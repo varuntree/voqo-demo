@@ -344,34 +344,7 @@ OUTPUT REQUIRED:
 - Agent ID: (from URL or settings)
 ```
 
-### Step 3.3: Configure Data Collection
-
-```
-INSTRUCTIONS FOR CLAUDE CODE:
-
-1. In agent settings, find "Data Collection" or "Extracted Variables"
-2. Configure extraction for:
-
-   VARIABLE: caller_intent
-   DESCRIPTION: Whether caller wants to buy, sell, or rent
-   TYPE: enum (buy, sell, rent, other)
-
-   VARIABLE: preferred_location
-   DESCRIPTION: Suburb or area the caller is interested in
-   TYPE: string
-
-   VARIABLE: budget_range
-   DESCRIPTION: Caller's budget or price range if mentioned
-   TYPE: string
-
-   VARIABLE: caller_name
-   DESCRIPTION: The caller's name
-   TYPE: string
-
-3. Save configuration
-```
-
-### Step 3.4: Import Twilio Phone Number
+### Step 3.3: Import Twilio Phone Number
 
 ```
 INSTRUCTIONS FOR CLAUDE CODE:
@@ -390,7 +363,7 @@ INSTRUCTIONS FOR CLAUDE CODE:
 NOTE: This automatically configures Twilio webhooks. Do not manually change Twilio voice webhook settings after this.
 ```
 
-### Step 3.5: Configure Webhooks
+### Step 3.4: Configure Webhooks
 
 ```
 INSTRUCTIONS FOR CLAUDE CODE:
@@ -411,7 +384,7 @@ OUTPUT REQUIRED:
 - Webhook signing secret (if any)
 ```
 
-### Step 3.6: Note All Credentials
+### Step 3.5: Note All Credentials
 
 ```
 INSTRUCTIONS FOR CLAUDE CODE:

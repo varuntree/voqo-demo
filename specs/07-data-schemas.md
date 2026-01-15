@@ -194,7 +194,9 @@ interface CallData {
   agencyName: string;                // "Ray White Surry Hills"
   agencyData: AgencyProfile | null;  // Full agency data if available
 
-  // Extracted Requirements
+  // Extracted Requirements (populated by Claude Code skill from transcript)
+  // NOTE: These are NOT from ElevenLabs data_collection_results
+  // Claude Code extracts ALL data directly from the raw transcript
   extractedData: {
     caller_name?: string;
     caller_intent?: 'buy' | 'sell' | 'rent' | 'other';

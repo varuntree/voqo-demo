@@ -324,16 +324,7 @@
     - **Turn Timeout:** 10 seconds
     - **Temperature:** 0.7
 
-- [ ] 6.3 **Configure Data Collection**
-  - Variables to extract:
-    - `caller_name` (string) - The caller's name
-    - `caller_intent` (enum: buy, sell, rent, other) - Intent
-    - `preferred_location` (string) - Suburb(s) mentioned
-    - `budget_range` (string) - Price range if mentioned
-    - `property_type` (string) - House, apartment, etc.
-    - `additional_notes` (string) - Other requirements
-
-- [ ] 6.4 **Configure Webhooks**
+- [ ] 6.3 **Configure Webhooks**
   - **Personalization Webhook:**
     - URL: `https://[ngrok-url]/api/webhook/personalize`
     - Called before each call to inject agency context
@@ -342,7 +333,7 @@
     - Event: `post_call_transcription`
     - Called after call ends with transcript
 
-- [ ] 6.5 **Import Twilio number to ElevenLabs**
+- [ ] 6.4 **Import Twilio number to ElevenLabs**
   - Go to Phone Numbers section
   - Click "Import Number" or "Add Phone Number"
   - Select Twilio as provider
@@ -352,11 +343,11 @@
     - Auth Token: xxxxxxxx
   - Assign agent to this number
 
-- [ ] 6.6 **Note Agent ID and update .env.local**
+- [ ] 6.5 **Note Agent ID and update .env.local**
   - Copy Agent ID from URL or settings
   - Update: `ELEVENLABS_AGENT_ID=actual_agent_id`
 
-- [ ] 6.7 **Test voice agent**
+- [ ] 6.6 **Test voice agent**
   - Call the Twilio number from a phone
   - Verify agent answers with default greeting
   - Check ngrok logs for webhook hits
@@ -365,7 +356,6 @@
 ### Checkpoint 6
 - [ ] ngrok running with HTTPS URL
 - [ ] ElevenLabs agent created with full system prompt
-- [ ] Data collection configured
 - [ ] Webhooks configured with ngrok URLs
 - [ ] Twilio number imported and assigned
 - [ ] Agent ID saved to .env.local

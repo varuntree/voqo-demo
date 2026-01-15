@@ -214,19 +214,15 @@ interface VoiceAgentConfig {
   // Agent Identity
   agentName: string;              // "Lisa" (Voqo-style name)
   voiceId: string;                // 11 Labs voice ID (Australian female)
-  
-  // Context (injected per-agency)
+
+  // Context (injected per-agency via personalization webhook)
   agencyName: string;             // "Ray White Surry Hills"
   agencyLocation: string;         // "Surry Hills, Sydney"
-  
-  // Conversation Goals
-  dataToCollect: [
-    "intent",       // buy/sell/rent
-    "location",     // suburb preference
-    "name",         // caller name
-    "phone"         // callback number (auto from Twilio)
-  ];
-  
+
+  // NOTE: We do NOT configure dataToCollect in ElevenLabs
+  // Claude Code skill extracts ALL data from the raw transcript
+  // This provides more flexibility and no information loss
+
   // Conversation Limits
   maxQuestions: 4;
   maxDurationSeconds: 90;
@@ -452,18 +448,14 @@ interface ElevenLabsWebhook {
   phone_number: string;
   caller_phone: string;
   duration_seconds: number;
-  transcript: string;
+  transcript: string;           // Full conversation transcript
   metadata: {
     agency_id: string;
     agency_name: string;
   };
-  // Extracted variables from conversation
-  variables: {
-    caller_name?: string;
-    intent?: string;
-    location?: string;
-    budget?: string;
-  };
+  // NOTE: We do NOT use ElevenLabs data extraction (variables field)
+  // Claude Code skill extracts ALL data directly from the transcript
+  // This provides more flexibility, accuracy, and no information loss
 }
 ```
 

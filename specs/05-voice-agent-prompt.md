@@ -223,22 +223,6 @@ These variables are injected per-call via the personalization webhook:
 
 ---
 
-## Data Collection Configuration
-
-Configure ElevenLabs to extract these variables from the conversation:
-
-| Variable | Type | Description |
-|----------|------|-------------|
-| `caller_name` | string | Caller's name |
-| `caller_intent` | enum | buy, sell, rent, other |
-| `preferred_location` | string | Suburb(s) mentioned |
-| `budget_range` | string | Price range mentioned |
-| `property_type` | string | House, apartment, etc. |
-| `bedrooms` | string | Number of bedrooms |
-| `additional_notes` | string | Other requirements |
-
----
-
 ## Voice Selection
 
 ### Recommended Voice Characteristics:

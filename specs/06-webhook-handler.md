@@ -383,14 +383,15 @@ export async function POST(request: NextRequest) {
                   'Unknown Agency',
       agencyData: matchedContext?.agencyData || null,
 
-      // Extracted data
-      extractedData: data.analysis.data_collection_results,
-      callerName: data.analysis.data_collection_results?.caller_name || null,
-      intent: data.analysis.data_collection_results?.caller_intent || null,
-      location: data.analysis.data_collection_results?.preferred_location || null,
-      budget: data.analysis.data_collection_results?.budget_range || null,
+      // Extracted data - Claude Code skill will populate these from transcript
+      // NOTE: We do NOT use data.analysis.data_collection_results
+      extractedData: null,
+      callerName: null,
+      intent: null,
+      location: null,
+      budget: null,
 
-      // Transcript
+      // Transcript - Claude Code extracts all data from this
       transcript: transcriptText,
       transcriptRaw: data.transcript,
       summary: data.analysis.transcript_summary,
@@ -436,19 +437,14 @@ async function triggerPageGeneration(callId: string, callData: any) {
     console.log(`Triggering page generation for call: ${callId}`);
 
     // Build prompt for Claude Code
+    // NOTE: We pass only the transcript - Claude Code extracts ALL data
     const prompt = `
 Use the postcall-page-builder skill to generate a personalized page for this completed call.
 
 Call ID: ${callId}
 
-Transcript:
+Full Transcript:
 ${callData.transcript}
-
-Extracted Data:
-- Caller Name: ${callData.callerName || 'Unknown'}
-- Intent: ${callData.intent || 'Unknown'}
-- Location: ${callData.location || 'Not specified'}
-- Budget: ${callData.budget || 'Not specified'}
 
 Agency Context:
 - Agency: ${callData.agencyName}
@@ -456,11 +452,15 @@ Agency Context:
 ${callData.agencyData ? JSON.stringify(callData.agencyData, null, 2) : ''}
 
 Instructions:
-1. Analyze the transcript for any additional requirements
-2. Search for matching property listings based on caller requirements
+1. EXTRACT from transcript: caller name, intent (buy/sell/rent), location, budget, property type, bedrooms, special requirements
+2. Search for matching property listings based on extracted requirements
 3. Generate a personalized HTML page using the postcall-page-builder skill
 4. Save the HTML to: /public/call/${callId}.html
-5. Update /data/calls/${callId}.json with pageStatus: "completed" and pageUrl: "/call/${callId}"
+5. Update /data/calls/${callId}.json with:
+   - extractedData (all extracted fields)
+   - callerName, intent, location, budget
+   - pageStatus: "completed"
+   - pageUrl: "/call/${callId}"
 `;
 
     // Invoke Claude Code

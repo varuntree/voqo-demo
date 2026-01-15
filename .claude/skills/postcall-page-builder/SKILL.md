@@ -21,13 +21,7 @@ You receive:
 ```json
 {
   "callId": "call-abc123",
-  "transcript": "Agent: Hi! Thanks for calling...",
-  "extractedData": {
-    "caller_name": "Sarah",
-    "intent": "buy",
-    "preferred_location": "Surry Hills or Darlinghurst",
-    "budget_range": "$800k to $1.2M"
-  },
+  "transcript": "Agent: Hi! Thanks for calling...\nCaller: Hi, I'm looking to buy...",
   "agencyData": {
     "id": "ray-white-surry-hills",
     "name": "Ray White Surry Hills",
@@ -36,11 +30,15 @@ You receive:
 }
 ```
 
+**NOTE:** You will NOT receive pre-extracted data. You extract ALL data from the raw transcript yourself.
+
 ## Processing Steps
 
-### Step 1: Analyze Transcript
+### Step 1: Extract Requirements from Transcript
 
-If extractedData incomplete, parse transcript for:
+**IMPORTANT:** Always parse the full transcript to extract ALL requirements. Do NOT rely on any pre-extracted data.
+
+Parse transcript for:
 - Caller name: "My name is...", "I'm...", "This is..."
 - Intent: "looking to buy", "want to sell", "need to rent"
 - Location: suburb names, area descriptions
@@ -147,29 +145,55 @@ If no exact matches:
 
 ## Output Files
 
-1. HTML page: `/public/call/[call-id].html`
+1. **HTML page:** `/public/call/[call-id].html`
 
-2. Call data JSON: `/data/calls/[call-id].json`
-```json
-{
-  "callId": "call-abc123",
-  "timestamp": "2025-01-15T10:30:00Z",
-  "agencyId": "ray-white-surry-hills",
-  "callerName": "Sarah",
-  "requirements": {
-    "intent": "buy",
-    "location": "Surry Hills or Darlinghurst",
-    "budget": "$800k-$1.2M",
-    "propertyType": null,
-    "bedrooms": null
-  },
-  "listingsShown": [
-    { "address": "12/45 Crown Street", "price": "$950,000", "url": "..." }
-  ],
-  "pageUrl": "/call/call-abc123",
-  "generatedAt": "2025-01-15T10:32:00Z"
-}
-```
+2. **Update existing call JSON:** `/data/calls/[call-id].json`
+
+   The webhook handler creates this file with the raw transcript. You must UPDATE it with:
+   - `extractedData` - all fields you extracted from transcript
+   - `callerName` - extracted name
+   - `intent` - buy/sell/rent
+   - `location` - extracted location preference
+   - `budget` - extracted budget range
+   - `requirements` - structured requirements object
+   - `listingsShown` - array of listings you found
+   - `pageUrl` - "/call/[call-id]"
+   - `pageStatus` - "completed"
+   - `generatedAt` - current timestamp
+
+   Example updated JSON:
+   ```json
+   {
+     "callId": "call-abc123",
+     "timestamp": "2025-01-15T10:30:00Z",
+     "agencyId": "ray-white-surry-hills",
+     "callerName": "Sarah",
+     "extractedData": {
+       "caller_name": "Sarah",
+       "caller_intent": "buy",
+       "preferred_location": "Surry Hills or Darlinghurst",
+       "budget_range": "$800k-$1.2M",
+       "property_type": null,
+       "bedrooms": null
+     },
+     "intent": "buy",
+     "location": "Surry Hills or Darlinghurst",
+     "budget": "$800k-$1.2M",
+     "requirements": {
+       "intent": "buy",
+       "location": "Surry Hills or Darlinghurst",
+       "budget": "$800k-$1.2M",
+       "propertyType": null,
+       "bedrooms": null
+     },
+     "listingsShown": [
+       { "address": "12/45 Crown Street", "price": "$950,000", "url": "..." }
+     ],
+     "pageUrl": "/call/call-abc123",
+     "pageStatus": "completed",
+     "generatedAt": "2025-01-15T10:32:00Z"
+   }
+   ```
 
 ## Quality Standards
 
