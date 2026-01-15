@@ -59,7 +59,9 @@ plans/               # Generated phase plans
 
 ## Discovered Gotchas
 
-*(Populated during implementation)*
+- Next.js 16 uses Tailwind v4 with `@tailwindcss/postcss` plugin instead of `tailwind.config.ts`
+- Port 3000 may be occupied; Next.js auto-selects next available port (check terminal output)
+- scmp package deprecated warning on twilio install - harmless
 
 ## External Service URLs
 

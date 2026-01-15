@@ -14,11 +14,11 @@
 
 ### Steps
 
-- [ ] 1.1 **Create Next.js project**
+- [x] 1.1 **Create Next.js project**
   - Run: `npx create-next-app@latest voqo-app --typescript --tailwind --app --no-eslint`
   - Move contents to project root or create in subdirectory
 
-- [ ] 1.2 **Create directory structure**
+- [x] 1.2 **Create directory structure**
   ```
   .claude/skills/agency-researcher/
   .claude/skills/demo-page-builder/
@@ -31,10 +31,10 @@
   lib/
   ```
 
-- [ ] 1.3 **Install dependencies**
+- [x] 1.3 **Install dependencies**
   - `npm install twilio`
 
-- [ ] 1.4 **Create placeholder .env.local**
+- [x] 1.4 **Create placeholder .env.local**
   ```
   TWILIO_ACCOUNT_SID=placeholder
   TWILIO_AUTH_TOKEN=placeholder
@@ -45,14 +45,14 @@
   NEXT_PUBLIC_DEMO_PHONE=+61 XXX XXX XXX
   ```
 
-- [ ] 1.5 **Verify project runs**
+- [x] 1.5 **Verify project runs**
   - `npm run dev` works
   - http://localhost:3000 loads
 
 ### Checkpoint 1
-- [ ] Project structure created
-- [ ] Dependencies installed
-- [ ] Dev server runs without errors
+- [x] Project structure created
+- [x] Dependencies installed
+- [x] Dev server runs without errors
 
 ---
 
