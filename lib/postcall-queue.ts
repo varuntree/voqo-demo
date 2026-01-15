@@ -2,6 +2,7 @@ import { readFile, writeFile, mkdir, readdir, rename, unlink, access, stat } fro
 import path from 'path';
 import { invokeClaudeCode } from '@/lib/claude';
 import { updateAgencyCall } from '@/lib/agency-calls';
+import { sendSMS, normalizePhoneNumber } from '@/lib/twilio';
 
 const JOBS_DIR = path.join(process.cwd(), 'data/jobs/postcall');
 const CALLS_DIR = path.join(process.cwd(), 'data/calls');
@@ -28,6 +29,31 @@ interface ErrorEntry {
 }
 
 let workerStarted = false;
+
+interface SendPostcallSMSParams {
+  callerPhone: string;
+  agencyName: string;
+  callId: string;
+}
+
+async function sendPostcallSMS({
+  callerPhone,
+  agencyName,
+  callId,
+}: SendPostcallSMSParams): Promise<void> {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const pageUrl = `${baseUrl}/call/${callId}`;
+  const message = `${agencyName} found properties for you: ${pageUrl}`;
+
+  try {
+    const normalizedPhone = normalizePhoneNumber(callerPhone);
+    await sendSMS(normalizedPhone, message);
+    console.log(`[SMS] Sent to ${normalizedPhone} for call ${callId}`);
+  } catch (error) {
+    console.error(`[SMS] Failed for call ${callId}:`, error);
+    // Log error but don't throw - page generation succeeded
+  }
+}
 
 export async function enqueuePostcallJob(callId: string, prompt: string): Promise<void> {
   await mkdir(JOBS_DIR, { recursive: true });
@@ -165,6 +191,8 @@ async function markCallCompleted(callId: string): Promise<void> {
   try {
     const data = JSON.parse(await readFile(callFile, 'utf-8')) as {
       agencyId?: string;
+      agencyName?: string;
+      callerPhone?: string;
       pageStatus?: string;
       pageUrl?: string | null;
       generatedAt?: string | null;
@@ -177,6 +205,15 @@ async function markCallCompleted(callId: string): Promise<void> {
     data.generatedAt = new Date().toISOString();
 
     await writeFile(callFile, JSON.stringify(data, null, 2));
+
+    // Send SMS notification to caller
+    if (data.callerPhone) {
+      await sendPostcallSMS({
+        callerPhone: data.callerPhone,
+        agencyName: data.agencyName || 'Voqo',
+        callId,
+      });
+    }
 
     if (data.agencyId) {
       await updateAgencyCall(data.agencyId, callId, {
