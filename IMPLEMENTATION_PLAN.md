@@ -64,24 +64,24 @@
 
 ### Steps
 
-- [ ] 2.1 **Twilio: Get Account SID and Auth Token**
+- [x] 2.1 **Twilio: Get Account SID and Auth Token**
   - Navigate to https://console.twilio.com
   - Copy Account SID (ACxxxxxxxx)
   - Copy Auth Token
 
-- [ ] 2.2 **Twilio: Get Australian phone number**
+- [x] 2.2 **Twilio: Get Australian phone number**
   - Check Phone Numbers → Manage → Active Numbers for existing +61 number
   - If none:
     - Check/create regulatory bundle for Australia
     - Purchase Australian local number (~$3/mo)
   - Note number in E.164 format: +61XXXXXXXXX
 
-- [ ] 2.3 **ElevenLabs: Get API key**
+- [x] 2.3 **ElevenLabs: Get API key**
   - Navigate to https://elevenlabs.io
   - Go to Profile → API Keys
   - Copy API key
 
-- [ ] 2.4 **Update .env.local with real credentials**
+- [x] 2.4 **Update .env.local with real credentials**
   ```
   TWILIO_ACCOUNT_SID=ACxxxx (real)
   TWILIO_AUTH_TOKEN=xxxx (real)
@@ -92,11 +92,11 @@
   ```
 
 ### Checkpoint 2
-- [ ] Twilio Account SID noted
-- [ ] Twilio Auth Token noted
-- [ ] Australian phone number acquired
-- [ ] ElevenLabs API key noted
-- [ ] .env.local updated with real values
+- [x] Twilio Account SID noted
+- [x] Twilio Auth Token noted
+- [x] Australian phone number acquired
+- [x] ElevenLabs API key noted
+- [x] .env.local updated with real values
 
 ---
 
