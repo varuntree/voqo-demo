@@ -253,7 +253,7 @@
 
 ### Steps
 
-- [ ] 5.1 **Create main search page (app/page.tsx)**
+- [x] 5.1 **Create main search page (app/page.tsx)**
   - Search input for suburb
   - Submit button
   - Loading state during Claude Code execution
@@ -265,22 +265,22 @@
   - Error handling
   - Styling: Tailwind CSS
 
-- [ ] 5.2 **Create demo page route (app/demo/[slug]/page.tsx)**
+- [x] 5.2 **Create demo page route (app/demo/[slug]/page.tsx)**
   - Check if `/public/demo/[slug].html` exists
   - If exists: Serve the static HTML (or redirect)
   - If not: Show "generating" or "not found" state
   - Alternative: Use Next.js static file serving
 
-- [ ] 5.3 **Create post-call page route (app/call/[id]/page.tsx)**
+- [x] 5.3 **Create post-call page route (app/call/[id]/page.tsx)**
   - Check if `/public/call/[id].html` exists
   - If exists: Serve the static HTML
   - If not: Show "generating" or "not found" state
 
-- [ ] 5.4 **Verify build succeeds**
+- [x] 5.4 **Verify build succeeds**
   - `npm run build` completes without errors
   - `npm run dev` shows all pages
 
-- [ ] 5.5 **Test UI locally**
+- [x] 5.5 **Test UI locally**
   - Main page loads at /
   - Can type suburb and click search
   - Loading state appears
@@ -288,12 +288,12 @@
   - Call route accessible at /call/test
 
 ### Checkpoint 5
-- [ ] Search page loads and accepts input
-- [ ] Loading states work
-- [ ] Demo page route works
-- [ ] Call page route works
-- [ ] Build succeeds
-- [ ] No console errors
+- [x] Search page loads and accepts input
+- [x] Loading states work
+- [x] Demo page route works
+- [x] Call page route works
+- [x] Build succeeds
+- [x] No console errors
 
 ---
 
