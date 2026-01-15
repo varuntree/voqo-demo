@@ -160,24 +160,24 @@
 
 ### Steps
 
-- [ ] 4.1 **Create lib/twilio.ts**
+- [x] 4.1 **Create lib/twilio.ts**
   - Twilio client initialization
   - `sendSMS(to, message)` helper function
   - Reference: `specs/06-webhook-handler.md`
 
-- [ ] 4.2 **Create lib/claude.ts**
+- [x] 4.2 **Create lib/claude.ts**
   - `invokeClaudeCode(options)` helper
   - Placeholder for Claude Code CLI/SDK integration
   - Reference: `specs/08-build-sequence.md` Step 4.1
 
-- [ ] 4.3 **Create /api/search/route.ts**
+- [x] 4.3 **Create /api/search/route.ts**
   - POST endpoint
   - Accepts: `{ suburb: string }`
   - Invokes Claude Code with agency-researcher skill
   - Returns: agency list with pain scores
   - Saves: `/data/agencies/[suburb-slug].json`
 
-- [ ] 4.4 **Create /api/generate-demo/route.ts**
+- [x] 4.4 **Create /api/generate-demo/route.ts**
   - POST endpoint
   - Accepts: `{ agencyId: string }`
   - Loads agency data from `/data/agencies/[id].json`
@@ -185,7 +185,7 @@
   - Returns: `{ url: "/demo/[agency-id]" }`
   - Saves: `/public/demo/[agency-id].html`
 
-- [ ] 4.5 **Create /api/register-call/route.ts**
+- [x] 4.5 **Create /api/register-call/route.ts**
   - POST endpoint
   - Accepts: `{ agencyData, timestamp }`
   - Generates unique contextId
@@ -194,14 +194,14 @@
   - TTL: 5 minutes
   - Full implementation in `specs/06-webhook-handler.md`
 
-- [ ] 4.6 **Create /api/call-status/route.ts**
+- [x] 4.6 **Create /api/call-status/route.ts**
   - GET endpoint
   - Query: `?agency=[agency-id]`
   - Reads `/data/calls/` for recent calls
   - Returns: `{ hasRecentCall, callId, status, pageUrl }`
   - Full implementation in `specs/06-webhook-handler.md`
 
-- [ ] 4.7 **Create /api/webhook/personalize/route.ts**
+- [x] 4.7 **Create /api/webhook/personalize/route.ts**
   - POST endpoint (called by ElevenLabs)
   - Accepts: `{ caller_id, agent_id, called_number, call_sid }`
   - Finds most recent pending context
@@ -209,7 +209,7 @@
   - Fallback to default agency if no context
   - Full implementation in `specs/06-webhook-handler.md`
 
-- [ ] 4.8 **Create /api/webhook/call-complete/route.ts**
+- [x] 4.8 **Create /api/webhook/call-complete/route.ts**
   - POST endpoint (called by ElevenLabs)
   - Accepts: Full ElevenLabs post_call_transcription payload
   - Extracts: transcript, caller info, agency context
@@ -218,7 +218,7 @@
   - Returns: `{ success, callId, pageGenerationStarted }`
   - Full implementation in `specs/06-webhook-handler.md`
 
-- [ ] 4.9 **Test all routes locally**
+- [x] 4.9 **Test all routes locally**
   ```bash
   # Test register-call
   curl -X POST http://localhost:3000/api/register-call \
@@ -235,13 +235,13 @@
   ```
 
 ### Checkpoint 4
-- [ ] lib/twilio.ts created
-- [ ] lib/claude.ts created
-- [ ] All 6 API routes created
-- [ ] Routes return valid JSON responses
-- [ ] File read/write works in /data
-- [ ] No TypeScript errors
-- [ ] `npm run build` succeeds
+- [x] lib/twilio.ts created
+- [x] lib/claude.ts created
+- [x] All 6 API routes created
+- [x] Routes return valid JSON responses
+- [x] File read/write works in /data
+- [x] No TypeScript errors
+- [x] `npm run build` succeeds
 
 ---
 
