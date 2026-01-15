@@ -108,7 +108,7 @@
 
 ### Steps
 
-- [ ] 3.1 **Create Agency Researcher skill**
+- [x] 3.1 **Create Agency Researcher skill**
   - File: `.claude/skills/agency-researcher/SKILL.md`
   - Content: Full skill content from `specs/02-agency-researcher-skill.md`
   - Key capabilities:
@@ -118,7 +118,7 @@
     - Calculate pain score (0-100)
     - Save to `/data/agencies/[slug].json`
 
-- [ ] 3.2 **Create Demo Page Builder skill**
+- [x] 3.2 **Create Demo Page Builder skill**
   - File: `.claude/skills/demo-page-builder/SKILL.md`
   - Content: Full skill content from `specs/03-demo-page-skill.md`
   - Key capabilities:
@@ -129,7 +129,7 @@
     - Call Demo button with JS to register call
     - Save to `/public/demo/[agency-id].html`
 
-- [ ] 3.3 **Create Post-Call Page Builder skill**
+- [x] 3.3 **Create Post-Call Page Builder skill**
   - File: `.claude/skills/postcall-page-builder/SKILL.md`
   - Content: Full skill content from `specs/04-postcall-page-skill.md`
   - Key capabilities:
@@ -139,16 +139,16 @@
     - Show listings matching caller criteria
     - Save to `/public/call/[call-id].html`
 
-- [ ] 3.4 **Create CLAUDE.md**
+- [x] 3.4 **Create CLAUDE.md**
   - File: `CLAUDE.md` in project root
   - Content: Project overview, available skills, guidelines
   - Reference: `specs/08-build-sequence.md` Step 3.4
 
 ### Checkpoint 3
-- [ ] agency-researcher/SKILL.md created with full content
-- [ ] demo-page-builder/SKILL.md created with full content
-- [ ] postcall-page-builder/SKILL.md created with full content
-- [ ] CLAUDE.md created in project root
+- [x] agency-researcher/SKILL.md created with full content
+- [x] demo-page-builder/SKILL.md created with full content
+- [x] postcall-page-builder/SKILL.md created with full content
+- [x] CLAUDE.md created in project root
 
 ---
 
