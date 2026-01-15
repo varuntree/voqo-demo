@@ -40,6 +40,8 @@ Load these based on identified phase:
 
 Also read `specs/07-data-schemas.md` if phase involves data handling.
 
+**Always read `AGENTS.md`** for accumulated patterns, gotchas, and working knowledge from previous phases.
+
 **Synthesize findings**:
 - Exact files to create/modify
 - Code implementations from specs

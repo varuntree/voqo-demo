@@ -198,6 +198,29 @@ Phase 3.1: Create agency-researcher skill
 
 ---
 
+## AGENTS.md Updates
+
+After discovering patterns or gotchas during implementation:
+
+1. Read current `AGENTS.md`
+2. Add to appropriate section:
+   - **Key Patterns**: Useful patterns for future phases
+   - **Discovered Gotchas**: Things that broke and how to fix
+3. Save updates
+
+**Examples of what to add:**
+- "Chrome tool requires tabs_context_mcp first"
+- "File paths must be absolute for Claude Code"
+- "ngrok URL changes on restart - update webhooks"
+- "ElevenLabs agent ID format: xxx-xxx-xxx"
+
+**When to update:**
+- After resolving any bug or issue
+- When discovering a pattern that will help future phases
+- After external service setup (credential locations, quirks)
+
+---
+
 ## Bug Investigation
 
 When a step fails, deploy up to 5 parallel agents:
