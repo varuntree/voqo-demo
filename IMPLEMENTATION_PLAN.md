@@ -307,59 +307,84 @@
 
 ### Steps
 
-- [ ] 6.1 **Start ngrok for webhook testing**
+- [x] 6.1 **Start ngrok for webhook testing**
   - `ngrok http 3000`
-  - Note HTTPS URL (e.g., https://abc123.ngrok.io)
+  - Note HTTPS URL (e.g., https://be38bcbf4844.ngrok-free.app)
   - This URL will be used for webhook configuration
 
-- [ ] 6.2 **Create ElevenLabs Conversational AI agent (Chrome)**
+- [x] 6.2 **Create ElevenLabs Conversational AI agent (Chrome)**
   - Navigate to ElevenLabs → Conversational AI → Create Agent
   - Configure:
     - **Name:** Voqo Real Estate Demo
     - **First Message:** `Hi! Thanks for calling {{agency_name}}. I'm their AI assistant - how can I help you today?`
     - **System Prompt:** Full content from `specs/05-voice-agent-prompt.md`
-    - **Voice:** Australian female (natural, professional)
+    - **Voice:** Kylie - Warm & Friendly (Australian)
     - **LLM:** GPT-4o
     - **Max Duration:** 180 seconds
     - **Turn Timeout:** 10 seconds
     - **Temperature:** 0.7
 
-- [ ] 6.3 **Configure Webhooks**
+- [x] 6.3 **Configure Webhooks**
   - **Personalization Webhook:**
     - URL: `https://[ngrok-url]/api/webhook/personalize`
     - Called before each call to inject agency context
   - **Post-Call Webhook:**
     - URL: `https://[ngrok-url]/api/webhook/call-complete`
-    - Event: `post_call_transcription`
+    - Event: `post_call_transcription` (Transcript toggle ON)
     - Called after call ends with transcript
 
-- [ ] 6.4 **Import Twilio number to ElevenLabs**
+- [x] 6.4 **Import Twilio number to ElevenLabs**
   - Go to Phone Numbers section
   - Click "Import Number" or "Add Phone Number"
   - Select Twilio as provider
   - Enter:
-    - Phone Number: +61XXXXXXXXX
-    - Account SID: ACxxxxxxxx
-    - Auth Token: xxxxxxxx
+    - Phone Number: +61483943567
+    - Account SID: REDACTED_TWILIO_SID
+    - Auth Token: (from .env.local)
   - Assign agent to this number
 
-- [ ] 6.5 **Note Agent ID and update .env.local**
+- [x] 6.5 **Note Agent ID and update .env.local**
   - Copy Agent ID from URL or settings
-  - Update: `ELEVENLABS_AGENT_ID=actual_agent_id`
+  - Update: `ELEVENLABS_AGENT_ID=agent_5001kf0882f6fndanzag9eg4xqev`
 
-- [ ] 6.6 **Test voice agent**
+- [x] 6.6 **Enable Security Overrides (CRITICAL)**
+  - Go to Agent Settings → Security tab
+  - Enable ALL overrides:
+    - ✅ Agent language
+    - ✅ First message
+    - ✅ System prompt
+    - ✅ LLM
+    - ✅ Voice
+    - ✅ Voice speed
+    - ✅ Voice stability
+    - ✅ Voice similarity
+    - ✅ Text only
+  - This allows webhook to override agent config per-call
+
+- [x] 6.7 **Test voice agent**
   - Call the Twilio number from a phone
-  - Verify agent answers with default greeting
+  - Verify agent answers with agency name (e.g., "Thanks for calling Ray White Surry Hills...")
   - Check ngrok logs for webhook hits
   - Verify personalization webhook is called
 
+### Troubleshooting Notes (Issues Encountered)
+
+| Issue | Symptom | Solution |
+|-------|---------|----------|
+| **Webhook URL path missing** | ElevenLabs sent to `/` instead of `/api/webhook/personalize` | Add full path in ElevenLabs webhook config |
+| **Missing `type` field** | Webhook response rejected | Add `"type": "conversation_initiation_client_data"` to response |
+| **Context window too short** | Multiple dial attempts returned default agency | Extended `RECENT_ACTIVE_WINDOW_MS` from 60s to 5 minutes |
+| **Sort logic bug** | Wrong context selected | Fixed swapped variables in sort comparison |
+| **Override not allowed** | Call failed with "Override for field 'first_message' is not allowed" | Enable overrides in Security tab |
+
 ### Checkpoint 6
-- [ ] ngrok running with HTTPS URL
-- [ ] ElevenLabs agent created with full system prompt
-- [ ] Webhooks configured with ngrok URLs
-- [ ] Twilio number imported and assigned
-- [ ] Agent ID saved to .env.local
-- [ ] Test call works
+- [x] ngrok running with HTTPS URL
+- [x] ElevenLabs agent created with full system prompt
+- [x] Webhooks configured with ngrok URLs (with FULL paths!)
+- [x] Twilio number imported and assigned
+- [x] Agent ID saved to .env.local
+- [x] Security overrides enabled
+- [x] Test call works with correct agency context
 
 ---
 

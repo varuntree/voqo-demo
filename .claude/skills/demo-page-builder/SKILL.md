@@ -83,7 +83,16 @@ Create a beautiful, modern landing page with these sections. Design freely - use
 - "AI Voice Agents for Real Estate"
 - Minimal, professional
 
-### 8. Required JavaScript Functionality
+### 8. Recent Calls Section
+- Add a section titled "Recent Calls"
+- Fetch `/api/agency-calls?agency={id}` on page load
+- Render a list of call entries with:
+  - callerName (fallback to "Caller" if missing)
+  - summary (fallback to "Call completed")
+  - link to pageUrl
+- If no calls, show a friendly empty state
+
+### 9. Required JavaScript Functionality
 
 Embed this functionality (implement cleanly):
 
@@ -102,6 +111,11 @@ Embed this functionality (implement cleanly):
 // showCallResult(data) function:
 // - Display success notification with link to pageUrl
 // - Smooth scroll to notification
+
+// loadRecentCalls() function:
+// - GET /api/agency-calls?agency={id}
+// - Render call list into "Recent Calls" section
+// - Show empty state if no calls
 ```
 
 ### Results Container

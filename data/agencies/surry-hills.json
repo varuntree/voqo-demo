@@ -1,0 +1,215 @@
+{
+  "suburb": "Surry Hills",
+  "searchedAt": "2026-01-15T10:30:00Z",
+  "totalFound": 7,
+  "agencies": [
+    {
+      "id": "ray-white-surry-hills",
+      "name": "Ray White Surry Hills",
+      "website": "https://raywhitesurryhills.com.au/",
+      "phone": "+61 2 9004 8800",
+      "email": "peter.natoli@raywhite.com",
+      "address": "Suite 9-11, 410 Crown Street, Surry Hills NSW 2010",
+      "branding": {
+        "logoUrl": "https://cdn6.ep.dynamics.net/s3/rw-media/memberphotos/6b682c19-1887-45d5-9ba5-bfc97975c07c.jpg",
+        "primaryColor": "#ffe512",
+        "secondaryColor": "#595959"
+      },
+      "metrics": {
+        "teamSize": 50,
+        "listingCount": 44,
+        "hasPropertyManagement": true,
+        "hasAfterHoursNumber": false,
+        "hasChatWidget": false,
+        "hasOnlineBooking": true,
+        "principalName": "Peter Natoli"
+      },
+      "painScore": 70,
+      "painReasons": [
+        "44 active listings generating high call volume",
+        "No after-hours contact solution",
+        "No chat widget for instant inquiries",
+        "Large PM portfolio needs 24/7 coverage"
+      ],
+      "notes": "Major franchise, largest team in area"
+    },
+    {
+      "id": "belle-property-surry-hills",
+      "name": "Belle Property Surry Hills",
+      "website": "https://www.belleproperty.com/surry-hills",
+      "phone": "02 9188 6878",
+      "email": "cynthia.elbakht@belleproperty.com",
+      "address": "144A Foveaux Street, Surry Hills NSW 2010",
+      "branding": {
+        "logoUrl": null,
+        "primaryColor": "#000000",
+        "secondaryColor": "#c9a961"
+      },
+      "metrics": {
+        "teamSize": 11,
+        "listingCount": 15,
+        "hasPropertyManagement": true,
+        "hasAfterHoursNumber": false,
+        "hasChatWidget": true,
+        "hasOnlineBooking": false,
+        "principalName": "Ted Pye & James Perlowski"
+      },
+      "painScore": 55,
+      "painReasons": [
+        "Small team managing sales and PM",
+        "No after-hours contact solution",
+        "No online booking for inspections"
+      ],
+      "notes": "Boutique premium agency, strong inner-city presence"
+    },
+    {
+      "id": "mcgrath-surry-hills",
+      "name": "McGrath Surry Hills",
+      "website": "https://www.mcgrath.com.au/offices/surry-hills-a0v5g000002CWGRAA4",
+      "phone": "02 8093 2200",
+      "email": null,
+      "address": "Surry Hills NSW 2010",
+      "branding": {
+        "logoUrl": null,
+        "primaryColor": "#E67200",
+        "secondaryColor": "#11181C"
+      },
+      "metrics": {
+        "teamSize": 7,
+        "listingCount": 20,
+        "hasPropertyManagement": true,
+        "hasAfterHoursNumber": false,
+        "hasChatWidget": false,
+        "hasOnlineBooking": false,
+        "principalName": "Mark Foy"
+      },
+      "painScore": 75,
+      "painReasons": [
+        "Small team of 7 managing 20+ listings",
+        "No after-hours contact solution",
+        "No chat widget for instant inquiries",
+        "No online booking system"
+      ],
+      "notes": "Boutique agency, high-performing principal"
+    },
+    {
+      "id": "duchateau-surry-hills",
+      "name": "duCHATEAU Real Estate",
+      "website": "https://www.duchateau.com.au/",
+      "phone": "+61 2 9281 4001",
+      "email": "info@duchateau.com.au",
+      "address": "Shop 1/38 Mary St, Surry Hills NSW 2010",
+      "branding": {
+        "logoUrl": "https://www.duchateau.com.au/wp-content/uploads/2024/08/duCHATEAU_Logo-square_1080.png",
+        "primaryColor": "#D1C292",
+        "secondaryColor": "#606060"
+      },
+      "metrics": {
+        "teamSize": 4,
+        "listingCount": 8,
+        "hasPropertyManagement": true,
+        "hasAfterHoursNumber": false,
+        "hasChatWidget": false,
+        "hasOnlineBooking": false,
+        "principalName": "Myles du Chateau"
+      },
+      "painScore": 65,
+      "painReasons": [
+        "Very small team managing sales and PM",
+        "No after-hours contact solution",
+        "No chat widget for instant inquiries",
+        "No online booking system"
+      ],
+      "notes": "Family-owned boutique agency"
+    },
+    {
+      "id": "laing-simmons-cbd-surry-hills",
+      "name": "Laing+Simmons Sydney CBD - Surry Hills",
+      "website": "https://lsre.com.au/cbd-surry-hills/",
+      "phone": "02 9267 8000",
+      "email": "dean.applegate@lsre.com.au",
+      "address": "2/37-43 King St, Sydney NSW 2000",
+      "branding": {
+        "logoUrl": "https://images.lsre.com.au/wp-content/uploads/sites/13/2018/03/18235037/logo-light.png",
+        "primaryColor": "#00334d",
+        "secondaryColor": "#fcdf05"
+      },
+      "metrics": {
+        "teamSize": 6,
+        "listingCount": 15,
+        "hasPropertyManagement": true,
+        "hasAfterHoursNumber": false,
+        "hasChatWidget": false,
+        "hasOnlineBooking": false,
+        "principalName": "Dean Applegate"
+      },
+      "painScore": 70,
+      "painReasons": [
+        "Small team of 6 managing sales and PM",
+        "67 leases in last 12 months - high PM volume",
+        "No after-hours contact solution",
+        "No chat widget for instant inquiries"
+      ],
+      "notes": "Strong PM focus, franchise network"
+    },
+    {
+      "id": "ayre-surry-hills",
+      "name": "Ayre Real Estate (formerly City Residential)",
+      "website": "https://ayre.com.au/",
+      "phone": "+61 2 8319 4488",
+      "email": "info@ayre.com.au",
+      "address": "Surry Hills NSW 2010",
+      "branding": {
+        "logoUrl": "https://s3.ap-southeast-2.amazonaws.com/app-spoke-sites-au/270/8d018c3d42daae1f5b4804e738b7c8ee.png",
+        "primaryColor": "#b1a17d",
+        "secondaryColor": "#1c2f42"
+      },
+      "metrics": {
+        "teamSize": 5,
+        "listingCount": 20,
+        "hasPropertyManagement": true,
+        "hasAfterHoursNumber": false,
+        "hasChatWidget": false,
+        "hasOnlineBooking": false,
+        "principalName": "Adrian Wilson & Craig Donohue"
+      },
+      "painScore": 70,
+      "painReasons": [
+        "Small team managing 20+ listings",
+        "Multi-office operation increases complexity",
+        "No after-hours contact solution",
+        "No chat widget for instant inquiries"
+      ],
+      "notes": "Recently merged with City Residential Property"
+    },
+    {
+      "id": "bresic-whitney-darlinghurst",
+      "name": "BresicWhitney Darlinghurst",
+      "website": "https://www.bresicwhitney.com.au/",
+      "phone": null,
+      "email": null,
+      "address": "Level 2, 318 Liverpool Street, Darlinghurst NSW 2010",
+      "branding": {
+        "logoUrl": "https://www.datocms-assets.com/117990/1743585589-banner-bw.png",
+        "primaryColor": "#000000",
+        "secondaryColor": "#FFFFFF"
+      },
+      "metrics": {
+        "teamSize": 15,
+        "listingCount": 126,
+        "hasPropertyManagement": false,
+        "hasAfterHoursNumber": false,
+        "hasChatWidget": false,
+        "hasOnlineBooking": true,
+        "principalName": null
+      },
+      "painScore": 60,
+      "painReasons": [
+        "126 active listings generating very high call volume",
+        "No after-hours contact solution",
+        "No chat widget for instant inquiries"
+      ],
+      "notes": "Large inner-city agency, covers Surry Hills area"
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readdir, readFile } from 'fs/promises';
 import path from 'path';
+import { processPostcallJobsOnce } from '@/lib/postcall-queue';
 
 const CALLS_DIR = path.join(process.cwd(), 'data/calls');
 
@@ -16,6 +17,7 @@ interface CallData {
 
 export async function GET(request: NextRequest) {
   try {
+    void processPostcallJobsOnce();
     const agencyId = request.nextUrl.searchParams.get('agency');
 
     if (!agencyId) {

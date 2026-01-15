@@ -1,0 +1,13 @@
+{
+  "agencyId": "ray-white-surry-hills",
+  "calls": [
+    {
+      "callId": "call-1768493009666-fe33yd",
+      "createdAt": "2026-01-15T16:03:29.672Z",
+      "status": "completed",
+      "summary": "Buyer inquiry in Surry Hills for 2 bed",
+      "pageUrl": "/call/call-1768493009666-fe33yd",
+      "callerName": null
+    }
+  ]
+}

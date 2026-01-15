@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voqo AI Demo | Ray White Surry Hills</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #ffe512;
+            --secondary: #595959;
+            --dark: #1a1a1a;
+            --light: #f8f8f8;
+            --gradient: linear-gradient(135deg, #ffe512 0%, #ffd000 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--dark);
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 229, 18, 0.08) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 70%, rgba(89, 89, 89, 0.1) 0%, transparent 50%);
+            animation: pulse 20s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.1) rotate(10deg); }
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 1rem 2rem;
+            background: rgba(26, 26, 26, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 229, 18, 0.1);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logos {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .agency-logo {
+            height: 50px;
+            border-radius: 8px;
+        }
+
+        .divider {
+            width: 1px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .voqo-logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            letter-spacing: -0.5px;
+        }
+
+        .voqo-logo span {
+            color: #fff;
+        }
+
+        .header-cta {
+            padding: 0.75rem 1.5rem;
+            background: var(--primary);
+            color: var(--dark);
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .header-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 229, 18, 0.3);
+        }
+
+        /* Hero Section */
+        .hero {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 8rem 2rem 4rem;
+        }
+
+        .hero-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(255, 229, 18, 0.1);
+            border: 1px solid rgba(255, 229, 18, 0.3);
+            border-radius: 100px;
+            font-size: 0.875rem;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-badge::before {
+            content: '✨';
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.8) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero h1 .highlight {
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-description {
+            font-size: 1.25rem;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.7;
+            margin-bottom: 2rem;
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 2rem;
+            background: var(--gradient);
+            color: var(--dark);
+            font-size: 1rem;
+            font-weight: 700;
+            text-decoration: none;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 40px rgba(255, 229, 18, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 50px rgba(255, 229, 18, 0.4);
+        }
+
+        .btn-primary svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 2rem;
+            background: transparent;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* Hero Visual */
+        .hero-visual {
+            position: relative;
+        }
+
+        .phone-mockup {
+            position: relative;
+            max-width: 350px;
+            margin: 0 auto;
+        }
+
+        .phone-frame {
+            background: linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 100%);
+            border-radius: 40px;
+            padding: 15px;
+            box-shadow: 0 50px 100px rgba(0, 0, 0, 0.5),
+                        0 0 0 1px rgba(255, 255, 255, 0.1);
+        }
+
+        .phone-screen {
+            background: #fff;
+            border-radius: 28px;
+            overflow: hidden;
+            aspect-ratio: 9/16;
+        }
+
+        .phone-content {
+            height: 100%;
+            background: linear-gradient(180deg, var(--primary) 0%, #ffd000 50%, #fff 50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 3rem;
+        }
+
+        .phone-content .ai-avatar {
+            width: 80px;
+            height: 80px;
+            background: var(--dark);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .phone-content .call-info {
+            color: var(--dark);
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .phone-content .call-info h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .phone-content .call-info p {
+            font-size: 0.875rem;
+            opacity: 0.7;
+        }
+
+        .call-wave {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            margin-top: 1rem;
+        }
+
+        .call-wave span {
+            width: 4px;
+            height: 20px;
+            background: var(--dark);
+            border-radius: 2px;
+            animation: wave 1.2s ease-in-out infinite;
+        }
+
+        .call-wave span:nth-child(2) { animation-delay: 0.1s; }
+        .call-wave span:nth-child(3) { animation-delay: 0.2s; }
+        .call-wave span:nth-child(4) { animation-delay: 0.3s; }
+        .call-wave span:nth-child(5) { animation-delay: 0.4s; }
+
+        @keyframes wave {
+            0%, 100% { height: 20px; }
+            50% { height: 40px; }
+        }
+
+        .floating-badge {
+            position: absolute;
+            background: #fff;
+            border-radius: 16px;
+            padding: 1rem 1.25rem;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .floating-badge.badge-1 {
+            top: 10%;
+            left: -20%;
+            animation-delay: 0s;
+        }
+
+        .floating-badge.badge-2 {
+            bottom: 20%;
+            right: -15%;
+            animation-delay: 1s;
+        }
+
+        .floating-badge.badge-3 {
+            top: 40%;
+            right: -25%;
+            animation-delay: 0.5s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .badge-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .badge-icon.green { background: #e8f5e9; }
+        .badge-icon.yellow { background: #fff8e1; }
+        .badge-icon.blue { background: #e3f2fd; }
+
+        .badge-text {
+            color: var(--dark);
+        }
+
+        .badge-text .label {
+            font-size: 0.75rem;
+            color: #666;
+        }
+
+        .badge-text .value {
+            font-size: 0.875rem;
+            font-weight: 700;
+        }
+
+        /* Pain Points Section */
+        .pain-section {
+            position: relative;
+            z-index: 1;
+            padding: 6rem 2rem;
+            background: linear-gradient(180deg, var(--dark) 0%, #111 100%);
+        }
+
+        .section-header {
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto 4rem;
+        }
+
+        .section-label {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: rgba(255, 229, 18, 0.1);
+            border-radius: 100px;
+            font-size: 0.875rem;
+            color: var(--primary);
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+
+        .section-header p {
+            font-size: 1.125rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .pain-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+
+        .pain-card {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .pain-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 229, 18, 0.3);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+        }
+
+        .pain-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, rgba(255, 229, 18, 0.2) 0%, rgba(255, 229, 18, 0.05) 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .pain-card h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .pain-card p {
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.6;
+        }
+
+        .pain-card .solution {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .pain-card .solution svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* ROI Calculator */
+        .roi-section {
+            position: relative;
+            z-index: 1;
+            padding: 6rem 2rem;
+            background: var(--secondary);
+        }
+
+        .roi-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .roi-content h2 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+
+        .roi-content h2 .highlight {
+            color: var(--primary);
+        }
+
+        .roi-content p {
+            font-size: 1.125rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 2rem;
+        }
+
+        .roi-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .input-group label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .input-group input {
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            font-size: 1rem;
+            color: #fff;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(255, 229, 18, 0.1);
+        }
+
+        .input-group input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .roi-results {
+            background: linear-gradient(145deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.1) 100%);
+            border-radius: 24px;
+            padding: 3rem;
+        }
+
+        .roi-results h3 {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 2rem;
+        }
+
+        .savings-display {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .savings-label {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 0.5rem;
+        }
+
+        .savings-value {
+            font-size: 4rem;
+            font-weight: 800;
+            color: var(--primary);
+            line-height: 1;
+        }
+
+        .savings-period {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 0.5rem;
+        }
+
+        .roi-breakdown {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .breakdown-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+        }
+
+        .breakdown-item .label {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .breakdown-item .label span {
+            font-size: 1.25rem;
+        }
+
+        .breakdown-item .value {
+            font-weight: 700;
+            color: #fff;
+        }
+
+        /* Features Grid */
+        .features-section {
+            position: relative;
+            z-index: 1;
+            padding: 6rem 2rem;
+            background: var(--dark);
+        }
+
+        .features-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 229, 18, 0.3);
+        }
+
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            background: var(--gradient);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin: 0 auto 1.5rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-card p {
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.6;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            position: relative;
+            z-index: 1;
+            padding: 6rem 2rem;
+            background: linear-gradient(180deg, #111 0%, var(--dark) 100%);
+        }
+
+        .cta-container {
+            max-width: 900px;
+            margin: 0 auto;
+            text-align: center;
+            background: linear-gradient(145deg, rgba(255, 229, 18, 0.1) 0%, rgba(255, 229, 18, 0.02) 100%);
+            border: 1px solid rgba(255, 229, 18, 0.2);
+            border-radius: 32px;
+            padding: 4rem;
+        }
+
+        .cta-container h2 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+
+        .cta-container p {
+            font-size: 1.25rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 2rem;
+        }
+
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            padding: 1.25rem 3rem;
+            background: var(--gradient);
+            color: var(--dark);
+            font-size: 1.25rem;
+            font-weight: 800;
+            text-decoration: none;
+            border: none;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 20px 50px rgba(255, 229, 18, 0.4);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 30px 60px rgba(255, 229, 18, 0.5);
+        }
+
+        .cta-button svg {
+            width: 28px;
+            height: 28px;
+        }
+
+        .trust-badges {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .trust-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.875rem;
+        }
+
+        .trust-badge svg {
+            width: 16px;
+            height: 16px;
+            color: #4ade80;
+        }
+
+        /* Footer */
+        .footer {
+            position: relative;
+            z-index: 1;
+            padding: 2rem;
+            background: var(--dark);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+
+        .footer p {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.875rem;
+        }
+
+        .footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .hero-content {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .hero-stats {
+                justify-content: center;
+            }
+
+            .hero-actions {
+                justify-content: center;
+            }
+
+            .hero-visual {
+                display: none;
+            }
+
+            .roi-container {
+                grid-template-columns: 1fr;
+            }
+
+            .pain-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .section-header h2 {
+                font-size: 2rem;
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .savings-value {
+                font-size: 3rem;
+            }
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--dark);
+            border: 1px solid rgba(255, 229, 18, 0.2);
+            border-radius: 24px;
+            padding: 3rem;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .modal-content h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .modal-content p {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 2rem;
+        }
+
+        .modal-phone {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 2rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .modal-cancel {
+            padding: 1rem 2rem;
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-cancel:hover {
+            border-color: #fff;
+        }
+
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(26, 26, 26, 0.3);
+            border-top-color: var(--dark);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .btn-primary.loading .spinner {
+            display: block;
+        }
+
+        .btn-primary.loading .btn-text {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation"></div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logos">
+                <img src="https://cdn6.ep.dynamics.net/s3/rw-media/memberphotos/6b682c19-1887-45d5-9ba5-bfc97975c07c.jpg" alt="Ray White Surry Hills" class="agency-logo">
+                <div class="divider"></div>
+                <div class="voqo-logo">VOQO<span>.AI</span></div>
+            </div>
+            <button class="header-cta" onclick="openCallModal()">Book Demo Call</button>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-text">
+                <div class="hero-badge">Built for Ray White Surry Hills</div>
+                <h1>Never Miss Another <span class="highlight">Lead</span> Again</h1>
+                <p class="hero-description">
+                    With <strong>44 active listings</strong> and a team of <strong>50 agents</strong>,
+                    Ray White Surry Hills deserves AI-powered phone handling that works as hard as you do.
+                    24/7. Every call answered. Every lead captured.
+                </p>
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">44</div>
+                        <div class="stat-label">Active Listings</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">50</div>
+                        <div class="stat-label">Team Members</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">24/7</div>
+                        <div class="stat-label">Coverage</div>
+                    </div>
+                </div>
+                <div class="hero-actions">
+                    <button class="btn-primary" onclick="openCallModal()">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                        <span class="btn-text">Experience Live Demo</span>
+                        <span class="spinner"></span>
+                    </button>
+                    <a href="https://raywhitesurryhills.com.au/" target="_blank" class="btn-secondary">
+                        Visit Your Website →
+                    </a>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="phone-mockup">
+                    <div class="floating-badge badge-1">
+                        <div class="badge-icon green">✓</div>
+                        <div class="badge-text">
+                            <div class="label">Status</div>
+                            <div class="value">Call Answered</div>
+                        </div>
+                    </div>
+                    <div class="floating-badge badge-2">
+                        <div class="badge-icon yellow">📅</div>
+                        <div class="badge-text">
+                            <div class="label">Action</div>
+                            <div class="value">Viewing Booked</div>
+                        </div>
+                    </div>
+                    <div class="floating-badge badge-3">
+                        <div class="badge-icon blue">📊</div>
+                        <div class="badge-text">
+                            <div class="label">Lead Score</div>
+                            <div class="value">Hot - 95%</div>
+                        </div>
+                    </div>
+                    <div class="phone-frame">
+                        <div class="phone-screen">
+                            <div class="phone-content">
+                                <div class="ai-avatar">🤖</div>
+                                <div class="call-info">
+                                    <h3>Voqo AI</h3>
+                                    <p>Handling inquiry...</p>
+                                </div>
+                                <div class="call-wave">
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pain Points Section -->
+    <section class="pain-section">
+        <div class="section-header">
+            <span class="section-label">Your Challenges</span>
+            <h2>We Understand Your Pain Points</h2>
+            <p>Based on our analysis, here's what's costing Ray White Surry Hills leads and revenue</p>
+        </div>
+        <div class="pain-grid">
+            <div class="pain-card">
+                <div class="pain-icon">📞</div>
+                <h3>High Call Volume from 44 Listings</h3>
+                <p>Every listing generates inquiries. Missed calls mean missed opportunities and frustrated buyers who move on to competitors.</p>
+                <div class="solution">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Voqo answers 100% of calls instantly
+                </div>
+            </div>
+            <div class="pain-card">
+                <div class="pain-icon">🌙</div>
+                <h3>No After-Hours Solution</h3>
+                <p>When your office closes, leads don't stop calling. Without after-hours coverage, you're losing business to agents who answer.</p>
+                <div class="solution">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    24/7 AI coverage, never miss a lead
+                </div>
+            </div>
+            <div class="pain-card">
+                <div class="pain-icon">💬</div>
+                <h3>No Instant Chat Support</h3>
+                <p>Modern buyers expect instant responses. Without a chat widget, you're missing the digital-first generation of buyers.</p>
+                <div class="solution">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    AI chat widget included with Voqo
+                </div>
+            </div>
+            <div class="pain-card">
+                <div class="pain-icon">🏠</div>
+                <h3>PM Portfolio Needs 24/7 Coverage</h3>
+                <p>Property management emergencies don't wait for business hours. Tenants need immediate response for urgent issues.</p>
+                <div class="solution">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Intelligent PM call routing & triage
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ROI Calculator -->
+    <section class="roi-section">
+        <div class="roi-container">
+            <div class="roi-content">
+                <h2>Calculate Your <span class="highlight">ROI</span></h2>
+                <p>See exactly how much revenue Voqo AI can recover for Ray White Surry Hills</p>
+                <div class="roi-inputs">
+                    <div class="input-group">
+                        <label>Estimated missed calls per week</label>
+                        <input type="number" id="missedCalls" value="25" oninput="calculateROI()">
+                    </div>
+                    <div class="input-group">
+                        <label>Average commission per sale ($)</label>
+                        <input type="number" id="avgCommission" value="15000" oninput="calculateROI()">
+                    </div>
+                    <div class="input-group">
+                        <label>Lead to sale conversion rate (%)</label>
+                        <input type="number" id="conversionRate" value="5" oninput="calculateROI()">
+                    </div>
+                </div>
+            </div>
+            <div class="roi-results">
+                <h3>Potential Revenue Recovery</h3>
+                <div class="savings-display">
+                    <div class="savings-label">Annual Recovered Revenue</div>
+                    <div class="savings-value" id="annualSavings">$97,500</div>
+                    <div class="savings-period">per year with Voqo AI</div>
+                </div>
+                <div class="roi-breakdown">
+                    <div class="breakdown-item">
+                        <div class="label">
+                            <span>📞</span>
+                            Calls captured/year
+                        </div>
+                        <div class="value" id="callsCaptured">1,300</div>
+                    </div>
+                    <div class="breakdown-item">
+                        <div class="label">
+                            <span>💰</span>
+                            Additional sales/year
+                        </div>
+                        <div class="value" id="additionalSales">6.5</div>
+                    </div>
+                    <div class="breakdown-item">
+                        <div class="label">
+                            <span>⏰</span>
+                            Hours saved/month
+                        </div>
+                        <div class="value" id="hoursSaved">40+</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section">
+        <div class="section-header">
+            <span class="section-label">Why Voqo AI</span>
+            <h2>Built for Real Estate Excellence</h2>
+            <p>Powerful AI designed specifically for agencies like Ray White Surry Hills</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <h3>Smart Lead Qualification</h3>
+                <p>AI qualifies leads in real-time, asking the right questions and routing hot leads directly to your agents.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📅</div>
+                <h3>Instant Booking</h3>
+                <p>Integrates with your calendar to book viewings instantly. No back-and-forth, no missed appointments.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔄</div>
+                <h3>CRM Integration</h3>
+                <p>Seamlessly syncs with your existing CRM. Every call logged, every lead captured, every detail preserved.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🏠</div>
+                <h3>Property Knowledge</h3>
+                <p>AI knows your listings inside out. Answers questions about features, pricing, and availability accurately.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🌏</div>
+                <h3>Multilingual Support</h3>
+                <p>Serves diverse buyers in their preferred language. Expand your reach without expanding your team.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3>Analytics Dashboard</h3>
+                <p>Real-time insights into call patterns, lead quality, and conversion metrics. Data-driven decisions made easy.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="cta-container">
+            <h2>Ready to Transform Ray White Surry Hills?</h2>
+            <p>Join Australia's leading agencies using AI to capture every opportunity</p>
+            <button class="cta-button" onclick="openCallModal()">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+                Start Your Live Demo Now
+            </button>
+            <div class="trust-badges">
+                <div class="trust-badge">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    No credit card required
+                </div>
+                <div class="trust-badge">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    5-minute setup
+                </div>
+                <div class="trust-badge">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Cancel anytime
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>
+            Personalized demo for <strong>Ray White Surry Hills</strong> |
+            Prepared by <a href="#">Voqo AI</a> |
+            Contact: <a href="mailto:peter.natoli@raywhite.com">peter.natoli@raywhite.com</a>
+        </p>
+    </footer>
+
+    <!-- Call Modal -->
+    <div class="modal-overlay" id="callModal">
+        <div class="modal-content">
+            <h3>🎉 Experience Voqo AI Live</h3>
+            <p>You're about to call our AI demo line configured for Ray White Surry Hills. Experience firsthand how Voqo handles your property inquiries.</p>
+            <div class="modal-phone">1300 VOQO AI</div>
+            <div class="modal-actions">
+                <button class="modal-cancel" onclick="closeCallModal()">Cancel</button>
+                <button class="btn-primary" onclick="initiateCall()">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                    </svg>
+                    <span class="btn-text">Call Now</span>
+                    <span class="spinner"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Agency context for API calls
+        const agencyContext = {
+            id: "ray-white-surry-hills",
+            name: "Ray White Surry Hills",
+            website: "https://raywhitesurryhills.com.au/",
+            phone: "+61 2 9004 8800",
+            email: "peter.natoli@raywhite.com",
+            address: "Suite 9-11, 410 Crown Street, Surry Hills NSW 2010",
+            metrics: {
+                teamSize: 50,
+                listingCount: 44,
+                hasPropertyManagement: true,
+                principalName: "Peter Natoli"
+            },
+            painScore: 70,
+            painReasons: [
+                "44 active listings generating high call volume",
+                "No after-hours contact solution",
+                "No chat widget for instant inquiries",
+                "Large PM portfolio needs 24/7 coverage"
+            ]
+        };
+
+        // ROI Calculator
+        function calculateROI() {
+            const missedCalls = parseInt(document.getElementById('missedCalls').value) || 0;
+            const avgCommission = parseInt(document.getElementById('avgCommission').value) || 0;
+            const conversionRate = parseFloat(document.getElementById('conversionRate').value) || 0;
+
+            const weeksPerYear = 52;
+            const callsPerYear = missedCalls * weeksPerYear;
+            const salesPerYear = (callsPerYear * (conversionRate / 100));
+            const annualRevenue = salesPerYear * avgCommission;
+
+            document.getElementById('callsCaptured').textContent = callsPerYear.toLocaleString();
+            document.getElementById('additionalSales').textContent = salesPerYear.toFixed(1);
+            document.getElementById('annualSavings').textContent = '$' + annualRevenue.toLocaleString();
+        }
+
+        // Modal functions
+        function openCallModal() {
+            document.getElementById('callModal').classList.add('active');
+        }
+
+        function closeCallModal() {
+            document.getElementById('callModal').classList.remove('active');
+        }
+
+        // Register call and initiate demo
+        async function initiateCall() {
+            const button = document.querySelector('#callModal .btn-primary');
+            button.classList.add('loading');
+
+            try {
+                // Register call context with the API
+                const response = await fetch('/api/register-call', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        agencyId: agencyContext.id,
+                        agencyName: agencyContext.name,
+                        context: {
+                            source: 'demo-page',
+                            timestamp: new Date().toISOString(),
+                            agency: agencyContext,
+                            userAgent: navigator.userAgent,
+                            referrer: document.referrer
+                        }
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.phoneNumber) {
+                    // Redirect to phone call
+                    window.location.href = `tel:${data.phoneNumber}`;
+                } else {
+                    // Fallback to default demo number
+                    window.location.href = 'tel:+61483943567';
+                }
+            } catch (error) {
+                console.error('Error registering call:', error);
+                // Fallback to default demo number on error
+                window.location.href = 'tel:+61483943567';
+            } finally {
+                button.classList.remove('loading');
+                closeCallModal();
+            }
+        }
+
+        // Close modal on overlay click
+        document.getElementById('callModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeCallModal();
+            }
+        });
+
+        // Close modal on escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeCallModal();
+            }
+        });
+
+        // Initialize ROI calculator
+        calculateROI();
+
+        // Track page view
+        console.log('Demo page loaded for:', agencyContext.name);
+    </script>
+</body>
+</html>

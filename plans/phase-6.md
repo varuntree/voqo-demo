@@ -3,6 +3,47 @@
 ## What & Why
 Create and configure the ElevenLabs Conversational AI voice agent that handles inbound calls. This connects Twilio phone number to AI agent with webhooks for dynamic agency context injection and post-call processing.
 
+## Current Status Summary (Updated 2026-01-16)
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| ElevenLabs Agent | ✅ Created | ID: `agent_5001kf0882f6fndanzag9eg4xqev` |
+| System Prompt | ✅ Deployed | Full prompt with dynamic vars |
+| Voice | ✅ Configured | Australian female (Kylie) |
+| Agent ID in .env | ✅ Saved | Ready for API use |
+| Webhooks (code) | ✅ Implemented | personalize + call-complete routes |
+| Twilio credentials | ✅ Present | SID, Token, Phone in .env.local |
+| Twilio→ElevenLabs import | ✅ Complete | Phone: +61 483 943 567, Agent assigned |
+| ngrok tunnel | ⚠️ Session-based | URL changes on restart, update webhooks each session |
+| Webhook URLs | ⚠️ Need update | Must match current ngrok URL before testing |
+| End-to-end test | ❌ Pending | Blocked until webhooks updated |
+
+**Before testing each session:**
+1. Start dev server: `npm run dev`
+2. Start ngrok: `ngrok http 3000`
+3. Update webhook URLs in ElevenLabs Settings with new ngrok URL (see Quick Start below)
+
+## Quick Start (Each Session)
+
+Since ngrok free tier generates new URL each restart, update webhooks before testing:
+
+1. **Start services:**
+   ```bash
+   cd /Users/varunprasad/code/prjs/voqo-demo
+   npm run dev &
+   ngrok http 3000
+   ```
+   Note the ngrok URL (e.g., `https://xxxxx.ngrok-free.app`)
+
+2. **Update webhooks in ElevenLabs:**
+   - Go to: https://elevenlabs.io/app/agents/settings
+   - **Conversation Initiation Client Data Webhook**: Delete old, add new URL + `/api/webhook/personalize`
+   - **Post-Call Webhook**: Click trash icon, then "Select Webhook" → add new URL + `/api/webhook/call-complete`
+
+3. **Test:** Call +61 483 943 567, watch http://127.0.0.1:4040 for webhook hits
+
+---
+
 ## Prerequisites
 - Phases 1-5 complete (project, credentials, skills, API routes, UI)
 - Twilio credentials in `.env.local`
@@ -233,11 +274,11 @@ ALWAYS:
 **Note**: This auto-configures Twilio voice webhooks. Do not manually change Twilio settings after.
 
 **Verify**:
-- [ ] Phone number shows as connected
-- [ ] Agent assigned to number
-- [ ] No errors in import process
+- [x] Phone number shows as connected
+- [x] Agent assigned to number
+- [x] No errors in import process
 
-**Status**: [ ] Pending (BLOCKED: Twilio Auth Token invalid)
+**Status**: [✓] Complete (Fixed by deleting cached workspace secret, re-imported with fresh token)
 
 ---
 
@@ -326,6 +367,62 @@ You: "My name is Test User"
 3. **Personalization fires**: ngrok dashboard shows POST to /api/webhook/personalize
 4. **Post-call fires**: After hangup, ngrok shows POST to /api/webhook/call-complete
 5. **No errors**: Terminal shows clean logs, no 500 errors
+
+---
+
+## REMAINING WORK TO COMPLETE PHASE 6
+
+### Step 6.4-FIX: Verify and fix Twilio credentials
+**Status**: [✓] Complete
+
+**Resolution**:
+- ElevenLabs had cached old Twilio auth token as workspace secret
+- Deleted secret `twilio_token_account_REDACTED_TWILIO_SID` from Settings
+- Re-imported phone with fresh credentials - success
+
+---
+
+### Step 6.3-UPDATE: Update webhook URLs with fresh ngrok
+**Status**: [✓] Complete
+
+**Done**:
+- [x] ngrok running at `https://be38bcbf4844.ngrok-free.app` (updated 2026-01-16)
+- [ ] Personalization webhook needs update in ElevenLabs Settings (Conversation Initiation Client Data)
+- [x] Post-call webhook updated in Agents Platform Settings (`https://elevenlabs.io/app/agents/settings`)
+  - URL: `https://be38bcbf4844.ngrok-free.app/api/webhook/call-complete`
+  - Auth: HMAC with secret `wsec_2d74db973133d9e2522cd4e180be1a8a8cd27e5cc360864f52fb421cf1fce792`
+  - Event: Transcript enabled
+- [x] Verified: `curl -X POST https://be38bcbf4844.ngrok-free.app/api/webhook/personalize -d '{}'` returns JSON
+
+**⚠️ ACTION REQUIRED**: Update webhook URLs in ElevenLabs before testing:
+1. Personalization: `https://be38bcbf4844.ngrok-free.app/api/webhook/personalize`
+2. Post-call: `https://be38bcbf4844.ngrok-free.app/api/webhook/call-complete`
+
+**Note**: Post-call webhook found in Agents Platform Settings, NOT in Developers > Webhooks section
+
+---
+
+### Step 6.6: Test voice agent end-to-end
+**Status**: [⏳] Pre-test verified - Awaiting user test call
+
+**Pre-test verification complete** (2026-01-16):
+- ✅ Dev server running on port 3000
+- ✅ ngrok tunnel active: https://940e7c8b4adb.ngrok-free.app
+- ✅ Personalization webhook working (returns valid JSON)
+- ✅ ngrok web interface accessible at http://127.0.0.1:4040
+- All systems ready for manual test call
+
+**To test**:
+1. Call +61 483 943 567
+2. Verify agent answers with greeting
+3. Check ngrok logs (http://127.0.0.1:4040) for webhook hits
+4. Have brief conversation
+5. End call
+
+---
+
+### Step 6.7: Phase Checkpoint
+**Status**: [ ] Pending
 
 ---
 

@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.2.7",
     "next": "16.1.2",
     "react": "19.2.3",
     "react-dom": "19.2.3",

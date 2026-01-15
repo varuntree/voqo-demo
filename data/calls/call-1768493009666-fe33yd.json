@@ -1,0 +1,55 @@
+{
+  "callId": "call-1768493009666-fe33yd",
+  "contextId": "ctx-1768492982972-f97scp3ac",
+  "conversationId": "conv_ray_001",
+  "timestamp": "2026-01-15T16:03:29.672Z",
+  "duration": 65,
+  "callerPhone": "+61400000000",
+  "status": "completed",
+  "agencyId": "ray-white-surry-hills",
+  "agencyName": "Ray White Surry Hills",
+  "agencyData": {
+    "id": "ray-white-surry-hills",
+    "name": "Ray White Surry Hills",
+    "location": "Surry Hills",
+    "phone": "+61 2 9004 8800"
+  },
+  "extractedData": {
+    "callerName": null,
+    "intent": "buy",
+    "location": "Surry Hills",
+    "budget": "$1.2M",
+    "budgetNumeric": 1200000,
+    "propertyType": "apartment",
+    "bedrooms": 2,
+    "bathrooms": null,
+    "specialRequirements": null
+  },
+  "callerName": null,
+  "intent": "buy",
+  "location": "Surry Hills",
+  "budget": "$1.2M",
+  "transcript": "Agent: Hi! Thanks for calling Ray White Surry Hills.\n\nCaller: I am looking to buy in Surry Hills.\n\nAgent: Great. What is your budget?\n\nCaller: Around $1.2M and 2 bedrooms.",
+  "transcriptRaw": [
+    {
+      "role": "agent",
+      "message": "Hi! Thanks for calling Ray White Surry Hills."
+    },
+    {
+      "role": "user",
+      "message": "I am looking to buy in Surry Hills."
+    },
+    {
+      "role": "agent",
+      "message": "Great. What is your budget?"
+    },
+    {
+      "role": "user",
+      "message": "Around $1.2M and 2 bedrooms."
+    }
+  ],
+  "summary": "Buyer inquiry in Surry Hills for 2 bed",
+  "pageStatus": "completed",
+  "pageUrl": "/call/call-1768493009666-fe33yd",
+  "generatedAt": "2026-01-15T16:07:01.655Z"
+}

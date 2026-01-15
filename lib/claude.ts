@@ -1,7 +1,4 @@
-import { exec } from 'child_process';
-import { promisify } from 'util';
-
-const execAsync = promisify(exec);
+import { query } from '@anthropic-ai/claude-agent-sdk';
 
 export interface ClaudeCodeOptions {
   prompt: string;
@@ -11,20 +8,47 @@ export interface ClaudeCodeOptions {
 }
 
 export async function invokeClaudeCode(options: ClaudeCodeOptions): Promise<string> {
-  const { prompt, workingDir = process.cwd() } = options;
-
-  // Escape prompt for shell
-  const escapedPrompt = prompt.replace(/"/g, '\\"').replace(/\n/g, '\\n');
-
-  // Build command - uses claude CLI with --print for non-interactive
-  const command = `cd "${workingDir}" && claude --print --dangerously-skip-permissions -p "${escapedPrompt}"`;
+  const { prompt, workingDir } = options;
 
   console.log('[Claude Code] Invoking with prompt:', prompt.substring(0, 100) + '...');
 
+  let result = '';
+
   try {
-    const { stdout, stderr } = await execAsync(command, { maxBuffer: 10 * 1024 * 1024 });
-    if (stderr) console.error('[Claude Code] stderr:', stderr);
-    return stdout;
+    for await (const message of query({
+      prompt,
+      options: {
+        allowedTools: ['Read', 'Write', 'Edit', 'Bash', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Task', 'Skill'],
+        allowDangerouslySkipPermissions: true,
+        cwd: workingDir || process.cwd(),
+      }
+    })) {
+      // Log message types for debugging
+      if ('type' in message) {
+        console.log('[Claude Code] Message type:', message.type);
+      }
+
+      // Capture assistant text responses
+      if ('type' in message && message.type === 'assistant' && 'content' in message) {
+        const content = message.content;
+        if (Array.isArray(content)) {
+          for (const block of content) {
+            if (block.type === 'text') {
+              result += block.text + '\n';
+            }
+          }
+        }
+      }
+
+      // Capture final result
+      if ('result' in message) {
+        console.log('[Claude Code] Got result');
+        result = String(message.result);
+      }
+    }
+
+    console.log('[Claude Code] Completed, result length:', result.length);
+    return result;
   } catch (error) {
     console.error('[Claude Code] Error:', error);
     throw error;
@@ -33,17 +57,27 @@ export async function invokeClaudeCode(options: ClaudeCodeOptions): Promise<stri
 
 // Fire-and-forget version for background tasks
 export function invokeClaudeCodeAsync(options: ClaudeCodeOptions): void {
-  const { prompt, workingDir = process.cwd() } = options;
-  const escapedPrompt = prompt.replace(/"/g, '\\"').replace(/\n/g, '\\n');
-  const command = `cd "${workingDir}" && claude --print --dangerously-skip-permissions -p "${escapedPrompt}"`;
+  const { prompt, workingDir } = options;
 
   console.log('[Claude Code Async] Starting background task');
 
-  exec(command, { maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
-    if (error) {
+  // Run in background without waiting
+  (async () => {
+    try {
+      for await (const message of query({
+        prompt,
+        options: {
+          allowedTools: ['Read', 'Write', 'Edit', 'Bash', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Task', 'Skill'],
+          allowDangerouslySkipPermissions: true,
+          cwd: workingDir || process.cwd(),
+        }
+      })) {
+        if ('result' in message) {
+          console.log('[Claude Code Async] Completed with result');
+        }
+      }
+    } catch (error) {
       console.error('[Claude Code Async] Error:', error);
-    } else {
-      console.log('[Claude Code Async] Completed');
     }
-  });
+  })();
 }

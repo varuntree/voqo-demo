@@ -1,0 +1,54 @@
+{
+  "callId": "call-1768491987484-4svahd",
+  "conversationId": "conv_test_001",
+  "timestamp": "2026-01-15T15:46:27.486Z",
+  "duration": 60,
+  "callerPhone": "+61400000000",
+  "status": "completed",
+  "agencyId": "test-agency",
+  "agencyName": "Test Agency",
+  "agencyData": {
+    "id": "test-agency",
+    "name": "Test Agency",
+    "location": "Surry Hills",
+    "phone": "+61200000000"
+  },
+  "extractedData": {
+    "callerName": null,
+    "intent": "buy",
+    "location": "Surry Hills",
+    "budget": "$1,000,000",
+    "budgetMin": 800000,
+    "budgetMax": 1200000,
+    "propertyType": null,
+    "bedrooms": null,
+    "specialRequirements": null
+  },
+  "callerName": null,
+  "intent": "buy",
+  "location": "Surry Hills",
+  "budget": "$1,000,000",
+  "transcript": "Agent: Hi! Thanks for calling Test Agency.\n\nCaller: I am looking to buy in Surry Hills.\n\nAgent: Great. Whats your budget?\n\nCaller: Around $1M.",
+  "transcriptRaw": [
+    {
+      "role": "agent",
+      "message": "Hi! Thanks for calling Test Agency."
+    },
+    {
+      "role": "user",
+      "message": "I am looking to buy in Surry Hills."
+    },
+    {
+      "role": "agent",
+      "message": "Great. Whats your budget?"
+    },
+    {
+      "role": "user",
+      "message": "Around $1M."
+    }
+  ],
+  "summary": "Buyer inquiry in Surry Hills",
+  "pageStatus": "completed",
+  "pageUrl": "/call/call-1768491987484-4svahd",
+  "generatedAt": "2026-01-16T00:00:00.000Z"
+}

@@ -75,8 +75,11 @@ Instructions:
 3. Highlight their pain points and how Voqo helps
 4. Include ROI calculator section
 5. Include "Call Demo" button that registers call context
-6. Save to: public/demo/${agencyId}.html
-7. The page should call /api/register-call when user clicks Call Demo
+6. Add a "Recent Calls" section that fetches /api/agency-calls?agency=${agencyId}
+   - Render call list with callerName (if present), summary, and link to pageUrl (/call/<id>)
+   - If no calls, show a friendly empty state
+7. Save to: public/demo/${agencyId}.html
+8. The page should call /api/register-call when user clicks Call Demo
 
 Make the page visually impressive - this is a sales demo.
 `;
