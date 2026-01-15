@@ -1,17 +1,43 @@
-# Silo Implement
+# Phase Implement
 
-Execute implementation plan and E2E tests. Iterate until ALL steps pass.
+Execute the current phase plan and update status tracking.
 
 ## Variables
-plan_path: $ARGUMENTS
+phase: $ARGUMENTS
 
 ## Instructions
 
-Read the implementation plan at `plan_path`. If not provided, find the most recent `silo-plan-*.md` in `AGENTS/specs/`.
+Execute the phase plan. If no phase specified, find the current phase from plans/.
+
+---
+
+## Execution Setup
+
+### Find Current Phase Plan
+
+1. If `phase` argument provided, use `plans/phase-{phase}.md`
+2. Otherwise, find the most recent phase plan in `plans/`
+3. If no plan exists, output: "No phase plan found. Run /plan first."
+
+### Read Plan Context
+
+Load these files:
+- The phase plan file
+- `IMPLEMENTATION_PLAN.md` (for status updates)
+- Relevant spec files referenced in the plan
 
 ---
 
 ## Execution Rules
+
+### Tool Usage by Action Type
+
+| Action Type | Tools to Use |
+|-------------|-------------|
+| Local code (Write/Edit) | Write, Edit, Read tools |
+| Local bash | Bash tool (npm, curl, etc.) |
+| Chrome automation | mcp__claude-in-chrome__* tools |
+| Verification | Bash (curl, npm), Chrome (screenshots) |
 
 ### Sub-agent Constraints
 
@@ -35,9 +61,12 @@ Read the implementation plan at `plan_path`. If not provided, find the most rece
 ```
 REPEAT until ALL steps = [✓]:
 
-1. READ current plan state
+1. READ current plan state from plans/phase-{N}.md
 2. FIND next pending step (Status: [ ] Pending)
-3. EXECUTE step with single sub-agent
+3. EXECUTE step:
+   - For code: Use Write/Edit tools
+   - For Chrome: Use mcp__claude-in-chrome__* tools
+   - For bash: Use Bash tool
 4. VERIFY checklist outcomes
 5. UPDATE plan file:
    - Success → Status: [✓] Complete
@@ -45,25 +74,53 @@ REPEAT until ALL steps = [✓]:
 6. IF failed:
    a. Deploy up to 5 investigation agents to find root cause
    b. Determine fix:
-      - If maps to existing step → fix and retry that step
-      - If complex new issue → add NEW step to plan, execute it
+      - If simple fix → fix and retry step
+      - If complex → add NEW step to plan, execute it
    c. REWRITE plan file with updates
-7. CONTINUE to next step
+7. UPDATE IMPLEMENTATION_PLAN.md:
+   - Mark corresponding [ ] item as [x]
+8. GIT COMMIT after significant progress:
+   - After each major step OR
+   - After phase checkpoint
+9. CONTINUE to next step
 
-AFTER all implementation steps [✓]:
-
-8. EXECUTE E2E tests (single agent)
-9. FOR each test:
-   - Pass → mark [✓]
-   - Fail → investigate (up to 5 agents), fix, retry
-10. IF E2E failure requires implementation change:
-    - Update relevant implementation step to [✗]
-    - Add new step if needed
-    - RESTART loop from step 1
-
-EXIT only when:
+EXIT when:
 - ALL implementation steps = [✓]
-- ALL E2E tests = [✓]
+- Phase checkpoint verified
+```
+
+---
+
+## Chrome Tool Usage (Phases 2, 6, 8)
+
+### Browser Automation Guidelines
+
+**Assume user is logged in** to all services (DigitalOcean, Twilio, ElevenLabs)
+
+**Before any Chrome action:**
+```
+1. Call mcp__claude-in-chrome__tabs_context_mcp to get tab context
+2. Create new tab if needed with mcp__claude-in-chrome__tabs_create_mcp
+3. Navigate using mcp__claude-in-chrome__navigate
+```
+
+**For form filling:**
+```
+1. Use mcp__claude-in-chrome__read_page to find form elements
+2. Use mcp__claude-in-chrome__form_input to fill values
+3. Use mcp__claude-in-chrome__computer for clicks
+```
+
+**For value extraction:**
+```
+1. Use mcp__claude-in-chrome__read_page or find to locate elements
+2. Use mcp__claude-in-chrome__javascript_tool to extract values
+3. Store extracted values in .env.local or note them
+```
+
+**Take screenshots** at key moments for verification:
+```
+mcp__claude-in-chrome__computer with action: "screenshot"
 ```
 
 ---
@@ -81,11 +138,13 @@ When updating the plan file, REWRITE the entire file. Update:
 
 2. **Add new steps** when complex issues discovered:
 ```md
-### Step N+1: <Fix for discovered issue>
+### Step N+1: {Fix for discovered issue}
+**Why**: <explanation>
+
 **Actions**:
 - <fix actions>
 
-**Verifiable Outcome**:
+**Verify**:
 - [ ] <verification>
 
 **Status**: [ ] Pending
@@ -93,33 +152,48 @@ When updating the plan file, REWRITE the entire file. Update:
 **Added because**: <explanation of why this step was needed>
 ```
 
-3. **E2E test results**:
+---
+
+## IMPLEMENTATION_PLAN.md Updates
+
+After each step completes:
+
+1. Find the corresponding `- [ ]` item in IMPLEMENTATION_PLAN.md
+2. Change to `- [x]`
+3. Save file
+
+Example:
 ```md
-### Test 1: ...
-**Expected Results**:
-- [✓] <passed>
-- [✗] <failed - reason>
+# Before
+- [ ] 3.1 Create agency-researcher skill
+
+# After
+- [x] 3.1 Create agency-researcher skill
 ```
 
 ---
 
-## Implementation Step Execution
+## Git Commit Strategy
 
-IMPORTANT: For each step or adjacent steps, use a single sub-agent:
+Commit at these points:
 
+1. **After each major step** (code creation, config change)
+2. **After phase checkpoint** (all items verified)
+
+Commit message format:
 ```
-Task: "Execute implementation step N"
+Phase {N}.{step}: {brief description}
 
-Context:
-- Full plan file content
-- Current step details
-- Previous step outcomes
+- {what was done}
+- {files created/modified}
+```
 
-Instructions:
-1. Read the step's Actions
-2. Execute each action
-3. Verify each checklist item
-4. Report: PASS or FAIL with details
+Example:
+```
+Phase 3.1: Create agency-researcher skill
+
+- Created .claude/skills/agency-researcher/SKILL.md
+- Full skill content from specs/02-agency-researcher-skill.md
 ```
 
 ---
@@ -131,78 +205,53 @@ When a step fails, deploy up to 5 parallel agents:
 ```
 Agent 1: "Find root cause in <relevant files>"
 Agent 2: "Check if similar pattern exists elsewhere that works"
-Agent 3: "Verify schema/API alignment"
+Agent 3: "Verify spec requirements match implementation"
 Agent 4: "Check for missing dependencies or imports"
 Agent 5: "Analyze error logs and stack traces"
 ```
 
-Synthesize findings, then fix with single implementation agent.
-
----
-
-## E2E Test Execution
-
-IMPORTATN: For each E2E test, use single sub-agent:
-
-```
-Task: "Execute E2E test N"
-
-Context:
-- Full plan file content
-- Test instructions
-- Implementation outcomes
-
-Instructions:
-1. Set up preconditions
-2. Execute test steps
-3. Verify expected results (visual + functional)
-4. Report: PASS or FAIL with screenshots/details
-```
+Synthesize findings, then fix with single implementation.
 
 ---
 
 ## Completion Criteria
 
-The loop exits ONLY when the plan file shows:
+The phase is complete when the plan file shows:
 
 ```md
 ## IMPLEMENTATION STEPS
 
-### Step 1: ...
+### Step {N}.1: ...
 **Status**: [✓] Complete
 
-### Step 2: ...
+### Step {N}.2: ...
 **Status**: [✓] Complete
 
 ...
 
-### Step N: Final Validation
+### Step {N}.X: Phase Checkpoint
 **Status**: [✓] Complete
-
----
-
-## E2E TESTING INSTRUCTIONS
-
-### Test 1: ...
-**Expected Results**:
-- [✓] ...
-- [✓] ...
-
-### Test 2: ...
-**Expected Results**:
-- [✓] ...
-
-...
-
-### Test N: Full Flow Integration
-**Expected Results**:
-- [✓] ...
 ```
+
+AND `IMPLEMENTATION_PLAN.md` shows all items for this phase as `[x]`.
 
 ---
 
 ## Report
 
-When complete, output:
-1. Path to final plan file
-2. Summary: total steps, iterations needed, issues discovered and resolved
+When phase complete, output:
+
+1. Phase number completed
+2. Total steps executed
+3. Any issues encountered and resolved
+4. Path to final plan file
+5. Git commit hash
+
+Example:
+```
+Phase 3 complete!
+Steps: 5
+Issues resolved: 1 (skill file path typo)
+Plan: plans/phase-3.md
+Commit: abc1234
+```
