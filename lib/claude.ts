@@ -18,6 +18,22 @@ export interface ClaudeCodeOptions {
 
 const PROGRESS_DIR = path.join(process.cwd(), 'data', 'progress');
 
+function buildClaudeEnv(): Record<string, string | undefined> {
+  const env: Record<string, string | undefined> = { ...process.env };
+  const homeDir = env.HOME;
+  if (homeDir) {
+    const localBin = path.join(homeDir, '.local', 'bin');
+    if (env.PATH) {
+      if (!env.PATH.split(':').includes(localBin)) {
+        env.PATH = `${env.PATH}:${localBin}`;
+      }
+    } else {
+      env.PATH = localBin;
+    }
+  }
+  return env;
+}
+
 function pipelinePath(sessionId: string) {
   return path.join(PROGRESS_DIR, `pipeline-${sessionId}.json`);
 }
@@ -261,6 +277,7 @@ export async function invokeClaudeCode(options: ClaudeCodeOptions): Promise<stri
         allowedTools: ['Read', 'Write', 'Edit', 'Bash', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Task', 'Skill'],
         allowDangerouslySkipPermissions: true,
         cwd: workingDir || process.cwd(),
+        env: buildClaudeEnv(),
         settingSources: ['project'],
         hooks: activitySessionId ? buildActivityHooks(activitySessionId) : undefined,
       }
@@ -312,6 +329,7 @@ export function invokeClaudeCodeAsync(options: ClaudeCodeOptions): void {
         allowedTools: ['Read', 'Write', 'Edit', 'Bash', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Task', 'Skill'],
         allowDangerouslySkipPermissions: true,
         cwd: workingDir || process.cwd(),
+        env: buildClaudeEnv(),
         settingSources: ['project'],
         hooks: activitySessionId ? buildActivityHooks(activitySessionId) : undefined,
       }
