@@ -107,16 +107,21 @@ export default function AgencyCard({ data, isRemoving }: AgencyCardProps) {
   })();
 
   // Format price for display
-  const formatPrice = (price: string | null) => {
-    if (!price) return null;
+  const formatPrice = (price: string | number | null) => {
+    if (price === null || price === undefined) return null;
+    if (typeof price === 'number') {
+      const num = price;
+      if (num >= 1000000) return `$${(num / 1000000).toFixed(1)}M`;
+      if (num >= 1000) return `$${(num / 1000).toFixed(0)}K`;
+      return `$${num}`;
+    }
     // If already formatted, return as-is
     if (price.startsWith('$')) return price;
-    // Otherwise format
-    const num = parseFloat(price);
-    if (isNaN(num)) return price;
-    if (num >= 1000000) return `$${(num / 1000000).toFixed(1)}M`;
-    if (num >= 1000) return `$${(num / 1000).toFixed(0)}K`;
-    return `$${num}`;
+    const numeric = parseFloat(price.replace(/[^0-9.]/g, ''));
+    if (Number.isNaN(numeric)) return price;
+    if (numeric >= 1000000) return `$${(numeric / 1000000).toFixed(1)}M`;
+    if (numeric >= 1000) return `$${(numeric / 1000).toFixed(0)}K`;
+    return `$${numeric}`;
   };
 
   const priceMin = formatPrice(data.priceRangeMin);
