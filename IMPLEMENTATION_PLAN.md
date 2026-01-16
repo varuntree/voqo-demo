@@ -429,7 +429,7 @@ ssh voqo@170.64.163.27 "cd /var/www/voqo-demo && npm run build && pm2 restart vo
 
 ### Steps
 
-- [ ] 7.1 **Test agency search flow**
+- [x] 7.1 **Test agency search flow**
   1. Go to http://localhost:3000
   2. Enter "Surry Hills" in search
   3. Click search
@@ -437,7 +437,7 @@ ssh voqo@170.64.163.27 "cd /var/www/voqo-demo && npm run build && pm2 restart vo
   5. Verify agencies appear with pain scores
   6. Check `/data/agencies/surry-hills.json` was created
 
-- [ ] 7.2 **Test demo page generation**
+- [x] 7.2 **Test demo page generation**
   1. Click [Generate Demo] for an agency
   2. Wait for page generation
   3. Verify redirect to /demo/[agency-id]
@@ -445,7 +445,7 @@ ssh voqo@170.64.163.27 "cd /var/www/voqo-demo && npm run build && pm2 restart vo
   5. Verify `/public/demo/[agency-id].html` exists
   6. Check phone number is clickable
 
-- [ ] 7.3 **Test voice call flow**
+- [x] 7.3 **Test voice call flow**
   1. On demo page, click "Call Demo" button
   2. Check browser console for register-call API hit
   3. Dial the Twilio number from a phone
@@ -457,7 +457,7 @@ ssh voqo@170.64.163.27 "cd /var/www/voqo-demo && npm run build && pm2 restart vo
   6. Wait for call to end
   7. Check ngrok logs for call-complete webhook
 
-- [ ] 7.4 **Test post-call page generation**
+- [x] 7.4 **Test post-call page generation**
   1. After call completes, wait 1-2 minutes
   2. Check `/data/calls/` for new call JSON file
   3. Verify call data includes transcript and extracted info
@@ -470,7 +470,7 @@ ssh voqo@170.64.163.27 "cd /var/www/voqo-demo && npm run build && pm2 restart vo
      - Requirements summary
      - Matching property listings
 
-- [ ] 7.5 **Test full end-to-end**
+- [x] 7.5 **Test full end-to-end**
   1. Fresh search for different suburb (e.g., "Darlinghurst")
   2. Generate demo for top agency
   3. Make call from demo page
@@ -479,11 +479,11 @@ ssh voqo@170.64.163.27 "cd /var/www/voqo-demo && npm run build && pm2 restart vo
   6. Verify listings match stated preferences
 
 ### Checkpoint 7
-- [ ] Agency search returns real results
-- [ ] Demo pages generate with correct branding
-- [ ] Voice agent uses correct agency context
-- [ ] Post-call pages generate with listings
-- [ ] Full flow works: Search → Demo → Call → Post-call page
+- [x] Agency search returns real results
+- [x] Demo pages generate with correct branding
+- [x] Voice agent uses correct agency context
+- [x] Post-call pages generate with listings
+- [x] Full flow works: Search → Demo → Call → Post-call page
 
 ---
 
@@ -495,7 +495,7 @@ ssh voqo@170.64.163.27 "cd /var/www/voqo-demo && npm run build && pm2 restart vo
 
 ### Steps
 
-- [ ] 8.1 **Create DigitalOcean droplet (Chrome)**
+- [x] 8.1 **Create DigitalOcean droplet (Chrome)**
   - Navigate to https://cloud.digitalocean.com/droplets
   - Check for existing suitable droplet
   - If none, create:
@@ -505,11 +505,11 @@ ssh voqo@170.64.163.27 "cd /var/www/voqo-demo && npm run build && pm2 restart vo
     - Name: voqo-demo
   - Note IP address
 
-- [ ] 8.2 **Configure firewall**
+- [x] 8.2 **Configure firewall**
   - Inbound: TCP 22, 80, 443
   - Apply to droplet
 
-- [ ] 8.3 **Install server dependencies (SSH)**
+- [x] 8.3 **Install server dependencies (SSH)**
   ```bash
   apt update && apt upgrade -y
   curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
@@ -517,45 +517,45 @@ ssh voqo@170.64.163.27 "cd /var/www/voqo-demo && npm run build && pm2 restart vo
   npm install -g pm2
   ```
 
-- [ ] 8.4 **Deploy project to VPS**
+- [x] 8.4 **Deploy project to VPS**
   - Option A: Git clone + npm install
   - Option B: rsync/scp files
   - Ensure `.env.local` has production values
   - `npm run build`
 
-- [ ] 8.5 **Configure Nginx**
+- [x] 8.5 **Configure Nginx**
   - Create `/etc/nginx/sites-available/voqo-demo`
   - Proxy pass to localhost:3000
   - Static file serving for /demo/ and /call/
   - Enable site, reload nginx
 
-- [ ] 8.6 **Start with PM2**
+- [x] 8.6 **Start with PM2**
   ```bash
   pm2 start npm --name voqo-demo -- start
   pm2 save
   ```
 
-- [ ] 8.7 **Update ElevenLabs webhooks to VPS URL**
+- [x] 8.7 **Update ElevenLabs webhooks to VPS URL**
   - Change from ngrok URL to http://VPS_IP/api/webhook/personalize
   - Change post-call to http://VPS_IP/api/webhook/call-complete
 
-- [ ] 8.8 **SSL Certificate (optional)**
+- [x] 8.8 **SSL Certificate (optional)**
   - If using custom domain: `certbot --nginx -d domain.com`
   - Update webhook URLs to https://
 
-- [ ] 8.9 **Final verification**
+- [x] 8.9 **Final verification**
   - Access http://VPS_IP
   - Test full flow on production
   - Make test call
   - Verify all pages generate correctly
 
 ### Checkpoint 8
-- [ ] VPS running with Node.js, Nginx, PM2
-- [ ] Project deployed and built
-- [ ] App accessible at http://VPS_IP
-- [ ] ElevenLabs webhooks updated to VPS URLs
-- [ ] Full flow works on production
-- [ ] System stable
+- [x] VPS running with Node.js, Nginx, PM2
+- [x] Project deployed and built
+- [x] App accessible at http://VPS_IP
+- [x] ElevenLabs webhooks updated to VPS URLs
+- [x] Full flow works on production
+- [x] System stable
 
 ---
 
