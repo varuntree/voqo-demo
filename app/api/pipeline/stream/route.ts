@@ -155,6 +155,8 @@ export async function GET(request: NextRequest) {
             // Pipeline file might not exist yet
           }
 
+          const pipelineAgencyIds = new Set(pipelineData?.agencyIds || []);
+
           // Read agency files for this session
           if (pipelineData?.agencyIds?.length) {
             for (const agencyId of pipelineData.agencyIds) {
@@ -205,6 +207,12 @@ export async function GET(request: NextRequest) {
               }
 
               if (file.startsWith('agency-activity-') && file.endsWith('.json')) {
+                if (pipelineAgencyIds.size > 0) {
+                  const slug = file.replace(/^agency-activity-/, '').replace(/\.json$/, '');
+                  if (!pipelineAgencyIds.has(slug)) {
+                    continue;
+                  }
+                }
                 agencyActivityFiles.push(path.join(PROGRESS_DIR, file));
                 continue;
               }
