@@ -673,3 +673,86 @@ Update ElevenLabs webhook URLs to ngrok URL.
 - [ ] Call status returns recent call info
 - [ ] Signature verification works
 - [ ] Error handling doesn't crash server
+
+---
+
+## Implementation Enhancements (IMPLEMENTED)
+
+The following features are implemented beyond the original spec:
+
+### 1. Durable Job Queue (`lib/postcall-queue.ts`)
+
+Instead of fire-and-forget `exec()`, page generation uses a durable queue:
+
+```typescript
+interface PostcallJob {
+  callId: string;
+  prompt: string;
+  createdAt: string;
+  attempts: number;
+}
+```
+
+**Features:**
+- File-based persistence (`/data/jobs/postcall/`)
+- Max 3 retry attempts
+- 90-second processing timeout
+- Stale job recovery (10-minute threshold)
+- Worker with 5-second polling interval
+
+### 2. SMS Notification
+
+After successful page generation:
+```typescript
+await sendPostcallSMS({
+  callerPhone: normalizePhoneNumber(callerPhone),
+  agencyName: agencyName || 'Voqo',
+  callId
+});
+// Message: "{Agency} found properties for you: {url}"
+```
+
+### 3. Agency Call History (`lib/agency-calls.ts`)
+
+Tracks calls per agency for dashboard display:
+- `appendAgencyCall(agencyId, entry)` - Add new call
+- `updateAgencyCall(agencyId, callId, updates)` - Update call status
+- `getAgencyCalls(agencyId)` - Retrieve call history
+
+**API Endpoint:** `GET /api/agency-calls?agency={id}`
+
+### 4. Enhanced Context Matching
+
+Personalize webhook uses multi-strategy matching:
+1. Recently active contexts (5-min window for retries)
+2. Pending contexts sorted by registration time
+3. Fallback to any valid context
+
+Call-complete webhook matching:
+1. `context_id` from dynamic_variables
+2. `callSid` match
+3. `callerId` match
+4. Recent pending context fallback
+
+### 5. Response Type Field
+
+Personalization webhook response includes required `type` field:
+```json
+{
+  "type": "conversation_initiation_client_data",
+  "dynamic_variables": { ... },
+  "conversation_config_override": { ... }
+}
+```
+
+### 6. Error Logging
+
+Failed page generations logged to `/data/errors/postcall-errors.json`:
+```typescript
+interface ErrorEntry {
+  callId: string;
+  error: string;
+  attempts: number;
+  timestamp: string;
+}
+```

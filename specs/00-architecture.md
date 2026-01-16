@@ -41,13 +41,19 @@ VoqoLeadEngine is a lead generation + demo system for Voqo AI. It finds real est
 │  │                                                                         │ │
 │  │  /data                                                                  │ │
 │  │  ├── agencies/                  # Agency JSON data packs                │ │
-│  │  │   ├── ray-white-surry-hills.json                                    │ │
+│  │  │   ├── surry-hills.json       # Suburb search results                 │ │
 │  │  │   └── ...                                                           │ │
 │  │  ├── calls/                     # Call transcripts + context            │ │
 │  │  │   ├── call-abc123.json                                              │ │
 │  │  │   └── ...                                                           │ │
-│  │  └── context/                   # Temp caller→agency mapping            │ │
-│  │      └── pending-calls.json                                            │ │
+│  │  ├── context/                   # Temp caller→agency mapping            │ │
+│  │  │   └── pending-calls.json                                            │ │
+│  │  ├── agency-calls/              # Call history indexed by agency        │ │
+│  │  │   └── ray-white-surry-hills.json                                    │ │
+│  │  ├── jobs/                      # Background job queue                  │ │
+│  │  │   └── postcall/              # Post-call page generation jobs        │ │
+│  │  └── errors/                    # Error tracking                        │ │
+│  │      └── postcall-errors.json                                          │ │
 │  │                                                                         │ │
 │  │  /public                                                                │ │
 │  │  ├── demo/                      # Generated demo HTML pages             │ │
@@ -158,11 +164,13 @@ VoqoLeadEngine is a lead generation + demo system for Voqo AI. It finds real est
 │     │   └─► Save to /public/call/[call-id].html                          │
 │     └─► Save call data to /data/calls/[call-id].json                     │
 │                                                                          │
-│  8. UPDATE DEMO PAGE (via polling or websocket)                          │
+│  8. UPDATE DEMO PAGE (via polling)                                       │
+│     └─► Demo page polls /api/call-status                                 │
 │     └─► Show "Page ready!" with link to /call/[call-id]                  │
 │                                                                          │
-│  9. (FUTURE) SEND SMS                                                    │
-│     └─► Twilio SMS with link to post-call page                           │
+│  9. SEND SMS (IMPLEMENTED)                                               │
+│     └─► Twilio SMS sent to caller with personalized page link            │
+│     └─► Format: "{Agency} found properties for you: {url}"               │
 │                                                                          │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
@@ -219,7 +227,11 @@ VoqoLeadEngine is a lead generation + demo system for Voqo AI. It finds real est
 - Option B: Use session_id stored in browser, passed via URL param to call
 - Option C: Time-window matching (last registered context within X seconds)
 
-**Recommended:** Option C with fallback - most recent pending call context within 60 seconds of call start.
+**Implemented:** Multi-strategy matching with 5-minute TTL:
+1. Primary: `context_id` from dynamic_variables (returned by personalization webhook)
+2. Secondary: `callSid` match from webhook payload
+3. Tertiary: `callerId` phone number match
+4. Fallback: Most recent pending context within TTL window
 
 ---
 
@@ -257,6 +269,10 @@ voqo-demo/
 │       │   └── route.ts              # Invoke Claude Code for demo page
 │       ├── register-call/
 │       │   └── route.ts              # Store call context before dial
+│       ├── call-status/
+│       │   └── route.ts              # Poll for post-call page status
+│       ├── agency-calls/
+│       │   └── route.ts              # Get call history for an agency
 │       └── webhook/
 │           ├── personalize/
 │           │   └── route.ts          # ElevenLabs personalization webhook
@@ -282,8 +298,10 @@ voqo-demo/
 │   └── call/                         # Generated post-call HTML pages
 │
 ├── lib/
-│   ├── twilio.ts                     # Twilio SMS helper
-│   └── claude.ts                     # Claude Code invocation helper
+│   ├── twilio.ts                     # Twilio SMS + phone normalization
+│   ├── claude.ts                     # Claude Code invocation helper
+│   ├── postcall-queue.ts             # Durable job queue for page generation
+│   └── agency-calls.ts               # Agency call history tracking
 │
 └── specs/                            # This documentation
 ```
@@ -337,6 +355,7 @@ TWILIO_PHONE_NUMBER=+61...
 # ElevenLabs
 ELEVENLABS_API_KEY=...
 ELEVENLABS_AGENT_ID=...
+ELEVENLABS_WEBHOOK_SECRET=...  # For webhook signature verification
 
 # App
 NEXT_PUBLIC_APP_URL=https://voqo-demo.example.com
@@ -351,6 +370,61 @@ NEXT_PUBLIC_DEMO_PHONE=+61 XXX XXX XXX
 
 - No authentication (demo purposes only)
 - Environment variables for API keys
-- Webhook signature validation for ElevenLabs
+- Webhook signature validation for ElevenLabs (HMAC-SHA256)
 - No sensitive data stored
 - VPS firewall: only 80, 443, 22 open
+
+---
+
+## Post-Call Job Queue System
+
+**Purpose:** Ensure reliable post-call page generation with retries and error tracking.
+
+**Location:** `/lib/postcall-queue.ts`
+
+**Job Lifecycle:**
+```
+1. Call completes → enqueuePostcallJob()
+2. Job saved to /data/jobs/postcall/{callId}.json
+3. Worker picks up job (5-second polling interval)
+4. Job file renamed to .processing during execution
+5. Success: HTML generated, SMS sent, job deleted
+6. Failure: Retry up to 3 times, then log to /data/errors/
+```
+
+**Configuration:**
+- `MAX_ATTEMPTS`: 3 retries
+- `PROCESSING_TIMEOUT_MS`: 90 seconds
+- `POLLING_INTERVAL_MS`: 5 seconds
+- `STALE_THRESHOLD_MS`: 10 minutes (for recovery)
+
+**Features:**
+- Durable file-based queue (survives restarts)
+- Stale job recovery
+- SMS notification on completion
+- Agency call history updates
+- Centralized error logging
+
+---
+
+## Agency Call History
+
+**Purpose:** Track calls per agency for dashboard display.
+
+**Location:** `/lib/agency-calls.ts`, `/data/agency-calls/`
+
+**API Endpoint:** `GET /api/agency-calls?agency={agencyId}`
+
+**Data Structure:**
+```typescript
+interface AgencyCallEntry {
+  callId: string;
+  createdAt: string;
+  pageUrl: string | null;
+  callerName: string | null;
+  summary: string | null;
+  status: 'pending' | 'completed' | 'failed';
+}
+```
+
+**Usage:** Demo pages fetch recent calls to display "Recent Calls" section

@@ -12,15 +12,23 @@ This document defines all data structures used in the VoqoLeadEngine system. All
 /data
 ├── agencies/                    # Agency data from research
 │   ├── surry-hills.json        # Search results for suburb
-│   ├── ray-white-surry-hills.json   # Individual agency
-│   └── lj-hooker-darlinghurst.json  # Individual agency
+│   └── marsden-park.json       # Search results for suburb
 │
 ├── calls/                      # Call transcripts and results
 │   ├── call-1705312200-abc123.json
 │   └── call-1705312500-def456.json
 │
-└── context/                    # Temporary call context
-    └── pending-calls.json
+├── context/                    # Temporary call context
+│   └── pending-calls.json
+│
+├── agency-calls/               # Call history indexed by agency (IMPLEMENTED)
+│   └── ray-white-surry-hills.json
+│
+├── jobs/                       # Background job queue (IMPLEMENTED)
+│   └── postcall/               # Post-call page generation jobs
+│
+└── errors/                     # Error tracking (IMPLEMENTED)
+    └── postcall-errors.json
 ```
 
 ---
@@ -511,3 +519,79 @@ slugify("Surry Hills")  // "surry-hills"
 1. Created when user clicks "Call Demo"
 2. Expires after 5 minutes
 3. Cleaned up periodically
+
+---
+
+## 7. Agency Call History (IMPLEMENTED)
+
+**File:** `/data/agency-calls/{agency-id}.json`
+
+**Purpose:** Index of calls per agency for dashboard display
+
+```typescript
+interface AgencyCallEntry {
+  callId: string;
+  createdAt: string;         // ISO timestamp
+  pageUrl: string | null;    // "/call/call-xxx" when generated
+  callerName: string | null; // Extracted from transcript
+  summary: string | null;    // AI-generated call summary
+  status: 'pending' | 'completed' | 'failed';
+}
+
+type AgencyCallsFile = AgencyCallEntry[];
+```
+
+**Example:**
+```json
+[
+  {
+    "callId": "call-1768493009666-fe33yd",
+    "createdAt": "2025-01-15T12:30:09.666Z",
+    "pageUrl": "/call/call-1768493009666-fe33yd",
+    "callerName": "Sarah",
+    "summary": "Looking to buy in Surry Hills, budget $1.2M",
+    "status": "completed"
+  }
+]
+```
+
+---
+
+## 8. Post-Call Job Queue (IMPLEMENTED)
+
+**File:** `/data/jobs/postcall/{call-id}.json`
+
+**Purpose:** Durable job queue for post-call page generation
+
+```typescript
+interface PostcallJob {
+  callId: string;
+  prompt: string;           // Claude Code prompt
+  createdAt: string;        // ISO timestamp
+  attempts: number;         // Retry count (max 3)
+}
+```
+
+**Job States:**
+- `.json` file: Pending job
+- `.processing` file: Job in progress
+- File deleted: Job completed successfully
+
+---
+
+## 9. Error Log (IMPLEMENTED)
+
+**File:** `/data/errors/postcall-errors.json`
+
+**Purpose:** Track failed post-call page generation attempts
+
+```typescript
+interface ErrorEntry {
+  callId: string;
+  error: string;            // Error message
+  attempts: number;         // Number of attempts made
+  timestamp: string;        // ISO timestamp
+}
+
+type ErrorLog = ErrorEntry[];
+```
