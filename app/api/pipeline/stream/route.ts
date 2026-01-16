@@ -156,6 +156,9 @@ export async function GET(request: NextRequest) {
           }
 
           const pipelineAgencyIds = new Set(pipelineData?.agencyIds || []);
+          const pipelineStartedAtMs = pipelineData?.startedAt
+            ? Date.parse(pipelineData.startedAt)
+            : null;
 
           // Read agency files for this session
           if (pipelineData?.agencyIds?.length) {
@@ -314,7 +317,16 @@ export async function GET(request: NextRequest) {
                 }
               }
 
-              if (activitySessionId && activitySessionId !== sessionId) continue;
+              const effectiveMessages = pipelineStartedAtMs
+                ? messages.filter((message) => {
+                    const ts = Date.parse(message.timestamp);
+                    return Number.isFinite(ts) && ts >= pipelineStartedAtMs;
+                  })
+                : messages;
+
+              if (activitySessionId && activitySessionId !== sessionId && effectiveMessages.length === 0) {
+                continue;
+              }
 
               const fallbackAgencyId = path
                 .basename(activityFile)
@@ -329,7 +341,7 @@ export async function GET(request: NextRequest) {
                     ? `Subagent: ${fallbackAgencyId}`
                     : 'Subagent';
 
-              sendActivityMessages(activityFile, messages, foundCount, streamTarget, label);
+              sendActivityMessages(activityFile, effectiveMessages, foundCount, streamTarget, label);
             } catch {
               // Ignore activity file errors
             }
