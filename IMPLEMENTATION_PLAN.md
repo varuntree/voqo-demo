@@ -581,6 +581,33 @@ ssh voqo@170.64.163.27 "cd /var/www/voqo-demo && npm run build && pm2 restart vo
 
 ---
 
+## Phase 12: Parallel Agency Pipeline (Complete)
+
+**Goal:** Implement parallel agency processing with real-time SSE streaming UI
+
+**Spec Reference:** `specs/12-parallel-agency-pipeline.md`
+
+### Steps
+
+- [x] 12.1 **Create /data/progress/ directory**
+- [x] 12.2 **Create agency-processor skill**
+- [x] 12.3 **Create /api/pipeline/start endpoint**
+- [x] 12.4 **Create /api/pipeline/stream SSE endpoint**
+- [x] 12.5 **Create lib/progress-cleanup.ts**
+- [x] 12.6 **Create TodoPanel component**
+- [x] 12.7 **Create AgencyCard component**
+- [x] 12.8 **Create MockPreview component**
+- [x] 12.9 **Update app/page.tsx with streaming UI**
+- [x] 12.10 **Verify build succeeds**
+
+### Checkpoint 12
+- [x] Pipeline starts and creates progress files
+- [x] SSE endpoint streams events
+- [x] Frontend connects and receives updates
+- [x] Build passes
+
+---
+
 ## Quick Reference
 
 ### Key Files to Create
