@@ -285,6 +285,7 @@ export async function invokeClaudeCode(options: ClaudeCodeOptions): Promise<stri
         env: buildClaudeEnv(),
         settingSources: ['project'],
         stderr: logClaudeStderr,
+        permissionMode: 'bypassPermissions',
         hooks: activitySessionId ? buildActivityHooks(activitySessionId) : undefined,
       }
     })) {
@@ -338,6 +339,7 @@ export function invokeClaudeCodeAsync(options: ClaudeCodeOptions): void {
         env: buildClaudeEnv(),
         settingSources: ['project'],
         stderr: logClaudeStderr,
+        permissionMode: 'bypassPermissions',
         hooks: activitySessionId ? buildActivityHooks(activitySessionId) : undefined,
       }
     })) {
