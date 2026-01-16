@@ -6,6 +6,39 @@
 
 ---
 
+## 🚀 Production Server Quick Reference
+
+| Item | Value |
+|------|-------|
+| **Production URL** | https://theagentic.engineer |
+| **VPS IP** | 170.64.163.27 |
+| **SSH (root)** | `ssh root@170.64.163.27` |
+| **SSH (app user)** | `ssh voqo@170.64.163.27` |
+| **App Directory** | `/var/www/voqo-demo` |
+| **Demo Phone** | +61 483 943 567 |
+
+### Quick Commands
+```bash
+# View app status
+ssh voqo@170.64.163.27 "pm2 status"
+
+# View logs
+ssh voqo@170.64.163.27 "pm2 logs voqo-demo --lines 50"
+
+# Restart app
+ssh voqo@170.64.163.27 "pm2 restart voqo-demo"
+
+# Deploy updates (from local)
+rsync -avz --exclude='node_modules' --exclude='.next' --exclude='.git' --exclude='.env.local' \
+  /Users/varunprasad/code/prjs/voqo-demo/ root@170.64.163.27:/var/www/voqo-demo/
+ssh root@170.64.163.27 "chown -R voqo:voqo /var/www/voqo-demo"
+ssh voqo@170.64.163.27 "cd /var/www/voqo-demo && npm run build && pm2 restart voqo-demo"
+```
+
+**Full deployment details:** See `specs/11-deployment-results.md`
+
+---
+
 ## Phase 1: Project Setup (Local)
 
 **Goal:** Initialize Next.js project with all required structure locally
