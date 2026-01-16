@@ -1,5 +1,22 @@
 // Shared types for the pipeline system
 
+// Activity message for agent streaming
+export interface ActivityMessage {
+  id: string;
+  type: 'search' | 'results' | 'fetch' | 'identified' | 'warning' | 'thinking';
+  text: string;
+  detail?: string;
+  timestamp: string;
+}
+
+// Activity tracking for pipeline
+export interface Activity {
+  status: 'active' | 'complete';
+  agenciesFound: number;
+  agenciesTarget: number;
+  messages: ActivityMessage[];
+}
+
 export interface CardStep {
   id: 'website' | 'details' | 'generating' | 'complete';
   label: string;
@@ -61,6 +78,7 @@ export interface PipelineState {
     status: 'pending' | 'in_progress' | 'complete';
   }>;
   agencyIds: string[];
+  activity: Activity;
   error?: string;
 }
 

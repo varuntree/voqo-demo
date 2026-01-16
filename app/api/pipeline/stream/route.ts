@@ -77,6 +77,10 @@ export async function GET(request: NextRequest) {
         }
       };
 
+      // Track activity message count
+      let lastActivityCount = 0;
+      let activityCompleteNotified = false;
+
       // Poll for changes
       const pollForChanges = async () => {
         try {
@@ -99,6 +103,31 @@ export async function GET(request: NextRequest) {
                 todos: pipelineData.todos,
                 status: pipelineData.status,
               });
+            }
+
+            // Check for new activity messages
+            if (pipelineData.activity?.messages) {
+              const newMessages = pipelineData.activity.messages.slice(lastActivityCount);
+              for (const message of newMessages) {
+                sendEvent({
+                  type: 'activity_message',
+                  message,
+                  found: pipelineData.activity.agenciesFound,
+                  target: pipelineData.activity.agenciesTarget,
+                });
+              }
+              lastActivityCount = pipelineData.activity.messages.length;
+
+              // Check if activity search is complete
+              if (pipelineData.activity.status === 'complete' && !activityCompleteNotified) {
+                activityCompleteNotified = true;
+                sendEvent({
+                  type: 'activity_complete',
+                  sessionId,
+                  found: pipelineData.activity.agenciesFound,
+                  target: pipelineData.activity.agenciesTarget,
+                });
+              }
             }
 
             // Check if pipeline is complete

@@ -48,6 +48,12 @@ export async function POST(request: NextRequest) {
         { id: 't3', text: 'Generating demo pages', status: 'pending' },
       ],
       agencyIds: [],
+      activity: {
+        status: 'active',
+        agenciesFound: 0,
+        agenciesTarget: agencyCount,
+        messages: [],
+      },
     };
 
     const pipelinePath = path.join(PROGRESS_DIR, `pipeline-${sessionId}.json`);
@@ -92,26 +98,91 @@ CRITICAL: You must write progress updates to files so the UI can display real-ti
 The pipeline file has been created at ${PROGRESS_DIR}/pipeline-${sessionId}.json
 Current status: searching
 
+## CRITICAL: Activity Reporting
+
+You MUST report your activity to the pipeline file so users see real-time progress.
+The UI shows an activity panel that streams your tool usage.
+
+### Activity Message Format
+Read the pipeline file, add to activity.messages array, then write back:
+
+{
+  "id": "msg-{timestamp}",
+  "type": "search|results|fetch|identified|warning|thinking",
+  "text": "Human-readable message",
+  "detail": "Optional detail line",
+  "timestamp": "ISO timestamp"
+}
+
+### When to Report Activity
+
+1. BEFORE WebSearch:
+   Add message: { "type": "search", "text": "Searching for real estate agencies in ${suburb}..." }
+
+2. AFTER WebSearch:
+   Add message: { "type": "results", "text": "Found X search results" }
+
+3. BEFORE checking each agency website:
+   Add message: { "type": "fetch", "text": "Checking {agency name} website..." }
+
+4. AFTER confirming an agency:
+   Add message: { "type": "identified", "text": "Identified: {agency name}", "detail": "{website url}" }
+   Update: activity.agenciesFound = current count
+
+5. If searching for more agencies:
+   Add message: { "type": "thinking", "text": "Looking for more agencies to reach ${count}..." }
+
+6. If skipping an invalid result:
+   Add message: { "type": "warning", "text": "Skipping: {reason}" }
+
+### Activity Update Example
+
+After each action, read the pipeline file, update like this:
+\`\`\`json
+{
+  "activity": {
+    "status": "active",
+    "agenciesFound": 3,
+    "agenciesTarget": ${count},
+    "messages": [
+      { "id": "msg-1234", "type": "search", "text": "Searching for real estate agencies in ${suburb}...", "timestamp": "..." },
+      { "id": "msg-1235", "type": "results", "text": "Found 12 search results", "timestamp": "..." },
+      { "id": "msg-1236", "type": "fetch", "text": "Checking Ray White ${suburb} website...", "timestamp": "..." },
+      { "id": "msg-1237", "type": "identified", "text": "Identified: Ray White ${suburb}", "detail": "raywhite.com.au", "timestamp": "..." }
+    ]
+  }
+}
+\`\`\`
+
 ## Step 2: Search for Agencies
 Use WebSearch to find real estate agencies in ${suburb}. Find at least ${count} agencies.
+
+REPORT ACTIVITY: Before and after each search!
 
 Search queries to use:
 - "${suburb} real estate agents Sydney"
 - "${suburb} real estate agencies"
 - "best real estate agents ${suburb}"
 
-For each agency found, extract:
+For each agency found:
+- REPORT: "fetch" message before checking website
+- REPORT: "identified" message after confirming
+- Update activity.agenciesFound count
+
+Extract:
 - Name (official business name)
 - Website URL
 - Generate a URL-safe slug/ID (e.g., "ray-white-surry-hills")
 
-After finding agencies, update the pipeline file:
+After finding all ${count} agencies, update the pipeline file:
 1. Read ${PROGRESS_DIR}/pipeline-${sessionId}.json
 2. Update:
    - todos[0].status = "complete"
    - todos[1].status = "in_progress"
    - agencyIds = [list of agency slugs]
    - status = "processing"
+   - activity.status = "complete"
+   - activity.agenciesFound = ${count}
 3. Write back to the file
 
 ## Step 3: Create Skeleton Progress Files

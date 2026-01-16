@@ -5,7 +5,8 @@ import TodoPanel from '@/components/TodoPanel';
 import AgencyCard from '@/components/AgencyCard';
 import TabNavigation from '@/components/TabNavigation';
 import HistoryList from '@/components/HistoryList';
-import { AgencyProgress, SearchSession, DEFAULT_STEPS } from '@/lib/types';
+import AgentActivityPanel from '@/components/AgentActivityPanel';
+import { AgencyProgress, SearchSession, ActivityMessage, DEFAULT_STEPS } from '@/lib/types';
 
 interface Todo {
   id: string;
@@ -37,6 +38,12 @@ export default function Home() {
   // History state
   const [history, setHistory] = useState<SearchSession[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+
+  // Activity state
+  const [activityMessages, setActivityMessages] = useState<ActivityMessage[]>([]);
+  const [activityFound, setActivityFound] = useState(0);
+  const [activityTarget, setActivityTarget] = useState(0);
+  const [activityPanelStatus, setActivityPanelStatus] = useState<'active' | 'complete' | 'collapsed'>('active');
 
   // Load history when tab changes to history
   useEffect(() => {
@@ -108,6 +115,19 @@ export default function Home() {
             }, 500);
             break;
 
+          case 'activity_message':
+            setActivityMessages((prev) => [...prev, data.message]);
+            setActivityFound(data.found);
+            setActivityTarget(data.target);
+            break;
+
+          case 'activity_complete':
+            setActivityFound(data.found);
+            setActivityTarget(data.target);
+            // Collapse panel when search complete and cards will appear
+            setActivityPanelStatus('collapsed');
+            break;
+
           case 'pipeline_complete':
             setPipelineStatus(data.status === 'error' ? 'error' : 'complete');
             setCompletionStats({
@@ -147,6 +167,11 @@ export default function Home() {
       setCompletionStats(null);
       setPipelineStatus('searching');
       setActiveTab('search');
+      // Reset activity state
+      setActivityMessages([]);
+      setActivityFound(0);
+      setActivityTarget(agencyCount);
+      setActivityPanelStatus('active');
 
       try {
         const res = await fetch('/api/pipeline/start', {
@@ -177,12 +202,23 @@ export default function Home() {
     setTodos([]);
     setCompletionStats(null);
     setError('');
+    // Reset activity state
+    setActivityMessages([]);
+    setActivityFound(0);
+    setActivityTarget(0);
+    setActivityPanelStatus('active');
   };
 
   const handleAgencyClick = (agencyId: string, demoUrl: string | null) => {
     if (demoUrl) {
       window.location.href = demoUrl;
     }
+  };
+
+  const handleActivityPanelToggle = () => {
+    setActivityPanelStatus((prev) =>
+      prev === 'collapsed' ? 'complete' : 'collapsed'
+    );
   };
 
   const handleRename = async (sessionIdToRename: string, newName: string) => {
@@ -301,6 +337,36 @@ export default function Home() {
             </section>
           )}
 
+          {/* Agent Activity Panel */}
+          {pipelineStatus === 'searching' && (
+            <section className="px-4 pb-6">
+              <div className="max-w-6xl mx-auto">
+                <AgentActivityPanel
+                  status={activityPanelStatus}
+                  messages={activityMessages}
+                  found={activityFound}
+                  target={activityTarget}
+                  onToggle={handleActivityPanelToggle}
+                />
+              </div>
+            </section>
+          )}
+
+          {/* Activity Panel (collapsed) when processing */}
+          {pipelineStatus === 'processing' && activityMessages.length > 0 && (
+            <section className="px-4 pb-6">
+              <div className="max-w-6xl mx-auto">
+                <AgentActivityPanel
+                  status={activityPanelStatus}
+                  messages={activityMessages}
+                  found={activityFound}
+                  target={activityTarget}
+                  onToggle={handleActivityPanelToggle}
+                />
+              </div>
+            </section>
+          )}
+
           {/* Completion Stats */}
           {completionStats && pipelineStatus === 'complete' && (
             <section className="px-4 pb-6">
@@ -356,8 +422,8 @@ export default function Home() {
             </section>
           )}
 
-          {/* Empty state during search */}
-          {isSearching && cardsArray.length === 0 && (
+          {/* Empty state during search - only show if no activity panel */}
+          {isSearching && cardsArray.length === 0 && activityMessages.length === 0 && (
             <section className="px-4 py-12">
               <div className="max-w-6xl mx-auto text-center">
                 <div className="inline-flex items-center gap-3 px-6 py-3 bg-slate-800 rounded-full">
@@ -377,7 +443,7 @@ export default function Home() {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                     />
                   </svg>
-                  <span className="text-slate-300">Searching for agencies in {suburb}...</span>
+                  <span className="text-slate-300">Starting search for agencies in {suburb}...</span>
                 </div>
               </div>
             </section>
@@ -414,6 +480,9 @@ export default function Home() {
         }
         .animate-fadeIn {
           animation: fadeIn 0.3s ease-out forwards;
+        }
+        .activity-message {
+          animation: fadeIn 0.2s ease-out;
         }
       `}</style>
     </div>
