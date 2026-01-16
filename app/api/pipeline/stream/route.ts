@@ -5,6 +5,7 @@ import type { PipelineState, AgencyProgress, ActivityMessage } from '@/lib/types
 import { addToHistory, buildSessionFromPipeline } from '@/lib/history';
 
 const PROGRESS_DIR = path.join(process.cwd(), 'data', 'progress');
+const PUBLIC_DEMO_DIR = path.join(process.cwd(), 'public', 'demo');
 const POLL_INTERVAL_MS = 500;
 const HEARTBEAT_INTERVAL_MS = 15000;
 const MAX_STALE_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -116,6 +117,7 @@ export async function GET(request: NextRequest) {
         try {
           const sessionAgencyIds = new Set<string>();
           const processedAgencyIds = new Set<string>();
+          const agencyStatuses = new Map<string, AgencyProgress['status']>();
           const agencyActivityFiles: string[] = [];
           let targetCount = 0;
 
@@ -173,6 +175,40 @@ export async function GET(request: NextRequest) {
                 if (agencyData.sessionId !== sessionId) continue;
                 processedAgencyIds.add(agencyId);
                 sessionAgencyIds.add(agencyId);
+                agencyStatuses.set(agencyId, agencyData.status);
+
+                // Reconcile stuck progress if demo HTML already exists
+                if (
+                  agencyData.status !== 'complete' &&
+                  !agencyData.demoUrl &&
+                  agencyData.agencyId
+                ) {
+                  const demoPath = path.join(PUBLIC_DEMO_DIR, `${agencyData.agencyId}.html`);
+                  try {
+                    await fs.access(demoPath);
+                    const updatedAt = new Date().toISOString();
+                    const completedSteps = (agencyData.steps || []).map((step) => ({
+                      ...step,
+                      status: 'complete' as const,
+                    }));
+                    const reconciled: AgencyProgress = {
+                      ...agencyData,
+                      status: 'complete',
+                      htmlProgress: 100,
+                      demoUrl: `/demo/${agencyData.agencyId}`,
+                      updatedAt,
+                      steps: completedSteps.length ? completedSteps : agencyData.steps,
+                    };
+                    await fs.writeFile(agencyPath, JSON.stringify(reconciled, null, 2));
+                    agencyData.status = reconciled.status;
+                    agencyData.htmlProgress = reconciled.htmlProgress;
+                    agencyData.demoUrl = reconciled.demoUrl;
+                    agencyData.updatedAt = reconciled.updatedAt;
+                    agencyData.steps = reconciled.steps;
+                  } catch {
+                    // demo HTML not present yet
+                  }
+                }
 
                 const hash = JSON.stringify(agencyData);
                 const lastHash = lastSeen.get(agencyId);
@@ -233,6 +269,40 @@ export async function GET(request: NextRequest) {
               if (processedAgencyIds.has(agencyId)) continue;
               processedAgencyIds.add(agencyId);
               sessionAgencyIds.add(agencyId);
+              agencyStatuses.set(agencyId, agencyData.status);
+              // Reconcile stuck progress if demo HTML already exists
+              if (
+                agencyData.status !== 'complete' &&
+                !agencyData.demoUrl &&
+                agencyData.agencyId
+              ) {
+                const demoPath = path.join(PUBLIC_DEMO_DIR, `${agencyData.agencyId}.html`);
+                try {
+                  await fs.access(demoPath);
+                  const updatedAt = new Date().toISOString();
+                  const completedSteps = (agencyData.steps || []).map((step) => ({
+                    ...step,
+                    status: 'complete' as const,
+                  }));
+                  const reconciled: AgencyProgress = {
+                    ...agencyData,
+                    status: 'complete',
+                    htmlProgress: 100,
+                    demoUrl: `/demo/${agencyData.agencyId}`,
+                    updatedAt,
+                    steps: completedSteps.length ? completedSteps : agencyData.steps,
+                  };
+                  await fs.writeFile(agencyPath, JSON.stringify(reconciled, null, 2));
+                  agencyData.status = reconciled.status;
+                  agencyData.htmlProgress = reconciled.htmlProgress;
+                  agencyData.demoUrl = reconciled.demoUrl;
+                  agencyData.updatedAt = reconciled.updatedAt;
+                  agencyData.steps = reconciled.steps;
+                } catch {
+                  // demo HTML not present yet
+                }
+              }
+
               const hash = JSON.stringify(agencyData);
               const lastHash = lastSeen.get(agencyId);
 
@@ -256,6 +326,32 @@ export async function GET(request: NextRequest) {
             }
           } catch {
             // Ignore directory read errors
+          }
+
+          // If all agencies are done but pipeline didn't mark complete, reconcile pipeline state.
+          if (
+            pipelineData &&
+            pipelineData.status === 'processing' &&
+            pipelineData.agencyIds?.length
+          ) {
+            const allDone = pipelineData.agencyIds.every((agencyId) => {
+              const status = agencyStatuses.get(agencyId);
+              return status === 'complete' || status === 'error';
+            });
+
+            if (allDone) {
+              pipelineData.todos = pipelineData.todos.map((todo, index) => ({
+                ...todo,
+                status: index === 0 ? 'complete' : 'complete',
+              }));
+              pipelineData.status = 'complete';
+              pipelineData.completedAt = new Date().toISOString();
+              await fs.writeFile(
+                path.join(PROGRESS_DIR, `pipeline-${sessionId}.json`),
+                JSON.stringify(pipelineData, null, 2)
+              );
+              isComplete = true;
+            }
           }
 
           const foundCount = sessionAgencyIds.size;
