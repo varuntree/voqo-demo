@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import TodoPanel from '@/components/TodoPanel';
 import AgencyCard from '@/components/AgencyCard';
 import TabNavigation from '@/components/TabNavigation';
@@ -28,6 +28,7 @@ export default function Home() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [cards, setCards] = useState<Map<string, AgencyProgress>>(new Map());
   const [removingCards, setRemovingCards] = useState<Set<string>>(new Set());
+  const placeholderIdsRef = useRef<Set<string>>(new Set());
   const [error, setError] = useState('');
   const [completionStats, setCompletionStats] = useState<{
     total: number;
@@ -65,6 +66,42 @@ export default function Home() {
     }
   };
 
+  const buildPlaceholderCards = useCallback((count: number) => {
+    const now = new Date().toISOString();
+    const placeholders = new Map<string, AgencyProgress>();
+    const ids = new Set<string>();
+
+    for (let i = 0; i < count; i += 1) {
+      const id = `placeholder-${Date.now()}-${i}`;
+      ids.add(id);
+      placeholders.set(id, {
+        agencyId: id,
+        sessionId: 'pending',
+        isPlaceholder: true,
+        status: 'skeleton',
+        updatedAt: now,
+        name: null,
+        website: null,
+        phone: null,
+        address: null,
+        logoUrl: null,
+        primaryColor: null,
+        secondaryColor: null,
+        teamSize: null,
+        listingCount: null,
+        painScore: null,
+        soldCount: null,
+        priceRangeMin: null,
+        priceRangeMax: null,
+        forRentCount: null,
+        htmlProgress: 0,
+        demoUrl: null,
+      });
+    }
+
+    return { placeholders, ids };
+  }, []);
+
   // SSE connection
   useEffect(() => {
     if (!sessionId || pipelineStatus === 'idle' || pipelineStatus === 'complete') {
@@ -88,7 +125,16 @@ export default function Home() {
           case 'card_update':
             setCards((prev) => {
               const next = new Map(prev);
-              next.set(data.agencyId, data.data as AgencyProgress);
+              const incoming = data.data as AgencyProgress;
+
+              if (!incoming.isPlaceholder && placeholderIdsRef.current.size > 0) {
+                for (const id of placeholderIdsRef.current) {
+                  next.delete(id);
+                }
+                placeholderIdsRef.current = new Set();
+              }
+
+              next.set(data.agencyId, incoming);
               return next;
             });
             break;
@@ -119,8 +165,7 @@ export default function Home() {
           case 'activity_complete':
             setActivityFound(data.found);
             setActivityTarget(data.target);
-            // Collapse panel when search complete and cards will appear
-            setActivityPanelStatus('collapsed');
+            setActivityPanelStatus('complete');
             break;
 
           case 'pipeline_complete':
@@ -130,6 +175,7 @@ export default function Home() {
               success: data.successCount,
               failed: data.failedCount,
             });
+            setActivityPanelStatus('complete');
             if (data.error) {
               setError(data.error);
             }
@@ -160,6 +206,7 @@ export default function Home() {
       setCards(new Map());
       setTodos([]);
       setCompletionStats(null);
+      setRemovingCards(new Set());
       setPipelineStatus('searching');
       setActiveTab('search');
       // Reset activity state
@@ -167,6 +214,10 @@ export default function Home() {
       setActivityFound(0);
       setActivityTarget(agencyCount);
       setActivityPanelStatus('active');
+
+      const { placeholders, ids } = buildPlaceholderCards(agencyCount);
+      setCards(placeholders);
+      placeholderIdsRef.current = ids;
 
       try {
         const res = await fetch('/api/pipeline/start', {
@@ -181,13 +232,17 @@ export default function Home() {
         } else {
           setError(data.error || 'Failed to start pipeline');
           setPipelineStatus('error');
+          setCards(new Map());
+          placeholderIdsRef.current = new Set();
         }
       } catch (err) {
         setError('Failed to start search. Please try again.');
         setPipelineStatus('error');
+        setCards(new Map());
+        placeholderIdsRef.current = new Set();
       }
     },
-    [suburb, agencyCount]
+    [suburb, agencyCount, buildPlaceholderCards]
   );
 
   const handleReset = () => {
@@ -197,6 +252,8 @@ export default function Home() {
     setTodos([]);
     setCompletionStats(null);
     setError('');
+    setRemovingCards(new Set());
+    placeholderIdsRef.current = new Set();
     // Reset activity state
     setActivityMessages([]);
     setActivityFound(0);
@@ -336,22 +393,7 @@ export default function Home() {
           )}
 
           {/* Agent Activity Panel */}
-          {pipelineStatus === 'searching' && (
-            <section className="px-4 pb-6">
-              <div className="max-w-6xl mx-auto">
-                <AgentActivityPanel
-                  status={activityPanelStatus}
-                  messages={activityMessages}
-                  found={activityFound}
-                  target={activityTarget}
-                  onToggle={handleActivityPanelToggle}
-                />
-              </div>
-            </section>
-          )}
-
-          {/* Activity Panel (collapsed) when processing */}
-          {pipelineStatus === 'processing' && activityMessages.length > 0 && (
+          {(pipelineStatus === 'searching' || pipelineStatus === 'processing') && (
             <section className="px-4 pb-6">
               <div className="max-w-6xl mx-auto">
                 <AgentActivityPanel

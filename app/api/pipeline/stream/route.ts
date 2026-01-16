@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { PipelineState, AgencyProgress } from '@/lib/types';
+import type { PipelineState, AgencyProgress, ActivityMessage } from '@/lib/types';
 import { addToHistory, buildSessionFromPipeline } from '@/lib/history';
 
 const PROGRESS_DIR = path.join(process.cwd(), 'data', 'progress');
@@ -44,6 +44,33 @@ export async function GET(request: NextRequest) {
         }
       };
 
+      const sendActivityMessages = (
+        key: string,
+        messages: ActivityMessage[],
+        found: number,
+        target: number,
+        sourceFallback: string
+      ) => {
+        const previous = lastActivityCount.get(key) ?? 0;
+        const safePrevious = previous > messages.length ? 0 : previous;
+        const newMessages = messages.slice(safePrevious);
+
+        for (const message of newMessages) {
+          const normalized: ActivityMessage = {
+            ...message,
+            source: message.source ?? sourceFallback,
+          };
+          sendEvent({
+            type: 'activity_message',
+            message: normalized,
+            found,
+            target,
+          });
+        }
+
+        lastActivityCount.set(key, messages.length);
+      };
+
       // Check for and cleanup stale files
       const cleanupStaleFiles = async () => {
         try {
@@ -77,13 +104,18 @@ export async function GET(request: NextRequest) {
         }
       };
 
-      // Track activity message count
-      let lastActivityCount = 0;
+      // Track activity message count per source
+      const lastActivityCount = new Map<string, number>();
       let activityCompleteNotified = false;
 
       // Poll for changes
       const pollForChanges = async () => {
         try {
+          const sessionAgencyIds = new Set<string>();
+          const processedAgencyIds = new Set<string>();
+          const agencyActivityFiles: string[] = [];
+          let targetCount = 0;
+
           // Read pipeline file
           const pipelinePath = path.join(PROGRESS_DIR, `pipeline-${sessionId}.json`);
           let pipelineData: PipelineState | null = null;
@@ -91,6 +123,7 @@ export async function GET(request: NextRequest) {
           try {
             const content = await fs.readFile(pipelinePath, 'utf-8');
             pipelineData = JSON.parse(content) as PipelineState;
+            targetCount = pipelineData.requestedCount ?? targetCount;
 
             const hash = JSON.stringify(pipelineData.todos) + pipelineData.status;
             const lastHash = lastSeen.get('pipeline');
@@ -105,34 +138,15 @@ export async function GET(request: NextRequest) {
               });
             }
 
-            // Check for new activity messages
-            if (pipelineData.activity?.messages) {
-              const newMessages = pipelineData.activity.messages.slice(lastActivityCount);
-              for (const message of newMessages) {
-                sendEvent({
-                  type: 'activity_message',
-                  message,
-                  found: pipelineData.activity.agenciesFound,
-                  target: pipelineData.activity.agenciesTarget,
-                });
-              }
-              lastActivityCount = pipelineData.activity.messages.length;
-
-              // Check if activity search is complete
-              if (pipelineData.activity.status === 'complete' && !activityCompleteNotified) {
-                activityCompleteNotified = true;
-                sendEvent({
-                  type: 'activity_complete',
-                  sessionId,
-                  found: pipelineData.activity.agenciesFound,
-                  target: pipelineData.activity.agenciesTarget,
-                });
-              }
-            }
-
             // Check if pipeline is complete
             if (pipelineData.status === 'complete' || pipelineData.status === 'error') {
               isComplete = true;
+            }
+
+            if (pipelineData.agencyIds?.length) {
+              for (const agencyId of pipelineData.agencyIds) {
+                sessionAgencyIds.add(agencyId);
+              }
             }
           } catch {
             // Pipeline file might not exist yet
@@ -149,6 +163,8 @@ export async function GET(request: NextRequest) {
 
                 // Only process if it belongs to this session
                 if (agencyData.sessionId !== sessionId) continue;
+                processedAgencyIds.add(agencyId);
+                sessionAgencyIds.add(agencyId);
 
                 const hash = JSON.stringify(agencyData);
                 const lastHash = lastSeen.get(agencyId);
@@ -181,6 +197,15 @@ export async function GET(request: NextRequest) {
           try {
             const files = await fs.readdir(PROGRESS_DIR);
             for (const file of files) {
+              if (file === `activity-${sessionId}.json`) {
+                continue;
+              }
+
+              if (file.startsWith('agency-activity-') && file.endsWith('.json')) {
+                agencyActivityFiles.push(path.join(PROGRESS_DIR, file));
+                continue;
+              }
+
               if (!file.startsWith('agency-') || !file.endsWith('.json')) continue;
 
               const agencyPath = path.join(PROGRESS_DIR, file);
@@ -190,6 +215,9 @@ export async function GET(request: NextRequest) {
               if (agencyData.sessionId !== sessionId) continue;
 
               const agencyId = agencyData.agencyId;
+              if (processedAgencyIds.has(agencyId)) continue;
+              processedAgencyIds.add(agencyId);
+              sessionAgencyIds.add(agencyId);
               const hash = JSON.stringify(agencyData);
               const lastHash = lastSeen.get(agencyId);
 
@@ -215,6 +243,63 @@ export async function GET(request: NextRequest) {
             // Ignore directory read errors
           }
 
+          const foundCount = sessionAgencyIds.size;
+          const resolvedTarget = targetCount || pipelineData?.requestedCount || foundCount;
+          let streamTarget = resolvedTarget;
+
+          // Main activity stream
+          try {
+            const activityPath = path.join(PROGRESS_DIR, `activity-${sessionId}.json`);
+            const content = await fs.readFile(activityPath, 'utf-8');
+            const activityData = JSON.parse(content) as {
+              status?: 'active' | 'complete';
+              messages?: ActivityMessage[];
+              agenciesTarget?: number;
+            };
+            const messages = Array.isArray(activityData.messages) ? activityData.messages : [];
+            const activityTarget = resolvedTarget || activityData.agenciesTarget || foundCount;
+            streamTarget = activityTarget;
+            sendActivityMessages('activity-main', messages, foundCount, activityTarget, 'Main agent');
+
+            if (activityData.status === 'complete' && !activityCompleteNotified) {
+              activityCompleteNotified = true;
+              sendEvent({
+                type: 'activity_complete',
+                sessionId,
+                found: foundCount,
+                target: activityTarget,
+              });
+            }
+          } catch {
+            // Activity file might not exist yet
+          }
+
+          // Subagent activity streams
+          for (const activityFile of agencyActivityFiles) {
+            try {
+              const content = await fs.readFile(activityFile, 'utf-8');
+              const activityData = JSON.parse(content) as {
+                sessionId?: string;
+                agencyId?: string;
+                agencyName?: string;
+                messages?: ActivityMessage[];
+              };
+
+              if (activityData.sessionId && activityData.sessionId !== sessionId) continue;
+
+              const label = activityData.agencyName
+                ? `Subagent: ${activityData.agencyName}`
+                : activityData.agencyId
+                  ? `Subagent: ${activityData.agencyId}`
+                  : 'Subagent';
+
+              const messages = Array.isArray(activityData.messages) ? activityData.messages : [];
+              sendActivityMessages(activityFile, messages, foundCount, streamTarget, label);
+            } catch {
+              // Ignore activity file errors
+            }
+          }
+
           // Send complete event if pipeline is done
           if (isComplete && pipelineData) {
             // Count successes and failures
@@ -235,6 +320,16 @@ export async function GET(request: NextRequest) {
 
             // Save to history before sending complete event
             await saveToHistory(pipelineData);
+
+            if (!activityCompleteNotified) {
+              activityCompleteNotified = true;
+              sendEvent({
+                type: 'activity_complete',
+                sessionId,
+                found: pipelineData.agencyIds?.length || 0,
+                target: pipelineData.requestedCount || 0,
+              });
+            }
 
             sendEvent({
               type: 'pipeline_complete',

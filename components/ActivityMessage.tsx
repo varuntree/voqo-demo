@@ -34,7 +34,14 @@ export default function ActivityMessage({ message }: ActivityMessageProps) {
     <div className="activity-message flex items-start gap-2 py-1.5">
       <span className="text-sm w-5 flex-shrink-0">{icon}</span>
       <div className="flex-1 min-w-0">
-        <p className={`text-sm ${colorClass}`}>{message.text}</p>
+        <p className={`text-sm ${colorClass}`}>
+          {message.source && (
+            <span className="mr-2 text-[10px] uppercase tracking-wide text-slate-500">
+              {message.source}
+            </span>
+          )}
+          {message.text}
+        </p>
         {message.detail && (
           <p className="text-xs text-slate-500 truncate">{message.detail}</p>
         )}

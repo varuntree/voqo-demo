@@ -12,6 +12,38 @@ You process a single real estate agency: extract details and generate its demo p
 You MUST write progress updates to /data/progress/agency-{agencyId}.json at each milestone.
 The UI displays these updates in real-time. Users see your progress as it happens.
 
+## CRITICAL: Activity Streaming
+
+You MUST append brief activity messages to `/data/progress/agency-activity-{agencyId}.json`.
+This powers the subagent streaming feed in the UI.
+
+Format:
+```json
+{
+  "sessionId": "...",
+  "agencyId": "...",
+  "agencyName": "...",
+  "messages": [
+    {
+      "id": "msg-{timestamp}",
+      "type": "thinking|fetch|identified|warning|tool|agent",
+      "text": "Short human-readable update",
+      "detail": "Optional detail",
+      "source": "Subagent",
+      "timestamp": "ISO timestamp"
+    }
+  ]
+}
+```
+
+Append a message at each milestone:
+- Start processing agency
+- After homepage fetch
+- After extracting logo/colors/contact
+- After metrics + pain score
+- After HTML generation
+- On any error
+
 ## CRITICAL: Step Reporting
 
 You MUST update the `steps` array in the progress file at each milestone.

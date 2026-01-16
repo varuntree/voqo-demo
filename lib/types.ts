@@ -6,6 +6,7 @@ export interface ActivityMessage {
   type: 'search' | 'results' | 'fetch' | 'identified' | 'warning' | 'thinking' | 'tool' | 'agent';
   text: string;
   detail?: string;
+  source?: string;
   timestamp: string;
 }
 
@@ -27,6 +28,9 @@ export interface AgencyProgress {
   // Identity
   agencyId: string;
   sessionId: string;
+
+  // Client-only placeholder flag
+  isPlaceholder?: boolean;
 
   // Status
   status: 'skeleton' | 'extracting' | 'generating' | 'complete' | 'error';
@@ -59,7 +63,7 @@ export interface AgencyProgress {
   demoUrl: string | null;
 
   // Step Tracking
-  steps: CardStep[];
+  steps?: CardStep[];
 
   // Error
   error?: string;
@@ -78,7 +82,7 @@ export interface PipelineState {
     status: 'pending' | 'in_progress' | 'complete';
   }>;
   agencyIds: string[];
-  activity: Activity;
+  activity?: Activity;
   error?: string;
 }
 

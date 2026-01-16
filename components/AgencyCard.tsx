@@ -26,6 +26,16 @@ export default function AgencyCard({ data, isRemoving }: AgencyCardProps) {
     return demoUrl;
   };
 
+  const getFallbackLogo = (website: string | null) => {
+    if (!website) return null;
+    try {
+      const hostname = new URL(website).hostname;
+      return `https://www.google.com/s2/favicons?domain=${hostname}&sz=64`;
+    } catch {
+      return null;
+    }
+  };
+
   const buildSteps = (progress: AgencyProgress): CardStep[] => {
     const steps: CardStep[] = [
       { id: 'website', label: 'Found website', status: 'pending' },
@@ -81,8 +91,20 @@ export default function AgencyCard({ data, isRemoving }: AgencyCardProps) {
     return steps;
   };
 
-  const steps = buildSteps(data);
+  const computedSteps = buildSteps(data);
+  const hasReportedSteps = data.steps?.some((step) => step.status !== 'pending') ?? false;
+  const steps = hasReportedSteps ? data.steps ?? computedSteps : computedSteps;
   const demoUrl = normalizeDemoUrl(data.demoUrl);
+  const fallbackLogoUrl = getFallbackLogo(data.website);
+  const logoSrc = data.logoUrl || fallbackLogoUrl;
+  const websiteHost = (() => {
+    if (!data.website) return null;
+    try {
+      return new URL(data.website).hostname;
+    } catch {
+      return data.website;
+    }
+  })();
 
   // Format price for display
   const formatPrice = (price: string | null) => {
@@ -119,14 +141,19 @@ export default function AgencyCard({ data, isRemoving }: AgencyCardProps) {
         <div className="flex items-start justify-between gap-3">
           {/* Logo + Name */}
           <div className="flex items-center gap-3 min-w-0">
-            {data.logoUrl ? (
+            {logoSrc ? (
               <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center overflow-hidden flex-shrink-0">
                 <img
-                  src={data.logoUrl}
+                  src={logoSrc}
                   alt={data.name || 'Agency'}
                   className="w-full h-full object-contain"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
+                    const target = e.target as HTMLImageElement;
+                    if (fallbackLogoUrl && target.src !== fallbackLogoUrl) {
+                      target.src = fallbackLogoUrl;
+                    } else {
+                      target.style.display = 'none';
+                    }
                   }}
                 />
               </div>
@@ -148,7 +175,7 @@ export default function AgencyCard({ data, isRemoving }: AgencyCardProps) {
                   rel="noopener noreferrer"
                   className="text-xs text-slate-500 hover:text-slate-400 truncate block"
                 >
-                  {new URL(data.website).hostname}
+                  {websiteHost}
                 </a>
               )}
             </div>
