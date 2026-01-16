@@ -25,17 +25,13 @@ const logClaudeStderr = (data: string) => {
 
 function buildClaudeEnv(): Record<string, string | undefined> {
   const env: Record<string, string | undefined> = { ...process.env };
+  const pathEntries = new Set<string>((env.PATH || '').split(':').filter(Boolean));
   const homeDir = env.HOME;
   if (homeDir) {
-    const localBin = path.join(homeDir, '.local', 'bin');
-    if (env.PATH) {
-      if (!env.PATH.split(':').includes(localBin)) {
-        env.PATH = `${env.PATH}:${localBin}`;
-      }
-    } else {
-      env.PATH = localBin;
-    }
+    pathEntries.add(path.join(homeDir, '.local', 'bin'));
   }
+  pathEntries.add('/home/voqo/.local/bin');
+  env.PATH = Array.from(pathEntries).join(':');
   return env;
 }
 
