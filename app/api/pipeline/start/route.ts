@@ -68,6 +68,7 @@ export async function POST(request: NextRequest) {
     invokeClaudeCodeAsync({
       prompt: orchestratorPrompt,
       workingDir: process.cwd(),
+      activitySessionId: sessionId,
     });
 
     return NextResponse.json({

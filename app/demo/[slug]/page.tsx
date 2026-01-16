@@ -7,7 +7,8 @@ interface Props {
 }
 
 export default async function DemoPage({ params }: Props) {
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
+  const slug = rawSlug.endsWith('.html') ? rawSlug.replace(/\.html$/, '') : rawSlug;
   const filePath = path.join(process.cwd(), 'public', 'demo', `${slug}.html`);
 
   let html: string;
@@ -23,7 +24,8 @@ export default async function DemoPage({ params }: Props) {
 }
 
 export async function generateMetadata({ params }: Props) {
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
+  const slug = rawSlug.endsWith('.html') ? rawSlug.replace(/\.html$/, '') : rawSlug;
   return {
     title: `${slug} | Voqo AI Demo`,
   };

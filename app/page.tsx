@@ -6,7 +6,7 @@ import AgencyCard from '@/components/AgencyCard';
 import TabNavigation from '@/components/TabNavigation';
 import HistoryList from '@/components/HistoryList';
 import AgentActivityPanel from '@/components/AgentActivityPanel';
-import { AgencyProgress, SearchSession, ActivityMessage, DEFAULT_STEPS } from '@/lib/types';
+import { AgencyProgress, SearchSession, ActivityMessage } from '@/lib/types';
 
 interface Todo {
   id: string;
@@ -88,12 +88,7 @@ export default function Home() {
           case 'card_update':
             setCards((prev) => {
               const next = new Map(prev);
-              // Ensure steps exist with defaults if not provided
-              const cardData: AgencyProgress = {
-                ...data.data,
-                steps: data.data.steps || DEFAULT_STEPS,
-              };
-              next.set(data.agencyId, cardData);
+              next.set(data.agencyId, data.data as AgencyProgress);
               return next;
             });
             break;
@@ -211,7 +206,10 @@ export default function Home() {
 
   const handleAgencyClick = (agencyId: string, demoUrl: string | null) => {
     if (demoUrl) {
-      window.location.href = demoUrl;
+      const normalized = demoUrl.endsWith('.html')
+        ? demoUrl.replace(/\.html$/, '')
+        : demoUrl;
+      window.location.href = normalized;
     }
   };
 

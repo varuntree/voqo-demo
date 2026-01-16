@@ -1,6 +1,6 @@
 'use client';
 
-import { AgencyProgress, DEFAULT_STEPS } from '@/lib/types';
+import { AgencyProgress, CardStep } from '@/lib/types';
 import StepList from './StepList';
 import MockPreview from './MockPreview';
 
@@ -18,7 +18,71 @@ export default function AgencyCard({ data, isRemoving }: AgencyCardProps) {
   };
 
   const borderColor = data.primaryColor || '#475569'; // slate-600 fallback
-  const steps = data.steps && data.steps.length > 0 ? data.steps : DEFAULT_STEPS;
+  const normalizeDemoUrl = (demoUrl: string | null) => {
+    if (!demoUrl) return null;
+    if (demoUrl.startsWith('/demo/') && demoUrl.endsWith('.html')) {
+      return demoUrl.replace(/\.html$/, '');
+    }
+    return demoUrl;
+  };
+
+  const buildSteps = (progress: AgencyProgress): CardStep[] => {
+    const steps: CardStep[] = [
+      { id: 'website', label: 'Found website', status: 'pending' },
+      { id: 'details', label: 'Extracted details', status: 'pending' },
+      { id: 'generating', label: 'Generating demo page', status: 'pending' },
+      { id: 'complete', label: 'Ready', status: 'pending' },
+    ];
+
+    const hasWebsite = Boolean(progress.website);
+    const hasDetails = Boolean(
+      progress.logoUrl ||
+        progress.primaryColor ||
+        progress.secondaryColor ||
+        progress.phone ||
+        progress.teamSize !== null ||
+        progress.listingCount !== null
+    );
+    const hasHtml = progress.htmlProgress >= 100 || Boolean(progress.demoUrl);
+
+    if (progress.status === 'complete') {
+      return steps.map((step) => ({ ...step, status: 'complete' }));
+    }
+
+    if (progress.status === 'error') {
+      steps[0].status = hasWebsite ? 'complete' : 'error';
+      steps[1].status = hasDetails ? 'complete' : 'error';
+      steps[2].status = 'error';
+      return steps;
+    }
+
+    if (hasWebsite) {
+      steps[0].status = 'complete';
+    } else if (progress.status !== 'skeleton') {
+      steps[0].status = 'in_progress';
+    }
+
+    if (hasDetails || progress.status === 'generating') {
+      steps[1].status = 'complete';
+    } else if (progress.status === 'extracting') {
+      steps[1].status = 'in_progress';
+    }
+
+    if (progress.status === 'generating' && !hasHtml) {
+      steps[2].status = 'in_progress';
+    } else if (hasHtml) {
+      steps[2].status = 'complete';
+    }
+
+    if (progress.demoUrl) {
+      steps[3].status = 'complete';
+    }
+
+    return steps;
+  };
+
+  const steps = buildSteps(data);
+  const demoUrl = normalizeDemoUrl(data.demoUrl);
 
   // Format price for display
   const formatPrice = (price: string | null) => {
@@ -196,9 +260,9 @@ export default function AgencyCard({ data, isRemoving }: AgencyCardProps) {
             <StepList steps={steps} />
 
             {/* View Demo button */}
-            {data.demoUrl && (
+            {demoUrl && (
               <a
-                href={data.demoUrl}
+                href={demoUrl}
                 className="block w-full py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-medium rounded-lg text-center transition-all mt-3"
               >
                 View Demo

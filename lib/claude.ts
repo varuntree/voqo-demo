@@ -1,14 +1,232 @@
 import { query } from '@anthropic-ai/claude-agent-sdk';
+import type {
+  HookCallbackMatcher,
+  HookEvent,
+  HookInput
+} from '@anthropic-ai/claude-agent-sdk';
+import { promises as fs } from 'fs';
+import path from 'path';
+import type { ActivityMessage } from '@/lib/types';
 
 export interface ClaudeCodeOptions {
   prompt: string;
   tools?: string[];
   skills?: string[];
   workingDir?: string;
+  activitySessionId?: string;
+}
+
+const PROGRESS_DIR = path.join(process.cwd(), 'data', 'progress');
+
+function pipelinePath(sessionId: string) {
+  return path.join(PROGRESS_DIR, `pipeline-${sessionId}.json`);
+}
+
+function buildActivityId() {
+  return `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function formatToolDetail(toolName: string, toolInput: unknown): string | undefined {
+  if (!toolInput || typeof toolInput !== 'object') return undefined;
+  const input = toolInput as Record<string, unknown>;
+
+  switch (toolName) {
+    case 'WebSearch':
+      return typeof input.query === 'string' ? input.query : undefined;
+    case 'WebFetch':
+      return typeof input.url === 'string' ? input.url : undefined;
+    case 'Read':
+    case 'Write':
+    case 'Edit':
+      return typeof input.path === 'string' ? input.path : undefined;
+    case 'Bash':
+      return typeof input.command === 'string' ? input.command : undefined;
+    case 'Glob':
+      return typeof input.pattern === 'string' ? input.pattern : undefined;
+    case 'Grep':
+      return typeof input.pattern === 'string' ? input.pattern : undefined;
+    case 'Task':
+      return typeof input.prompt === 'string'
+        ? input.prompt.slice(0, 140)
+        : undefined;
+    case 'Skill':
+      return typeof input.name === 'string' ? input.name : undefined;
+    default:
+      return undefined;
+  }
+}
+
+function mapToolMessage(toolName: string, toolInput: unknown): ActivityMessage {
+  const detail = formatToolDetail(toolName, toolInput);
+  const base: ActivityMessage = {
+    id: buildActivityId(),
+    type: 'tool',
+    text: `Using ${toolName}`,
+    detail,
+    timestamp: new Date().toISOString(),
+  };
+
+  if (toolName === 'WebSearch') {
+    return {
+      ...base,
+      type: 'search',
+      text: detail ? `Searching: ${detail}` : 'Searching the web...',
+    };
+  }
+
+  if (toolName === 'WebFetch') {
+    return {
+      ...base,
+      type: 'fetch',
+      text: detail ? `Fetching: ${detail}` : 'Fetching webpage...',
+    };
+  }
+
+  return base;
+}
+
+async function appendActivity(sessionId: string, message: ActivityMessage, status?: 'active' | 'complete') {
+  try {
+    const filePath = pipelinePath(sessionId);
+    const content = await fs.readFile(filePath, 'utf-8');
+    const pipeline = JSON.parse(content) as {
+      activity?: {
+        status: 'active' | 'complete';
+        agenciesFound: number;
+        agenciesTarget: number;
+        messages: ActivityMessage[];
+      };
+      agencyIds?: string[];
+      requestedCount?: number;
+    };
+
+    const agenciesFound = pipeline.agencyIds?.length ?? pipeline.activity?.agenciesFound ?? 0;
+    const agenciesTarget = pipeline.requestedCount ?? pipeline.activity?.agenciesTarget ?? 0;
+
+    const activity = pipeline.activity ?? {
+      status: 'active' as const,
+      agenciesFound,
+      agenciesTarget,
+      messages: [],
+    };
+
+    activity.messages = [...activity.messages, message].slice(-200);
+    activity.agenciesFound = agenciesFound;
+    activity.agenciesTarget = agenciesTarget;
+    if (status) {
+      activity.status = status;
+    }
+
+    pipeline.activity = activity;
+
+    await fs.writeFile(filePath, JSON.stringify(pipeline, null, 2));
+  } catch {
+    // Ignore activity write failures
+  }
+}
+
+function buildActivityHooks(sessionId: string): Partial<Record<HookEvent, HookCallbackMatcher[]>> {
+  return {
+    SessionStart: [
+      {
+        hooks: [
+          async (input: HookInput) => {
+            if (input.hook_event_name !== 'SessionStart') return { continue: true };
+            await appendActivity(sessionId, {
+              id: buildActivityId(),
+              type: 'thinking',
+              text: 'Session started',
+              timestamp: new Date().toISOString(),
+            });
+            return { continue: true };
+          }
+        ]
+      }
+    ],
+    PreToolUse: [
+      {
+        hooks: [
+          async (input: HookInput) => {
+            if (input.hook_event_name !== 'PreToolUse') return { continue: true };
+            const message = mapToolMessage(input.tool_name, input.tool_input);
+            await appendActivity(sessionId, message);
+            return { continue: true };
+          }
+        ]
+      }
+    ],
+    PostToolUseFailure: [
+      {
+        hooks: [
+          async (input: HookInput) => {
+            if (input.hook_event_name !== 'PostToolUseFailure') return { continue: true };
+            await appendActivity(sessionId, {
+              id: buildActivityId(),
+              type: 'warning',
+              text: `Tool failed: ${input.tool_name}`,
+              detail: typeof input.error === 'string' ? input.error : undefined,
+              timestamp: new Date().toISOString(),
+            });
+            return { continue: true };
+          }
+        ]
+      }
+    ],
+    SubagentStart: [
+      {
+        hooks: [
+          async (input: HookInput) => {
+            if (input.hook_event_name !== 'SubagentStart') return { continue: true };
+            await appendActivity(sessionId, {
+              id: buildActivityId(),
+              type: 'agent',
+              text: `Subagent started (${input.agent_type})`,
+              detail: input.agent_id,
+              timestamp: new Date().toISOString(),
+            });
+            return { continue: true };
+          }
+        ]
+      }
+    ],
+    SubagentStop: [
+      {
+        hooks: [
+          async (input: HookInput) => {
+            if (input.hook_event_name !== 'SubagentStop') return { continue: true };
+            await appendActivity(sessionId, {
+              id: buildActivityId(),
+              type: 'agent',
+              text: 'Subagent finished',
+              detail: input.agent_id,
+              timestamp: new Date().toISOString(),
+            });
+            return { continue: true };
+          }
+        ]
+      }
+    ],
+    SessionEnd: [
+      {
+        hooks: [
+          async (input: HookInput) => {
+            if (input.hook_event_name !== 'SessionEnd') return { continue: true };
+            await appendActivity(sessionId, {
+              id: buildActivityId(),
+              type: 'thinking',
+              text: 'Session complete',
+              timestamp: new Date().toISOString(),
+            }, 'complete');
+            return { continue: true };
+          }
+        ]
+      }
+    ],
+  };
 }
 
 export async function invokeClaudeCode(options: ClaudeCodeOptions): Promise<string> {
-  const { prompt, workingDir } = options;
+  const { prompt, workingDir, activitySessionId } = options;
 
   console.log('[Claude Code] Invoking with prompt:', prompt.substring(0, 100) + '...');
 
@@ -21,6 +239,7 @@ export async function invokeClaudeCode(options: ClaudeCodeOptions): Promise<stri
         allowedTools: ['Read', 'Write', 'Edit', 'Bash', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Task', 'Skill'],
         allowDangerouslySkipPermissions: true,
         cwd: workingDir || process.cwd(),
+        hooks: activitySessionId ? buildActivityHooks(activitySessionId) : undefined,
       }
     })) {
       // Log message types for debugging
@@ -57,7 +276,7 @@ export async function invokeClaudeCode(options: ClaudeCodeOptions): Promise<stri
 
 // Fire-and-forget version for background tasks
 export function invokeClaudeCodeAsync(options: ClaudeCodeOptions): void {
-  const { prompt, workingDir } = options;
+  const { prompt, workingDir, activitySessionId } = options;
 
   console.log('[Claude Code Async] Starting background task');
 
@@ -70,6 +289,7 @@ export function invokeClaudeCodeAsync(options: ClaudeCodeOptions): void {
           allowedTools: ['Read', 'Write', 'Edit', 'Bash', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Task', 'Skill'],
           allowDangerouslySkipPermissions: true,
           cwd: workingDir || process.cwd(),
+          hooks: activitySessionId ? buildActivityHooks(activitySessionId) : undefined,
         }
       })) {
         if ('result' in message) {

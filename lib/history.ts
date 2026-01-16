@@ -6,11 +6,31 @@ const HISTORY_FILE = path.join(process.cwd(), 'data', 'history', 'sessions.json'
 const PROGRESS_DIR = path.join(process.cwd(), 'data', 'progress');
 const MAX_SESSIONS = 50;
 
+function normalizeDemoUrl(demoUrl: string | null): string | null {
+  if (!demoUrl) return null;
+  if (demoUrl.startsWith('/demo/') && demoUrl.endsWith('.html')) {
+    return demoUrl.replace(/\.html$/, '');
+  }
+  return demoUrl;
+}
+
+function normalizeHistory(history: HistoryFile): HistoryFile {
+  return {
+    sessions: history.sessions.map((session) => ({
+      ...session,
+      agencies: session.agencies.map((agency) => ({
+        ...agency,
+        demoUrl: normalizeDemoUrl(agency.demoUrl),
+      })),
+    })),
+  };
+}
+
 export async function readHistory(): Promise<HistoryFile> {
   try {
     await fs.mkdir(path.dirname(HISTORY_FILE), { recursive: true });
     const content = await fs.readFile(HISTORY_FILE, 'utf-8');
-    return JSON.parse(content) as HistoryFile;
+    return normalizeHistory(JSON.parse(content) as HistoryFile);
   } catch {
     return { sessions: [] };
   }
@@ -71,7 +91,7 @@ export async function buildSessionFromPipeline(
           id: agencyData.agencyId,
           name: agencyData.name || agencyId,
           logoUrl: agencyData.logoUrl,
-          demoUrl: agencyData.demoUrl,
+          demoUrl: normalizeDemoUrl(agencyData.demoUrl),
         });
 
         if (agencyData.status === 'complete') {

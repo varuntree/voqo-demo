@@ -3,7 +3,7 @@
 // Activity message for agent streaming
 export interface ActivityMessage {
   id: string;
-  type: 'search' | 'results' | 'fetch' | 'identified' | 'warning' | 'thinking';
+  type: 'search' | 'results' | 'fetch' | 'identified' | 'warning' | 'thinking' | 'tool' | 'agent';
   text: string;
   detail?: string;
   timestamp: string;

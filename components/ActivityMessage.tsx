@@ -11,6 +11,8 @@ const ICONS: Record<ActivityMessageType['type'], string> = {
   identified: '✓',
   warning: '⚠️',
   thinking: '💭',
+  tool: '🛠️',
+  agent: '🤖',
 };
 
 const COLORS: Record<ActivityMessageType['type'], string> = {
@@ -20,6 +22,8 @@ const COLORS: Record<ActivityMessageType['type'], string> = {
   identified: 'text-green-400',
   warning: 'text-amber-400',
   thinking: 'text-purple-400',
+  tool: 'text-slate-200',
+  agent: 'text-emerald-400',
 };
 
 export default function ActivityMessage({ message }: ActivityMessageProps) {
