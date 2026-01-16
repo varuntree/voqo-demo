@@ -12,6 +12,34 @@ You process a single real estate agency: extract details and generate its demo p
 You MUST write progress updates to /data/progress/agency-{agencyId}.json at each milestone.
 The UI displays these updates in real-time. Users see your progress as it happens.
 
+## CRITICAL: Step Reporting
+
+You MUST update the `steps` array in the progress file at each milestone.
+
+### Initial State (when file is first written)
+```json
+{
+  "steps": [
+    { "id": "website", "label": "Found website", "status": "pending" },
+    { "id": "details", "label": "Extracted details", "status": "pending" },
+    { "id": "generating", "label": "Generating demo page", "status": "pending" },
+    { "id": "complete", "label": "Ready", "status": "pending" }
+  ]
+}
+```
+
+### After fetching website successfully
+Update: steps[0].status = "complete", steps[1].status = "in_progress"
+
+### After extracting all details
+Update: steps[1].status = "complete", steps[2].status = "in_progress"
+
+### After HTML generation complete
+Update: steps[2].status = "complete", steps[3].status = "complete"
+
+### On any error
+Set the failed step to status = "error"
+
 ## Input
 
 You receive:
@@ -26,7 +54,13 @@ You receive:
 
 #### 1.1 Fetch Homepage
 Use WebFetch to get the agency homepage.
-Update progress: status = "extracting"
+Update progress:
+- status = "extracting"
+- steps[0].status = "in_progress"
+
+After successful fetch:
+- steps[0].status = "complete"
+- steps[1].status = "in_progress"
 
 #### 1.2 Extract Logo
 Look for logo in:
@@ -72,19 +106,48 @@ Use WebSearch if needed:
 
 Update progress: teamSize = N, listingCount = N
 
-#### 1.6 Calculate Pain Score
+#### 1.6 Enhanced Data Extraction (NEW)
+
+Extract these additional fields from EXISTING page fetches (NO extra searches):
+
+**Sold Properties Count:**
+1. Look for links/sections: "Sold", "Recently Sold", "Past Sales", "Sold Properties"
+2. WebFetch that page if found
+3. Count properties or extract displayed total
+4. Update progress: soldCount = N
+
+**Price Range:**
+From listings already fetched:
+1. Collect all visible prices (for sale properties)
+2. Parse to numbers, find min and max
+3. Format as currency: "$600,000", "$2,100,000"
+4. Update progress: priceRangeMin, priceRangeMax
+
+**Rental/PM Count:**
+1. Look for "Rentals", "For Rent", "Property Management", "Leasing"
+2. If section exists, count listings or extract total
+3. Update progress: forRentCount = N
+
+IMPORTANT: If any data not found, set to null. Do NOT perform additional Google searches.
+
+#### 1.7 Calculate Pain Score
 Apply scoring formula:
 - 30+ listings: +20
 - 20-29 listings: +15
 - 10-19 listings: +10
-- Has Property Management: +25
+- Has Property Management (forRentCount > 0): +25
 - <5 agents + 20+ listings: +20
 - <3 agents + 10+ listings: +15
 - No after-hours number: +15
 - No chat widget: +10
 - No online booking: +5
 
-Update progress: painScore = N, status = "generating"
+After extraction complete:
+- steps[1].status = "complete"
+- steps[2].status = "in_progress"
+- status = "generating"
+
+Update progress: painScore = N
 
 ### Phase 2: Generate Demo Page
 
@@ -121,7 +184,12 @@ The HTML must include:
 7. Recent calls section (fetches from /api/agency-calls)
 8. JavaScript for call registration and polling
 
-Update progress: htmlProgress = 100, status = "complete", demoUrl = "/demo/{agencyId}"
+After HTML written:
+- steps[2].status = "complete"
+- steps[3].status = "complete"
+- htmlProgress = 100
+- status = "complete"
+- demoUrl = "/demo/{agencyId}"
 
 ### Phase 3: Save Agency Data
 
@@ -144,6 +212,10 @@ Format:
   "metrics": {
     "teamSize": 5,
     "listingCount": 30,
+    "soldCount": 12,
+    "forRentCount": 28,
+    "priceRangeMin": "$600,000",
+    "priceRangeMax": "$2,100,000",
     "hasPropertyManagement": true,
     "hasAfterHoursNumber": false,
     "hasChatWidget": false,
@@ -165,19 +237,30 @@ Always write valid JSON to /data/progress/agency-{agencyId}.json:
 {
   "agencyId": "...",
   "sessionId": "...",
-  "status": "extracting|generating|complete|error",
+  "status": "skeleton|extracting|generating|complete|error",
   "updatedAt": "ISO timestamp",
   "name": "...",
   "website": "...",
+  "phone": "..." or null,
+  "address": "..." or null,
   "logoUrl": "..." or null,
   "primaryColor": "..." or null,
   "secondaryColor": "..." or null,
-  "phone": "..." or null,
   "teamSize": N or null,
   "listingCount": N or null,
   "painScore": N or null,
+  "soldCount": N or null,
+  "priceRangeMin": "..." or null,
+  "priceRangeMax": "..." or null,
+  "forRentCount": N or null,
   "htmlProgress": 0-100,
   "demoUrl": "..." or null,
+  "steps": [
+    { "id": "website", "label": "Found website", "status": "pending|in_progress|complete|error" },
+    { "id": "details", "label": "Extracted details", "status": "pending|in_progress|complete|error" },
+    { "id": "generating", "label": "Generating demo page", "status": "pending|in_progress|complete|error" },
+    { "id": "complete", "label": "Ready", "status": "pending|in_progress|complete|error" }
+  ],
   "error": "..." (only if status = "error")
 }
 ```
@@ -186,8 +269,9 @@ Always write valid JSON to /data/progress/agency-{agencyId}.json:
 
 If extraction fails:
 1. Set status = "error"
-2. Set error = "reason"
-3. The UI will remove this card
+2. Set the failed step's status = "error"
+3. Set error = "reason"
+4. The UI will remove this card
 
 Do NOT retry - move on. The main agent handles retries if needed.
 

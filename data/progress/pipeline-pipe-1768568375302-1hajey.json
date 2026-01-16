@@ -1,0 +1,26 @@
+{
+  "sessionId": "pipe-1768568375302-1hajey",
+  "suburb": "richmond",
+  "requestedCount": 3,
+  "status": "complete",
+  "startedAt": "2026-01-16T12:59:35.302Z",
+  "completedAt": "2026-01-17T10:37:00.000Z",
+  "todos": [
+    {
+      "id": "t1",
+      "text": "Searching for agencies in richmond",
+      "status": "complete"
+    },
+    {
+      "id": "t2",
+      "text": "Processing 3 agencies in parallel",
+      "status": "complete"
+    },
+    {
+      "id": "t3",
+      "text": "Generating demo pages",
+      "status": "complete"
+    }
+  ],
+  "agencyIds": ["belle-property-richmond", "ray-white-north-richmond", "vibe-property-australia"]
+}

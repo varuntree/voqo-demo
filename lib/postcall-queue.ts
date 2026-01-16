@@ -116,6 +116,8 @@ export async function processPostcallJobsOnce(): Promise<void> {
         continue;
       }
 
+      const callSnapshot = await readCallSnapshot(job.callId);
+
       await runWithTimeout(
         invokeClaudeCode({ prompt: job.prompt, workingDir: process.cwd() }),
         PROCESSING_TIMEOUT_MS
@@ -136,7 +138,7 @@ export async function processPostcallJobsOnce(): Promise<void> {
         continue;
       }
 
-      await markCallCompleted(job.callId);
+      await markCallCompleted(job.callId, callSnapshot);
       await unlink(processingPath);
     } catch (error) {
       await appendPostcallError({
@@ -186,7 +188,14 @@ function runWithTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
   });
 }
 
-async function markCallCompleted(callId: string): Promise<void> {
+async function markCallCompleted(
+  callId: string,
+  fallback?: {
+    callerPhone?: string | null;
+    agencyName?: string | null;
+    agencyId?: string | null;
+  }
+): Promise<void> {
   const callFile = path.join(CALLS_DIR, `${callId}.json`);
   try {
     const data = JSON.parse(await readFile(callFile, 'utf-8')) as {
@@ -199,6 +208,16 @@ async function markCallCompleted(callId: string): Promise<void> {
       callerName?: string | null;
       summary?: string | null;
     };
+
+    if (!data.callerPhone && fallback?.callerPhone) {
+      data.callerPhone = fallback.callerPhone;
+    }
+    if (!data.agencyName && fallback?.agencyName) {
+      data.agencyName = fallback.agencyName;
+    }
+    if (!data.agencyId && fallback?.agencyId) {
+      data.agencyId = fallback.agencyId;
+    }
 
     data.pageStatus = 'completed';
     data.pageUrl = `/call/${callId}`;
@@ -230,6 +249,28 @@ async function markCallCompleted(callId: string): Promise<void> {
       attempts: 0,
       timestamp: new Date().toISOString()
     });
+  }
+}
+
+async function readCallSnapshot(callId: string): Promise<{
+  callerPhone?: string | null;
+  agencyName?: string | null;
+  agencyId?: string | null;
+} | undefined> {
+  const callFile = path.join(CALLS_DIR, `${callId}.json`);
+  try {
+    const data = JSON.parse(await readFile(callFile, 'utf-8')) as {
+      callerPhone?: string | null;
+      agencyName?: string | null;
+      agencyId?: string | null;
+    };
+    return {
+      callerPhone: data.callerPhone ?? null,
+      agencyName: data.agencyName ?? null,
+      agencyId: data.agencyId ?? null
+    };
+  } catch {
+    return undefined;
   }
 }
 

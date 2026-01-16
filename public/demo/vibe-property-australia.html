@@ -1,0 +1,1775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voqo AI Demo | Vibe Property Australia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #1e3a5f;
+            --dark: #1a1a1a;
+            --light: #f5f7fa;
+            --gradient: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            --accent: #3b82f6;
+            --text-on-primary: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--dark);
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background - Dynamic geometric patterns */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 20% 20%, rgba(37, 99, 235, 0.08) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(30, 58, 95, 0.12) 0%, transparent 50%),
+                        radial-gradient(circle at 60% 30%, rgba(59, 130, 246, 0.06) 0%, transparent 40%);
+            animation: pulse 25s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.1) rotate(5deg); }
+        }
+
+        /* Floating geometric shapes */
+        .geo-shape {
+            position: absolute;
+            background: rgba(37, 99, 235, 0.1);
+            animation: float-geo linear infinite;
+            pointer-events: none;
+        }
+
+        .geo-shape.square {
+            width: 30px;
+            height: 30px;
+            border: 2px solid rgba(37, 99, 235, 0.2);
+        }
+
+        .geo-shape.diamond {
+            width: 20px;
+            height: 20px;
+            background: rgba(37, 99, 235, 0.15);
+            transform: rotate(45deg);
+        }
+
+        @keyframes float-geo {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% {
+                transform: translateY(-100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 1rem 2rem;
+            background: rgba(26, 26, 26, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(37, 99, 235, 0.2);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logos {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .agency-logo {
+            height: 50px;
+            border-radius: 8px;
+            object-fit: contain;
+            background: #fff;
+            padding: 4px 8px;
+        }
+
+        .agency-logo-text {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+            background: #fff;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+        }
+
+        .divider {
+            width: 1px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .voqo-logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            letter-spacing: -0.5px;
+        }
+
+        .voqo-logo span {
+            color: #fff;
+        }
+
+        .header-cta {
+            padding: 0.75rem 1.5rem;
+            background: var(--primary);
+            color: var(--text-on-primary);
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .header-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(37, 99, 235, 0.4);
+        }
+
+        /* Hero Section */
+        .hero {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 8rem 2rem 4rem;
+        }
+
+        .hero-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(37, 99, 235, 0.15);
+            border: 1px solid rgba(37, 99, 235, 0.3);
+            border-radius: 100px;
+            font-size: 0.875rem;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-badge::before {
+            content: '\1F3E0';
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.85) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero h1 .highlight {
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-description {
+            font-size: 1.25rem;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.7;
+            margin-bottom: 2rem;
+        }
+
+        .hero-description strong {
+            color: var(--primary);
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 2rem;
+            background: var(--gradient);
+            color: var(--text-on-primary);
+            font-size: 1rem;
+            font-weight: 700;
+            text-decoration: none;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 40px rgba(37, 99, 235, 0.35);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 50px rgba(37, 99, 235, 0.5);
+        }
+
+        .btn-primary svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 2rem;
+            background: transparent;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* Hero Visual */
+        .hero-visual {
+            position: relative;
+        }
+
+        .phone-mockup {
+            position: relative;
+            max-width: 350px;
+            margin: 0 auto;
+        }
+
+        .phone-frame {
+            background: linear-gradient(145deg, #3a3a3a 0%, var(--dark) 100%);
+            border-radius: 40px;
+            padding: 15px;
+            box-shadow: 0 50px 100px rgba(0, 0, 0, 0.5),
+                        0 0 0 1px rgba(37, 99, 235, 0.2);
+        }
+
+        .phone-screen {
+            background: #fff;
+            border-radius: 28px;
+            overflow: hidden;
+            aspect-ratio: 9/16;
+        }
+
+        .phone-content {
+            height: 100%;
+            background: linear-gradient(180deg, var(--primary) 0%, #1d4ed8 50%, #fff 50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 3rem;
+        }
+
+        .phone-content .ai-avatar {
+            width: 80px;
+            height: 80px;
+            background: var(--secondary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .phone-content .call-info {
+            color: var(--text-on-primary);
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .phone-content .call-info h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .phone-content .call-info p {
+            font-size: 0.875rem;
+            opacity: 0.8;
+        }
+
+        .call-wave {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            margin-top: 1rem;
+        }
+
+        .call-wave span {
+            width: 4px;
+            height: 20px;
+            background: var(--text-on-primary);
+            border-radius: 2px;
+            animation: wave 1.2s ease-in-out infinite;
+        }
+
+        .call-wave span:nth-child(2) { animation-delay: 0.1s; }
+        .call-wave span:nth-child(3) { animation-delay: 0.2s; }
+        .call-wave span:nth-child(4) { animation-delay: 0.3s; }
+        .call-wave span:nth-child(5) { animation-delay: 0.4s; }
+
+        @keyframes wave {
+            0%, 100% { height: 20px; }
+            50% { height: 40px; }
+        }
+
+        .floating-badge {
+            position: absolute;
+            background: #fff;
+            border-radius: 16px;
+            padding: 1rem 1.25rem;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .floating-badge.badge-1 {
+            top: 10%;
+            left: -20%;
+            animation-delay: 0s;
+        }
+
+        .floating-badge.badge-2 {
+            bottom: 20%;
+            right: -15%;
+            animation-delay: 1s;
+        }
+
+        .floating-badge.badge-3 {
+            top: 40%;
+            right: -25%;
+            animation-delay: 0.5s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .badge-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .badge-icon.blue { background: #dbeafe; }
+        .badge-icon.gray { background: #f5f5f5; }
+        .badge-icon.green { background: #e8f5e9; }
+
+        .badge-text {
+            color: var(--secondary);
+        }
+
+        .badge-text .label {
+            font-size: 0.75rem;
+            color: #666;
+        }
+
+        .badge-text .value {
+            font-size: 0.875rem;
+            font-weight: 700;
+        }
+
+        /* Pain Points Section */
+        .pain-section {
+            position: relative;
+            z-index: 1;
+            padding: 6rem 2rem;
+            background: linear-gradient(180deg, var(--dark) 0%, #252525 100%);
+        }
+
+        .section-header {
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto 4rem;
+        }
+
+        .section-label {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: rgba(37, 99, 235, 0.15);
+            border-radius: 100px;
+            font-size: 0.875rem;
+            color: var(--primary);
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+
+        .section-header p {
+            font-size: 1.125rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .pain-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+
+        .pain-card {
+            background: linear-gradient(145deg, rgba(37, 99, 235, 0.08) 0%, rgba(37, 99, 235, 0.02) 100%);
+            border: 1px solid rgba(37, 99, 235, 0.15);
+            border-radius: 20px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .pain-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(37, 99, 235, 0.4);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+        }
+
+        .pain-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.25) 0%, rgba(37, 99, 235, 0.1) 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .pain-card h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            color: #fff;
+        }
+
+        .pain-card p {
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.6;
+        }
+
+        .pain-card .solution {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(37, 99, 235, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .pain-card .solution svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* ROI Calculator */
+        .roi-section {
+            position: relative;
+            z-index: 1;
+            padding: 6rem 2rem;
+            background: var(--secondary);
+        }
+
+        .roi-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .roi-content h2 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+
+        .roi-content h2 .highlight {
+            color: var(--accent);
+        }
+
+        .roi-content p {
+            font-size: 1.125rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 2rem;
+        }
+
+        .roi-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .input-group label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .input-group input {
+            padding: 1rem;
+            background: rgba(37, 99, 235, 0.1);
+            border: 2px solid rgba(37, 99, 235, 0.3);
+            border-radius: 12px;
+            font-size: 1rem;
+            color: #fff;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(37, 99, 235, 0.2);
+        }
+
+        .input-group input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .roi-results {
+            background: linear-gradient(145deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.1) 100%);
+            border-radius: 24px;
+            padding: 3rem;
+            border: 1px solid rgba(37, 99, 235, 0.2);
+        }
+
+        .roi-results h3 {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 2rem;
+        }
+
+        .savings-display {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .savings-label {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 0.5rem;
+        }
+
+        .savings-value {
+            font-size: 4rem;
+            font-weight: 800;
+            color: var(--accent);
+            line-height: 1;
+        }
+
+        .savings-period {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 0.5rem;
+        }
+
+        .roi-breakdown {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .breakdown-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(37, 99, 235, 0.1);
+            border-radius: 12px;
+        }
+
+        .breakdown-item .label {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .breakdown-item .label span {
+            font-size: 1.25rem;
+        }
+
+        .breakdown-item .value {
+            font-weight: 700;
+            color: #fff;
+        }
+
+        /* Features Grid */
+        .features-section {
+            position: relative;
+            z-index: 1;
+            padding: 6rem 2rem;
+            background: var(--dark);
+        }
+
+        .features-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: linear-gradient(145deg, rgba(37, 99, 235, 0.08) 0%, rgba(37, 99, 235, 0.02) 100%);
+            border: 1px solid rgba(37, 99, 235, 0.15);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(37, 99, 235, 0.4);
+        }
+
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            background: var(--gradient);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin: 0 auto 1.5rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-card p {
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.6;
+        }
+
+        /* Agency Highlight Section */
+        .agency-section {
+            position: relative;
+            z-index: 1;
+            padding: 6rem 2rem;
+            background: linear-gradient(180deg, #252525 0%, var(--dark) 100%);
+        }
+
+        .agency-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .agency-container h2 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+        }
+
+        .agency-container h2 .highlight {
+            color: var(--primary);
+        }
+
+        .agency-container .lead-text {
+            font-size: 1.25rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 3rem;
+            line-height: 1.7;
+        }
+
+        .local-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: rgba(37, 99, 235, 0.15);
+            border: 1px solid rgba(37, 99, 235, 0.3);
+            border-radius: 100px;
+            font-size: 1rem;
+            color: var(--primary);
+            font-weight: 600;
+            margin-bottom: 2rem;
+        }
+
+        .team-highlight {
+            display: inline-flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem 2rem;
+            background: rgba(37, 99, 235, 0.1);
+            border: 1px solid rgba(37, 99, 235, 0.2);
+            border-radius: 16px;
+        }
+
+        .team-highlight .avatar {
+            width: 60px;
+            height: 60px;
+            background: var(--gradient);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .team-highlight .info {
+            text-align: left;
+        }
+
+        .team-highlight .info .name {
+            font-weight: 700;
+            font-size: 1.125rem;
+        }
+
+        .team-highlight .info .role {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.875rem;
+        }
+
+        /* Recent Calls Section */
+        .recent-calls-section {
+            position: relative;
+            z-index: 1;
+            padding: 6rem 2rem;
+            background: linear-gradient(180deg, var(--dark) 0%, #252525 100%);
+        }
+
+        .calls-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .calls-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .calls-header h2 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+
+        .calls-header p {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .calls-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .call-card {
+            background: linear-gradient(145deg, rgba(37, 99, 235, 0.08) 0%, rgba(37, 99, 235, 0.02) 100%);
+            border: 1px solid rgba(37, 99, 235, 0.15);
+            border-radius: 16px;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .call-card:hover {
+            transform: translateX(5px);
+            border-color: rgba(37, 99, 235, 0.4);
+            background: linear-gradient(145deg, rgba(37, 99, 235, 0.12) 0%, rgba(37, 99, 235, 0.04) 100%);
+        }
+
+        .call-icon {
+            width: 50px;
+            height: 50px;
+            background: var(--gradient);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .call-icon svg {
+            width: 24px;
+            height: 24px;
+            color: var(--text-on-primary);
+        }
+
+        .call-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .call-caller {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+            color: #fff;
+        }
+
+        .call-summary {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.875rem;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .call-arrow {
+            color: var(--primary);
+            flex-shrink: 0;
+        }
+
+        .call-arrow svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .calls-empty {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: linear-gradient(145deg, rgba(37, 99, 235, 0.05) 0%, rgba(37, 99, 235, 0.01) 100%);
+            border: 1px dashed rgba(37, 99, 235, 0.2);
+            border-radius: 20px;
+        }
+
+        .calls-empty .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .calls-empty h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .calls-empty p {
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 1.5rem;
+        }
+
+        .calls-loading {
+            text-align: center;
+            padding: 3rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .calls-loading .spinner-large {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(37, 99, 235, 0.2);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            position: relative;
+            z-index: 1;
+            padding: 6rem 2rem;
+            background: linear-gradient(180deg, #252525 0%, var(--dark) 100%);
+        }
+
+        .cta-container {
+            max-width: 900px;
+            margin: 0 auto;
+            text-align: center;
+            background: linear-gradient(145deg, rgba(37, 99, 235, 0.12) 0%, rgba(37, 99, 235, 0.03) 100%);
+            border: 1px solid rgba(37, 99, 235, 0.25);
+            border-radius: 32px;
+            padding: 4rem;
+        }
+
+        .cta-container h2 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+
+        .cta-container p {
+            font-size: 1.25rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 2rem;
+        }
+
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            padding: 1.25rem 3rem;
+            background: var(--gradient);
+            color: var(--text-on-primary);
+            font-size: 1.25rem;
+            font-weight: 800;
+            text-decoration: none;
+            border: none;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 20px 50px rgba(37, 99, 235, 0.4);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 30px 60px rgba(37, 99, 235, 0.5);
+        }
+
+        .cta-button svg {
+            width: 28px;
+            height: 28px;
+        }
+
+        .trust-badges {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .trust-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.875rem;
+        }
+
+        .trust-badge svg {
+            width: 16px;
+            height: 16px;
+            color: #4ade80;
+        }
+
+        /* Footer */
+        .footer {
+            position: relative;
+            z-index: 1;
+            padding: 2rem;
+            background: var(--dark);
+            border-top: 1px solid rgba(37, 99, 235, 0.2);
+            text-align: center;
+        }
+
+        .footer p {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.875rem;
+        }
+
+        .footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .hero-content {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .hero-stats {
+                justify-content: center;
+            }
+
+            .hero-actions {
+                justify-content: center;
+            }
+
+            .hero-visual {
+                display: none;
+            }
+
+            .roi-container {
+                grid-template-columns: 1fr;
+            }
+
+            .pain-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .section-header h2 {
+                font-size: 2rem;
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .savings-value {
+                font-size: 3rem;
+            }
+
+            .agency-container h2 {
+                font-size: 2rem;
+            }
+
+            .call-card {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .call-details {
+                text-align: center;
+            }
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--dark);
+            border: 1px solid rgba(37, 99, 235, 0.3);
+            border-radius: 24px;
+            padding: 3rem;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .modal-content h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .modal-content p {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 2rem;
+        }
+
+        .modal-phone {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 2rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .modal-cancel {
+            padding: 1rem 2rem;
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-cancel:hover {
+            border-color: #fff;
+        }
+
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: var(--text-on-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .btn-primary.loading .spinner {
+            display: block;
+        }
+
+        .btn-primary.loading .btn-text {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation"></div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logos">
+                <div class="agency-logo-text">VIBE Property</div>
+                <div class="divider"></div>
+                <div class="voqo-logo">VOQO<span>.AI</span></div>
+            </div>
+            <button class="header-cta" onclick="openCallModal()">Book Demo Call</button>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-text">
+                <div class="hero-badge">Personalized for Vibe Property Australia</div>
+                <h1>Your <span class="highlight">Local Expert</span> Agency Deserves Smart Automation</h1>
+                <p class="hero-description">
+                    With a <strong>dedicated team of 2</strong> managing <strong>26 active listings</strong> across the Hawkesbury region, every call matters. Voqo AI ensures no inquiry slips through - especially when you're busy showing properties.
+                </p>
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">2</div>
+                        <div class="stat-label">Team Members</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">26</div>
+                        <div class="stat-label">Active Listings</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">24/7</div>
+                        <div class="stat-label">AI Coverage</div>
+                    </div>
+                </div>
+                <div class="hero-actions">
+                    <button class="btn-primary" onclick="openCallModal()">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                        <span class="btn-text">Experience Live Demo</span>
+                        <span class="spinner"></span>
+                    </button>
+                    <a href="https://vibeproperty.com.au/" target="_blank" class="btn-secondary">
+                        Visit Your Website &rarr;
+                    </a>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="phone-mockup">
+                    <div class="floating-badge badge-1">
+                        <div class="badge-icon green">&#10003;</div>
+                        <div class="badge-text">
+                            <div class="label">Status</div>
+                            <div class="value">Call Answered</div>
+                        </div>
+                    </div>
+                    <div class="floating-badge badge-2">
+                        <div class="badge-icon blue">&#128197;</div>
+                        <div class="badge-text">
+                            <div class="label">Action</div>
+                            <div class="value">Viewing Booked</div>
+                        </div>
+                    </div>
+                    <div class="floating-badge badge-3">
+                        <div class="badge-icon gray">&#127968;</div>
+                        <div class="badge-text">
+                            <div class="label">Service</div>
+                            <div class="value">PM Inquiry</div>
+                        </div>
+                    </div>
+                    <div class="phone-frame">
+                        <div class="phone-screen">
+                            <div class="phone-content">
+                                <div class="ai-avatar">&#129302;</div>
+                                <div class="call-info">
+                                    <h3>Voqo AI</h3>
+                                    <p>Handling inquiry...</p>
+                                </div>
+                                <div class="call-wave">
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pain Points Section -->
+    <section class="pain-section">
+        <div class="section-header">
+            <span class="section-label">Your Challenges</span>
+            <h2>We Understand Boutique Agency Needs</h2>
+            <p>Running a local agency with a small team requires smart solutions. Here's how Voqo helps.</p>
+        </div>
+        <div class="pain-grid">
+            <div class="pain-card">
+                <div class="pain-icon">&#128222;</div>
+                <h3>Small Team, Big Workload</h3>
+                <p>With just 2 team members managing 26 listings, you're constantly stretched. When you're at inspections, who answers the phone? Missed calls mean missed opportunities.</p>
+                <div class="solution">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    AI answers every call, routes to you when free
+                </div>
+            </div>
+            <div class="pain-card">
+                <div class="pain-icon">&#127769;</div>
+                <h3>No After-Hours Coverage</h3>
+                <p>Weekend buyers browse properties after work. When your office closes, motivated leads call competitors. You need 24/7 coverage without 24/7 staffing costs.</p>
+                <div class="solution">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    24/7 professional AI receptionist
+                </div>
+            </div>
+            <div class="pain-card">
+                <div class="pain-icon">&#127970;</div>
+                <h3>Property Management Calls</h3>
+                <p>Tenant emergencies don't wait for business hours. Burst pipes, lockouts, and urgent repairs need immediate triage - even at 2am on a Sunday.</p>
+                <div class="solution">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    AI triages PM calls, escalates emergencies
+                </div>
+            </div>
+            <div class="pain-card">
+                <div class="pain-icon">&#128205;</div>
+                <h3>Local Market Competition</h3>
+                <p>The Hawkesbury region is competitive. When buyers compare agencies, the one that responds fastest wins. Voqo ensures you're always first to respond.</p>
+                <div class="solution">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Instant response, every time
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Agency Highlight Section -->
+    <section class="agency-section">
+        <div class="agency-container">
+            <div class="local-badge">&#127793; Local Experts | Hawkesbury Region</div>
+            <h2>Empowering <span class="highlight">Richmond's</span> Trusted Agency</h2>
+            <p class="lead-text">
+                Located at 135 Windsor Street, Richmond NSW, Vibe Property Australia is built on people - a local company tailor-made for locals. With Voqo AI, your dedicated team gets the technological edge to capture every lead in the Hawkesbury market.
+            </p>
+            <div class="team-highlight">
+                <div class="avatar">&#128084;</div>
+                <div class="info">
+                    <div class="name">Vibe Property Team</div>
+                    <div class="role">Local Real Estate Experts | Richmond NSW</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ROI Calculator -->
+    <section class="roi-section">
+        <div class="roi-container">
+            <div class="roi-content">
+                <h2>Calculate Your <span class="highlight">ROI</span></h2>
+                <p>See how much revenue Voqo AI can recover for a boutique agency like yours</p>
+                <div class="roi-inputs">
+                    <div class="input-group">
+                        <label>Estimated missed calls per week</label>
+                        <input type="number" id="missedCalls" value="8" oninput="calculateROI()">
+                    </div>
+                    <div class="input-group">
+                        <label>Average commission per sale ($)</label>
+                        <input type="number" id="avgCommission" value="12000" oninput="calculateROI()">
+                    </div>
+                    <div class="input-group">
+                        <label>Lead to sale conversion rate (%)</label>
+                        <input type="number" id="conversionRate" value="5" oninput="calculateROI()">
+                    </div>
+                </div>
+            </div>
+            <div class="roi-results">
+                <h3>Potential Revenue Recovery</h3>
+                <div class="savings-display">
+                    <div class="savings-label">Annual Recovered Revenue</div>
+                    <div class="savings-value" id="annualSavings">$24,960</div>
+                    <div class="savings-period">per year with Voqo AI</div>
+                </div>
+                <div class="roi-breakdown">
+                    <div class="breakdown-item">
+                        <div class="label">
+                            <span>&#128222;</span>
+                            Calls captured/year
+                        </div>
+                        <div class="value" id="callsCaptured">416</div>
+                    </div>
+                    <div class="breakdown-item">
+                        <div class="label">
+                            <span>&#128176;</span>
+                            Additional sales/year
+                        </div>
+                        <div class="value" id="additionalSales">2.1</div>
+                    </div>
+                    <div class="breakdown-item">
+                        <div class="label">
+                            <span>&#9201;</span>
+                            Hours saved/month
+                        </div>
+                        <div class="value" id="hoursSaved">16+</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section">
+        <div class="section-header">
+            <span class="section-label">Why Voqo AI</span>
+            <h2>Built for Boutique Agencies</h2>
+            <p>Powerful AI designed for local agencies like Vibe Property Australia</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">&#127919;</div>
+                <h3>Smart Lead Routing</h3>
+                <p>AI understands inquiry types and routes to the right team member - sales, rentals, or property management.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">&#128197;</div>
+                <h3>Instant Booking</h3>
+                <p>Integrates with your calendar system to book viewings instantly. No back-and-forth delays.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">&#127968;</div>
+                <h3>Property Knowledge</h3>
+                <p>AI knows all 26 listings inside out. Answers questions about features, pricing, and availability.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">&#128222;</div>
+                <h3>PM Emergency Triage</h3>
+                <p>Intelligently handles property management calls - escalating true emergencies 24/7.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">&#128172;</div>
+                <h3>Website Chat Widget</h3>
+                <p>Add AI-powered chat to your website. Capture leads from visitors who prefer typing.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">&#128202;</div>
+                <h3>Analytics Dashboard</h3>
+                <p>Real-time insights into call patterns, lead quality, and conversion metrics for your team.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Recent Calls Section -->
+    <section class="recent-calls-section">
+        <div class="calls-container">
+            <div class="calls-header">
+                <span class="section-label">Demo Activity</span>
+                <h2>Recent Demo Calls</h2>
+                <p>See how Voqo AI has handled inquiries for Vibe Property Australia</p>
+            </div>
+            <div id="callsList" class="calls-list">
+                <div class="calls-loading">
+                    <div class="spinner-large"></div>
+                    <p>Loading recent calls...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="cta-container">
+            <h2>Ready to Grow Vibe Property Australia?</h2>
+            <p>Get enterprise-level phone handling at a price that works for boutique agencies</p>
+            <button class="cta-button" onclick="openCallModal()">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+                Start Your Live Demo Now
+            </button>
+            <div class="trust-badges">
+                <div class="trust-badge">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    No credit card required
+                </div>
+                <div class="trust-badge">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    5-minute setup
+                </div>
+                <div class="trust-badge">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Cancel anytime
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>
+            Personalized demo for <strong>Vibe Property Australia</strong> |
+            Prepared by <a href="#">Voqo AI</a> |
+            Contact: <a href="tel:0245784234">02 4578 4234</a>
+        </p>
+    </footer>
+
+    <!-- Call Modal -->
+    <div class="modal-overlay" id="callModal">
+        <div class="modal-content">
+            <h3>&#128313; Experience Voqo AI Live</h3>
+            <p>You're about to call our AI demo line configured for Vibe Property Australia. Experience firsthand how Voqo handles property inquiries across your 26 listings and property management portfolio.</p>
+            <div class="modal-phone">1300 VOQO AI</div>
+            <div class="modal-actions">
+                <button class="modal-cancel" onclick="closeCallModal()">Cancel</button>
+                <button class="btn-primary" onclick="initiateCall()">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                    </svg>
+                    <span class="btn-text">Call Now</span>
+                    <span class="spinner"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Agency context for API calls
+        const agencyContext = {
+            id: "vibe-property-australia",
+            name: "Vibe Property Australia",
+            website: "https://vibeproperty.com.au/",
+            phone: "02 4578 4234",
+            email: "info@vibeproperty.com.au",
+            address: "135 Windsor Street, Richmond NSW 2753",
+            branding: {
+                logoUrl: null,
+                primaryColor: "#2563eb",
+                secondaryColor: "#1e3a5f"
+            },
+            metrics: {
+                teamSize: 2,
+                listingCount: 26,
+                hasPropertyManagement: true,
+                hasAfterHoursNumber: false,
+                hasChatWidget: false,
+                hasOnlineBooking: false
+            },
+            painScore: 70,
+            painReasons: [
+                "Small team of 2 managing 26 listings",
+                "No after-hours contact solution",
+                "No chat widget for instant inquiries",
+                "Competitive local market"
+            ],
+            notes: "Local boutique agency in Hawkesbury region"
+        };
+
+        // ROI Calculator
+        function calculateROI() {
+            const missedCalls = parseInt(document.getElementById('missedCalls').value) || 0;
+            const avgCommission = parseInt(document.getElementById('avgCommission').value) || 0;
+            const conversionRate = parseFloat(document.getElementById('conversionRate').value) || 0;
+
+            const weeksPerYear = 52;
+            const callsPerYear = missedCalls * weeksPerYear;
+            const salesPerYear = (callsPerYear * (conversionRate / 100));
+            const annualRevenue = salesPerYear * avgCommission;
+
+            // Hours saved scales with team size
+            const hoursSaved = Math.round(missedCalls * 0.5 * 4);
+
+            document.getElementById('callsCaptured').textContent = callsPerYear.toLocaleString();
+            document.getElementById('additionalSales').textContent = salesPerYear.toFixed(1);
+            document.getElementById('annualSavings').textContent = '$' + annualRevenue.toLocaleString();
+            document.getElementById('hoursSaved').textContent = hoursSaved + '+';
+        }
+
+        // Modal functions
+        function openCallModal() {
+            document.getElementById('callModal').classList.add('active');
+        }
+
+        function closeCallModal() {
+            document.getElementById('callModal').classList.remove('active');
+        }
+
+        // Register call and initiate demo
+        async function initiateCall() {
+            const button = document.querySelector('#callModal .btn-primary');
+            button.classList.add('loading');
+
+            try {
+                // Register call context with the API
+                const response = await fetch('/api/register-call', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        agencyId: agencyContext.id,
+                        agencyName: agencyContext.name,
+                        context: {
+                            source: 'demo-page',
+                            timestamp: new Date().toISOString(),
+                            agency: agencyContext,
+                            userAgent: navigator.userAgent,
+                            referrer: document.referrer
+                        }
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.phoneNumber) {
+                    // Redirect to phone call
+                    window.location.href = `tel:${data.phoneNumber}`;
+                } else {
+                    // Fallback to default demo number
+                    window.location.href = 'tel:1300868624';
+                }
+            } catch (error) {
+                console.error('Error registering call:', error);
+                // Fallback to default demo number on error
+                window.location.href = 'tel:1300868624';
+            } finally {
+                button.classList.remove('loading');
+                closeCallModal();
+            }
+        }
+
+        // Fetch and render recent calls
+        async function loadRecentCalls() {
+            const callsList = document.getElementById('callsList');
+
+            try {
+                const response = await fetch('/api/agency-calls?agency=vibe-property-australia');
+                const data = await response.json();
+
+                if (data.calls && data.calls.length > 0) {
+                    callsList.innerHTML = data.calls.map(call => `
+                        <a href="/call/${call.id}" class="call-card">
+                            <div class="call-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                </svg>
+                            </div>
+                            <div class="call-details">
+                                <div class="call-caller">${call.callerName || 'Unknown Caller'}</div>
+                                <div class="call-summary">${call.summary || 'No summary available'}</div>
+                            </div>
+                            <div class="call-arrow">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </div>
+                        </a>
+                    `).join('');
+                } else {
+                    // Show empty state
+                    callsList.innerHTML = `
+                        <div class="calls-empty">
+                            <div class="empty-icon">&#128222;</div>
+                            <h3>No demo calls yet</h3>
+                            <p>Be the first to experience Voqo AI for Vibe Property Australia!</p>
+                            <button class="btn-primary" onclick="openCallModal()">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                </svg>
+                                <span class="btn-text">Start Demo Call</span>
+                                <span class="spinner"></span>
+                            </button>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading calls:', error);
+                // Show empty state on error
+                callsList.innerHTML = `
+                    <div class="calls-empty">
+                        <div class="empty-icon">&#128222;</div>
+                        <h3>No demo calls yet</h3>
+                        <p>Be the first to experience Voqo AI for Vibe Property Australia!</p>
+                        <button class="btn-primary" onclick="openCallModal()">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                            </svg>
+                            <span class="btn-text">Start Demo Call</span>
+                            <span class="spinner"></span>
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // Close modal on overlay click
+        document.getElementById('callModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeCallModal();
+            }
+        });
+
+        // Close modal on escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeCallModal();
+            }
+        });
+
+        // Initialize
+        calculateROI();
+        loadRecentCalls();
+
+        // Track page view
+        console.log('Demo page loaded for:', agencyContext.name);
+    </script>
+</body>
+</html>

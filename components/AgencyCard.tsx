@@ -1,25 +1,8 @@
 'use client';
 
+import { AgencyProgress, DEFAULT_STEPS } from '@/lib/types';
+import StepList from './StepList';
 import MockPreview from './MockPreview';
-
-export interface AgencyProgress {
-  agencyId: string;
-  sessionId: string;
-  status: 'skeleton' | 'extracting' | 'generating' | 'complete' | 'error';
-  updatedAt: string;
-  name: string | null;
-  website: string | null;
-  logoUrl: string | null;
-  primaryColor: string | null;
-  secondaryColor: string | null;
-  phone: string | null;
-  teamSize: number | null;
-  listingCount: number | null;
-  painScore: number | null;
-  htmlProgress: number;
-  demoUrl: string | null;
-  error?: string;
-}
 
 interface AgencyCardProps {
   data: AgencyProgress;
@@ -34,42 +17,25 @@ export default function AgencyCard({ data, isRemoving }: AgencyCardProps) {
     return 'bg-green-500/20 text-green-400';
   };
 
-  const getStatusBadge = () => {
-    switch (data.status) {
-      case 'skeleton':
-        return (
-          <span className="px-2 py-0.5 text-xs bg-slate-600 text-slate-300 rounded-full animate-pulse">
-            Queued
-          </span>
-        );
-      case 'extracting':
-        return (
-          <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-400 rounded-full">
-            Extracting...
-          </span>
-        );
-      case 'generating':
-        return (
-          <span className="px-2 py-0.5 text-xs bg-amber-500/20 text-amber-400 rounded-full">
-            Generating...
-          </span>
-        );
-      case 'complete':
-        return (
-          <span className="px-2 py-0.5 text-xs bg-green-500/20 text-green-400 rounded-full">
-            Ready
-          </span>
-        );
-      case 'error':
-        return (
-          <span className="px-2 py-0.5 text-xs bg-red-500/20 text-red-400 rounded-full">
-            Failed
-          </span>
-        );
-    }
+  const borderColor = data.primaryColor || '#475569'; // slate-600 fallback
+  const steps = data.steps && data.steps.length > 0 ? data.steps : DEFAULT_STEPS;
+
+  // Format price for display
+  const formatPrice = (price: string | null) => {
+    if (!price) return null;
+    // If already formatted, return as-is
+    if (price.startsWith('$')) return price;
+    // Otherwise format
+    const num = parseFloat(price);
+    if (isNaN(num)) return price;
+    if (num >= 1000000) return `$${(num / 1000000).toFixed(1)}M`;
+    if (num >= 1000) return `$${(num / 1000).toFixed(0)}K`;
+    return `$${num}`;
   };
 
-  const borderColor = data.primaryColor || '#475569'; // slate-600 fallback
+  const priceMin = formatPrice(data.priceRangeMin);
+  const priceMax = formatPrice(data.priceRangeMax);
+  const priceRange = priceMin && priceMax ? `${priceMin} - ${priceMax}` : null;
 
   return (
     <div
@@ -123,10 +89,48 @@ export default function AgencyCard({ data, isRemoving }: AgencyCardProps) {
               )}
             </div>
           </div>
-
-          {/* Status Badge */}
-          {getStatusBadge()}
         </div>
+
+        {/* Enhanced Metrics Row */}
+        {(data.status === 'extracting' || data.status === 'generating' || data.status === 'complete') && (
+          <div className="mt-3 space-y-1.5">
+            {/* Price Range */}
+            {priceRange && (
+              <div className="flex items-center gap-2 text-sm animate-fadeIn">
+                <span className="text-amber-400">$</span>
+                <span className="text-slate-300">{priceRange}</span>
+              </div>
+            )}
+
+            {/* Listing Stats */}
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              {data.listingCount !== null && (
+                <span className="text-slate-400">
+                  {data.listingCount} for sale
+                </span>
+              )}
+              {data.soldCount !== null && data.soldCount > 0 && (
+                <>
+                  <span className="text-slate-600">•</span>
+                  <span className="text-slate-400">{data.soldCount} sold</span>
+                </>
+              )}
+              {data.forRentCount !== null && data.forRentCount > 0 && (
+                <>
+                  <span className="text-slate-600">•</span>
+                  <span className="text-slate-400">{data.forRentCount} rentals</span>
+                </>
+              )}
+            </div>
+
+            {/* Team Size */}
+            {data.teamSize !== null && (
+              <div className="text-xs text-slate-400">
+                {data.teamSize} agents
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Content */}
@@ -134,73 +138,23 @@ export default function AgencyCard({ data, isRemoving }: AgencyCardProps) {
         {/* Skeleton state */}
         {data.status === 'skeleton' && (
           <div className="space-y-3">
-            <div className="h-4 bg-slate-700 rounded w-3/4 animate-pulse" />
-            <div className="h-4 bg-slate-700 rounded w-1/2 animate-pulse" />
-            <div className="h-8 bg-slate-700 rounded w-full animate-pulse mt-4" />
+            <StepList steps={steps} />
           </div>
         )}
 
         {/* Extracting state */}
         {data.status === 'extracting' && (
           <div className="space-y-3">
-            {/* Progressive data reveal */}
-            {data.phone && (
-              <div className="flex items-center gap-2 text-sm animate-fadeIn">
-                <span className="text-slate-500">Phone:</span>
-                <span className="text-slate-300">{data.phone}</span>
-              </div>
-            )}
-            {data.teamSize !== null && (
-              <div className="flex items-center gap-2 text-sm animate-fadeIn">
-                <span className="text-slate-500">Team:</span>
-                <span className="text-slate-300">{data.teamSize} agents</span>
-              </div>
-            )}
-            {data.listingCount !== null && (
-              <div className="flex items-center gap-2 text-sm animate-fadeIn">
-                <span className="text-slate-500">Listings:</span>
-                <span className="text-slate-300">{data.listingCount}</span>
-              </div>
-            )}
-
-            {/* Loading indicator */}
-            <div className="flex items-center gap-2 text-sm text-blue-400 mt-3">
-              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                />
-              </svg>
-              <span>Extracting details...</span>
-            </div>
+            <StepList steps={steps} />
           </div>
         )}
 
         {/* Generating state */}
         {data.status === 'generating' && (
           <div className="space-y-3">
-            {/* Metrics row */}
-            <div className="flex flex-wrap gap-2">
-              {data.listingCount !== null && (
-                <span className="px-2 py-1 bg-slate-700 rounded text-xs text-slate-300">
-                  {data.listingCount} listings
-                </span>
-              )}
-              {data.teamSize !== null && (
-                <span className="px-2 py-1 bg-slate-700 rounded text-xs text-slate-300">
-                  {data.teamSize} agents
-                </span>
-              )}
-              {data.painScore !== null && (
+            {/* Pain Score badge */}
+            {data.painScore !== null && (
+              <div className="flex justify-end">
                 <span
                   className={`px-2 py-1 rounded text-xs font-medium ${getPainScoreColor(
                     data.painScore
@@ -208,47 +162,26 @@ export default function AgencyCard({ data, isRemoving }: AgencyCardProps) {
                 >
                   Pain: {data.painScore}
                 </span>
-              )}
-            </div>
+              </div>
+            )}
+
+            {/* Steps */}
+            <StepList steps={steps} />
 
             {/* Mock Preview */}
             <MockPreview
               primaryColor={data.primaryColor}
               progress={data.htmlProgress}
             />
-
-            {/* Progress bar */}
-            <div className="mt-2">
-              <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-                <span>Generating page...</span>
-                <span>{data.htmlProgress}%</span>
-              </div>
-              <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-blue-500 to-blue-400 transition-all duration-500"
-                  style={{ width: `${data.htmlProgress}%` }}
-                />
-              </div>
-            </div>
           </div>
         )}
 
         {/* Complete state */}
         {data.status === 'complete' && (
           <div className="space-y-3">
-            {/* Metrics row */}
-            <div className="flex flex-wrap gap-2">
-              {data.listingCount !== null && (
-                <span className="px-2 py-1 bg-slate-700 rounded text-xs text-slate-300">
-                  {data.listingCount} listings
-                </span>
-              )}
-              {data.teamSize !== null && (
-                <span className="px-2 py-1 bg-slate-700 rounded text-xs text-slate-300">
-                  {data.teamSize} agents
-                </span>
-              )}
-              {data.painScore !== null && (
+            {/* Pain Score badge */}
+            {data.painScore !== null && (
+              <div className="flex justify-end">
                 <span
                   className={`px-2 py-1 rounded text-xs font-medium ${getPainScoreColor(
                     data.painScore
@@ -256,14 +189,17 @@ export default function AgencyCard({ data, isRemoving }: AgencyCardProps) {
                 >
                   Pain: {data.painScore}
                 </span>
-              )}
-            </div>
+              </div>
+            )}
+
+            {/* Steps */}
+            <StepList steps={steps} />
 
             {/* View Demo button */}
             {data.demoUrl && (
               <a
                 href={data.demoUrl}
-                className="block w-full py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-medium rounded-lg text-center transition-all"
+                className="block w-full py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-medium rounded-lg text-center transition-all mt-3"
               >
                 View Demo
               </a>
@@ -273,11 +209,15 @@ export default function AgencyCard({ data, isRemoving }: AgencyCardProps) {
 
         {/* Error state */}
         {data.status === 'error' && (
-          <div className="text-center py-2">
-            <p className="text-red-400 text-sm">{data.error || 'Failed to process'}</p>
+          <div className="space-y-3">
+            <StepList steps={steps} />
+            <p className="text-red-400 text-sm text-center">{data.error || 'Failed to process'}</p>
           </div>
         )}
       </div>
     </div>
   );
 }
+
+// Re-export the type for backwards compatibility
+export type { AgencyProgress };

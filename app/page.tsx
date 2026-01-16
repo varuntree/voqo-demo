@@ -2,7 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import TodoPanel from '@/components/TodoPanel';
-import AgencyCard, { AgencyProgress } from '@/components/AgencyCard';
+import AgencyCard from '@/components/AgencyCard';
+import TabNavigation from '@/components/TabNavigation';
+import HistoryList from '@/components/HistoryList';
+import { AgencyProgress, SearchSession, DEFAULT_STEPS } from '@/lib/types';
 
 interface Todo {
   id: string;
@@ -13,6 +16,10 @@ interface Todo {
 type PipelineStatus = 'idle' | 'searching' | 'processing' | 'complete' | 'error';
 
 export default function Home() {
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'search' | 'history'>('search');
+
+  // Search state
   const [suburb, setSuburb] = useState('');
   const [agencyCount, setAgencyCount] = useState(10);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -26,6 +33,30 @@ export default function Home() {
     success: number;
     failed: number;
   } | null>(null);
+
+  // History state
+  const [history, setHistory] = useState<SearchSession[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  // Load history when tab changes to history
+  useEffect(() => {
+    if (activeTab === 'history') {
+      loadHistory();
+    }
+  }, [activeTab]);
+
+  const loadHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const res = await fetch('/api/history');
+      const data = await res.json();
+      setHistory(data.sessions || []);
+    } catch (err) {
+      console.error('Failed to load history:', err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
 
   // SSE connection
   useEffect(() => {
@@ -50,7 +81,12 @@ export default function Home() {
           case 'card_update':
             setCards((prev) => {
               const next = new Map(prev);
-              next.set(data.agencyId, data.data);
+              // Ensure steps exist with defaults if not provided
+              const cardData: AgencyProgress = {
+                ...data.data,
+                steps: data.data.steps || DEFAULT_STEPS,
+              };
+              next.set(data.agencyId, cardData);
               return next;
             });
             break;
@@ -92,7 +128,6 @@ export default function Home() {
 
     eventSource.onerror = () => {
       console.error('SSE connection error');
-      // Don't set error immediately - might be temporary
     };
 
     return () => {
@@ -111,6 +146,7 @@ export default function Home() {
       setTodos([]);
       setCompletionStats(null);
       setPipelineStatus('searching');
+      setActiveTab('search');
 
       try {
         const res = await fetch('/api/pipeline/start', {
@@ -143,6 +179,32 @@ export default function Home() {
     setError('');
   };
 
+  const handleAgencyClick = (agencyId: string, demoUrl: string | null) => {
+    if (demoUrl) {
+      window.location.href = demoUrl;
+    }
+  };
+
+  const handleRename = async (sessionIdToRename: string, newName: string) => {
+    try {
+      const res = await fetch(`/api/history/${sessionIdToRename}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName }),
+      });
+
+      if (res.ok) {
+        setHistory((prev) =>
+          prev.map((s) =>
+            s.sessionId === sessionIdToRename ? { ...s, name: newName } : s
+          )
+        );
+      }
+    } catch (err) {
+      console.error('Failed to rename session:', err);
+    }
+  };
+
   const isSearching = pipelineStatus === 'searching' || pipelineStatus === 'processing';
   const cardsArray = Array.from(cards.values()).sort((a, b) => {
     // Sort by status: complete first, then generating, extracting, skeleton
@@ -155,11 +217,14 @@ export default function Home() {
       {/* Header */}
       <header className="border-b border-slate-700 bg-slate-900/50 backdrop-blur sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl font-bold text-white">Voqo</span>
-            <span className="text-slate-400 text-sm">Lead Engine</span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl font-bold text-white">Voqo</span>
+              <span className="text-slate-400 text-sm">Lead Engine</span>
+            </div>
+            <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
           </div>
-          {pipelineStatus !== 'idle' && (
+          {pipelineStatus !== 'idle' && activeTab === 'search' && (
             <button
               onClick={handleReset}
               className="text-sm text-slate-400 hover:text-white transition-colors"
@@ -170,142 +235,167 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Hero + Search */}
-      <section className="py-12 md:py-16">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Find Real Estate Agencies
-          </h1>
-          <p className="text-xl text-slate-300 mb-8">
-            Search any suburb to discover agencies and generate personalized demos
-          </p>
+      {/* Search Tab Content */}
+      {activeTab === 'search' && (
+        <>
+          {/* Hero + Search */}
+          <section className="py-12 md:py-16">
+            <div className="max-w-4xl mx-auto px-4 text-center">
+              <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+                Find Real Estate Agencies
+              </h1>
+              <p className="text-xl text-slate-300 mb-8">
+                Search any suburb to discover agencies and generate personalized demos
+              </p>
 
-          <form onSubmit={handleSearch} className="max-w-2xl mx-auto space-y-4">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <input
-                type="text"
-                value={suburb}
-                onChange={(e) => setSuburb(e.target.value)}
-                placeholder="Enter suburb (e.g. Surry Hills)"
-                disabled={isSearching}
-                className="flex-1 px-5 py-4 rounded-xl bg-white/10 border border-slate-600 text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
-              />
-              <button
-                type="submit"
-                disabled={isSearching || !suburb.trim()}
-                className="px-8 py-4 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors"
-              >
-                {isSearching ? 'Searching...' : 'Search'}
-              </button>
-            </div>
-
-            {/* Agency count slider */}
-            <div className="flex items-center gap-4 justify-center">
-              <label className="text-slate-400 text-sm">Agencies:</label>
-              <input
-                type="range"
-                min="1"
-                max="25"
-                value={agencyCount}
-                onChange={(e) => setAgencyCount(Number(e.target.value))}
-                disabled={isSearching}
-                className="w-32 accent-blue-500"
-              />
-              <span className="text-white font-medium w-8">{agencyCount}</span>
-            </div>
-          </form>
-
-          {error && <p className="mt-4 text-red-400">{error}</p>}
-        </div>
-      </section>
-
-      {/* Todo Panel */}
-      {todos.length > 0 && (
-        <section className="px-4 pb-6">
-          <div className="max-w-6xl mx-auto">
-            <TodoPanel todos={todos} pipelineStatus={pipelineStatus as 'searching' | 'processing' | 'complete' | 'error'} />
-          </div>
-        </section>
-      )}
-
-      {/* Completion Stats */}
-      {completionStats && pipelineStatus === 'complete' && (
-        <section className="px-4 pb-6">
-          <div className="max-w-6xl mx-auto">
-            <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <svg
-                  className="w-6 h-6 text-green-500"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M5 13l4 4L19 7"
+              <form onSubmit={handleSearch} className="max-w-2xl mx-auto space-y-4">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <input
+                    type="text"
+                    value={suburb}
+                    onChange={(e) => setSuburb(e.target.value)}
+                    placeholder="Enter suburb (e.g. Surry Hills)"
+                    disabled={isSearching}
+                    className="flex-1 px-5 py-4 rounded-xl bg-white/10 border border-slate-600 text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
                   />
-                </svg>
-                <span className="text-green-400 font-medium">
-                  Pipeline complete! {completionStats.success} of {completionStats.total} agencies
-                  processed successfully.
-                </span>
+                  <button
+                    type="submit"
+                    disabled={isSearching || !suburb.trim()}
+                    className="px-8 py-4 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors"
+                  >
+                    {isSearching ? 'Searching...' : 'Search'}
+                  </button>
+                </div>
+
+                {/* Agency count slider */}
+                <div className="flex items-center gap-4 justify-center">
+                  <label className="text-slate-400 text-sm">Agencies:</label>
+                  <input
+                    type="range"
+                    min="1"
+                    max="25"
+                    value={agencyCount}
+                    onChange={(e) => setAgencyCount(Number(e.target.value))}
+                    disabled={isSearching}
+                    className="w-32 accent-blue-500"
+                  />
+                  <span className="text-white font-medium w-8">{agencyCount}</span>
+                </div>
+              </form>
+
+              {error && <p className="mt-4 text-red-400">{error}</p>}
+            </div>
+          </section>
+
+          {/* Todo Panel */}
+          {todos.length > 0 && (
+            <section className="px-4 pb-6">
+              <div className="max-w-6xl mx-auto">
+                <TodoPanel
+                  todos={todos}
+                  pipelineStatus={
+                    pipelineStatus as 'searching' | 'processing' | 'complete' | 'error'
+                  }
+                />
               </div>
-              {completionStats.failed > 0 && (
-                <span className="text-amber-400 text-sm">
-                  {completionStats.failed} failed
-                </span>
-              )}
-            </div>
-          </div>
-        </section>
+            </section>
+          )}
+
+          {/* Completion Stats */}
+          {completionStats && pipelineStatus === 'complete' && (
+            <section className="px-4 pb-6">
+              <div className="max-w-6xl mx-auto">
+                <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <svg
+                      className="w-6 h-6 text-green-500"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                    <span className="text-green-400 font-medium">
+                      Pipeline complete! {completionStats.success} of {completionStats.total}{' '}
+                      agencies processed successfully.
+                    </span>
+                  </div>
+                  {completionStats.failed > 0 && (
+                    <span className="text-amber-400 text-sm">
+                      {completionStats.failed} failed
+                    </span>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Agency Cards Grid */}
+          {cardsArray.length > 0 && (
+            <section className="px-4 pb-16">
+              <div className="max-w-6xl mx-auto">
+                <h2 className="text-xl font-semibold text-white mb-4">
+                  {isSearching ? 'Processing Agencies...' : `Found ${cardsArray.length} Agencies`}
+                </h2>
+
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {cardsArray.map((card) => (
+                    <AgencyCard
+                      key={card.agencyId}
+                      data={card}
+                      isRemoving={removingCards.has(card.agencyId)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Empty state during search */}
+          {isSearching && cardsArray.length === 0 && (
+            <section className="px-4 py-12">
+              <div className="max-w-6xl mx-auto text-center">
+                <div className="inline-flex items-center gap-3 px-6 py-3 bg-slate-800 rounded-full">
+                  <svg className="animate-spin h-5 w-5 text-blue-500" viewBox="0 0 24 24">
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    />
+                  </svg>
+                  <span className="text-slate-300">Searching for agencies in {suburb}...</span>
+                </div>
+              </div>
+            </section>
+          )}
+        </>
       )}
 
-      {/* Agency Cards Grid */}
-      {cardsArray.length > 0 && (
-        <section className="px-4 pb-16">
+      {/* History Tab Content */}
+      {activeTab === 'history' && (
+        <section className="py-8 px-4">
           <div className="max-w-6xl mx-auto">
-            <h2 className="text-xl font-semibold text-white mb-4">
-              {isSearching ? 'Processing Agencies...' : `Found ${cardsArray.length} Agencies`}
-            </h2>
-
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {cardsArray.map((card) => (
-                <AgencyCard
-                  key={card.agencyId}
-                  data={card}
-                  isRemoving={removingCards.has(card.agencyId)}
-                />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Empty state during search */}
-      {isSearching && cardsArray.length === 0 && (
-        <section className="px-4 py-12">
-          <div className="max-w-6xl mx-auto text-center">
-            <div className="inline-flex items-center gap-3 px-6 py-3 bg-slate-800 rounded-full">
-              <svg className="animate-spin h-5 w-5 text-blue-500" viewBox="0 0 24 24">
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                  fill="none"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                />
-              </svg>
-              <span className="text-slate-300">Searching for agencies in {suburb}...</span>
-            </div>
+            <h1 className="text-2xl font-bold text-white mb-6">Search History</h1>
+            <HistoryList
+              sessions={history}
+              onAgencyClick={handleAgencyClick}
+              onRename={handleRename}
+              loading={historyLoading}
+            />
           </div>
         </section>
       )}

@@ -1,0 +1,69 @@
+{
+  "id": "ray-white-north-richmond",
+  "name": "Ray White North Richmond",
+  "website": "https://raywhitenorthrichmond.com.au/",
+  "phone": "+61 (2) 4571 3000",
+  "fax": "+61 (2) 4571 3700",
+  "email": "northrichmond.nsw@raywhite.com",
+  "address": "Shop 1&2, 57 Bells Line of Road, North Richmond NSW 2754",
+  "branding": {
+    "logoUrl": "https://cdn6.ep.dynamics.net/s3/rw-media/residential-offices/wp-content/blogs.dir/sites/1324/2025/08/05113820/DSC_5289-Enhanced-NR-scaled.jpg",
+    "primaryColor": "#ffe512",
+    "secondaryColor": "#595959"
+  },
+  "metrics": {
+    "teamSize": 8,
+    "listingCount": 32,
+    "forSale": 26,
+    "forRent": 6,
+    "soldHistorical": 1207,
+    "hasPropertyManagement": true,
+    "hasAfterHoursNumber": false,
+    "hasChatWidget": false,
+    "hasOnlineBooking": true,
+    "principalName": "Cindy Cash"
+  },
+  "team": {
+    "salesDirector": {
+      "name": "Cindy Cash",
+      "title": "Sales Director / Principal",
+      "achievements": [
+        "Chairman's Elite Agent (Top 1% Ray White Group)",
+        "#1 Agent in Ray White NSW for sales",
+        "#3 Salesperson in Ray White Group internationally",
+        "20 years experience in local market",
+        "Over 750 homes sold"
+      ]
+    },
+    "propertyManagementDirector": {
+      "name": "Di Tutty",
+      "title": "Director of Property Management",
+      "achievements": [
+        "Over 30 years experience in Real Estate",
+        "Diploma of Agriculture",
+        "Real Agent's Licensing Certificate",
+        "Stock and Station Agents Licensing Certificate",
+        "Advanced Residential Tenancy Certificate"
+      ]
+    }
+  },
+  "region": {
+    "area": "Hawkesbury",
+    "type": "Semi-rural",
+    "specialization": ["Acreage", "Residential", "Rural", "Lifestyle Properties"],
+    "suburb": "North Richmond",
+    "state": "NSW",
+    "postcode": "2754"
+  },
+  "painScore": 70,
+  "painReasons": [
+    "32 active listings generating high call volume",
+    "No after-hours contact solution",
+    "Boutique team managing sales and PM needs automation",
+    "Acreage specialization requires expert call handling",
+    "No chat widget for instant inquiries"
+  ],
+  "notes": "Boutique agency ranked #1 in Hawkesbury region for acreage and residential property sales via realestate.com.au. Part of largest real estate group in Australasia.",
+  "extractedAt": "2026-01-17T10:35:00.000Z",
+  "demoUrl": "/demo/ray-white-north-richmond.html"
+}

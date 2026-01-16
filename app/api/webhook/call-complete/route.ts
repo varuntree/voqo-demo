@@ -63,13 +63,15 @@ interface CallCompleteWebhook {
   data: {
     agent_id: string;
     conversation_id: string;
-    status: 'completed' | 'failed' | 'dropped';
+    status: string;
+    user_id?: string | null;
+    caller_id?: string | null;
     transcript: TranscriptEntry[];
-    metadata: {
-      call_duration_secs: number;
-      cost: number;
-      from_number: string;
-      to_number: string;
+    metadata?: {
+      call_duration_secs?: number;
+      cost?: number;
+      from_number?: string;
+      to_number?: string;
     };
     analysis: {
       transcript_summary: string;
@@ -87,8 +89,13 @@ interface CallCompleteWebhook {
       dynamic_variables: {
         agency_name: string;
         agency_location: string;
+        agency_phone?: string;
         context_id?: string;
         demo_page_url?: string;
+        system__caller_id?: string;
+        system__called_number?: string;
+        system__call_sid?: string;
+        system__call_duration_secs?: number;
       };
     };
   };
@@ -154,9 +161,20 @@ export async function POST(request: NextRequest) {
     }
 
     const { data } = body;
-    const callerId = data.metadata.from_number;
-    const callSid = data.conversation_id;
     const dynamicVars = data.conversation_initiation_client_data?.dynamic_variables;
+    const callerId =
+      data.metadata?.from_number ||
+      data.user_id ||
+      data.caller_id ||
+      dynamicVars?.system__caller_id ||
+      null;
+    const calledNumber =
+      data.metadata?.to_number ||
+      dynamicVars?.system__called_number ||
+      null;
+    const callSid =
+      dynamicVars?.system__call_sid ||
+      data.conversation_id;
     const contextId = dynamicVars?.context_id;
 
     // Generate call ID
@@ -227,8 +245,9 @@ export async function POST(request: NextRequest) {
       contextId: matchedId || contextId || null,
       conversationId: data.conversation_id,
       timestamp: new Date().toISOString(),
-      duration: data.metadata.call_duration_secs,
-      callerPhone: callerId,
+      duration: data.metadata?.call_duration_secs || dynamicVars?.system__call_duration_secs || null,
+      callerPhone: callerId || null,
+      calledNumber: calledNumber || null,
       status: data.status,
 
       agencyId: agencyIdFromContext || agencyIdFromDemo || 'unknown',
@@ -267,7 +286,7 @@ export async function POST(request: NextRequest) {
       contexts[matchedId].callId = callId;
       contexts[matchedId].completedAt = Date.now();
       contexts[matchedId].callSid = contexts[matchedId].callSid || callSid;
-      contexts[matchedId].callerId = contexts[matchedId].callerId || callerId;
+      contexts[matchedId].callerId = contexts[matchedId].callerId || callerId || undefined;
       await writeFile(CONTEXT_FILE, JSON.stringify(contexts, null, 2));
     }
 

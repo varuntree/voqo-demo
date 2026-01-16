@@ -1,46 +1,13 @@
 import { NextRequest } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { PipelineState, AgencyProgress } from '@/lib/types';
+import { addToHistory, buildSessionFromPipeline } from '@/lib/history';
 
 const PROGRESS_DIR = path.join(process.cwd(), 'data', 'progress');
 const POLL_INTERVAL_MS = 500;
 const HEARTBEAT_INTERVAL_MS = 15000;
 const MAX_STALE_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
-
-interface PipelineState {
-  sessionId: string;
-  suburb: string;
-  requestedCount: number;
-  status: 'searching' | 'processing' | 'complete' | 'error';
-  startedAt: string;
-  completedAt: string | null;
-  todos: Array<{
-    id: string;
-    text: string;
-    status: 'pending' | 'in_progress' | 'complete';
-  }>;
-  agencyIds: string[];
-  error?: string;
-}
-
-interface AgencyProgress {
-  agencyId: string;
-  sessionId: string;
-  status: 'skeleton' | 'extracting' | 'generating' | 'complete' | 'error';
-  updatedAt: string;
-  name: string | null;
-  website: string | null;
-  logoUrl: string | null;
-  primaryColor: string | null;
-  secondaryColor: string | null;
-  phone: string | null;
-  teamSize: number | null;
-  listingCount: number | null;
-  painScore: number | null;
-  htmlProgress: number;
-  demoUrl: string | null;
-  error?: string;
-}
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -56,6 +23,7 @@ export async function GET(request: NextRequest) {
       const lastSeen = new Map<string, string>();
       let isComplete = false;
       let heartbeatTimer: NodeJS.Timeout;
+      let historySaved = false;
 
       // Send heartbeat to keep connection alive
       const sendHeartbeat = () => {
@@ -92,6 +60,20 @@ export async function GET(request: NextRequest) {
           }
         } catch {
           // Ignore cleanup errors
+        }
+      };
+
+      // Save to history when pipeline completes
+      const saveToHistory = async (pipelineData: PipelineState) => {
+        if (historySaved) return;
+        historySaved = true;
+
+        try {
+          const session = await buildSessionFromPipeline(pipelineData);
+          await addToHistory(session);
+          console.log(`[SSE] Saved session ${sessionId} to history`);
+        } catch (error) {
+          console.error('[SSE] Failed to save to history:', error);
         }
       };
 
@@ -221,6 +203,9 @@ export async function GET(request: NextRequest) {
                 failedCount++;
               }
             }
+
+            // Save to history before sending complete event
+            await saveToHistory(pipelineData);
 
             sendEvent({
               type: 'pipeline_complete',
