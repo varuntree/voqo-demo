@@ -18,6 +18,11 @@ export interface ClaudeCodeOptions {
 
 const PROGRESS_DIR = path.join(process.cwd(), 'data', 'progress');
 
+const logClaudeStderr = (data: string) => {
+  if (!data) return;
+  console.error('[Claude Code STDERR]', data.trim());
+};
+
 function buildClaudeEnv(): Record<string, string | undefined> {
   const env: Record<string, string | undefined> = { ...process.env };
   const homeDir = env.HOME;
@@ -279,6 +284,7 @@ export async function invokeClaudeCode(options: ClaudeCodeOptions): Promise<stri
         cwd: workingDir || process.cwd(),
         env: buildClaudeEnv(),
         settingSources: ['project'],
+        stderr: logClaudeStderr,
         hooks: activitySessionId ? buildActivityHooks(activitySessionId) : undefined,
       }
     })) {
@@ -331,6 +337,7 @@ export function invokeClaudeCodeAsync(options: ClaudeCodeOptions): void {
         cwd: workingDir || process.cwd(),
         env: buildClaudeEnv(),
         settingSources: ['project'],
+        stderr: logClaudeStderr,
         hooks: activitySessionId ? buildActivityHooks(activitySessionId) : undefined,
       }
     })) {
