@@ -362,6 +362,9 @@ export async function GET(request: NextRequest) {
       // Start heartbeat
       heartbeatTimer = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL_MS);
 
+      // Initial flush to open the stream
+      sendHeartbeat();
+
       // Start polling
       pollForChanges();
 
@@ -376,8 +379,9 @@ export async function GET(request: NextRequest) {
   return new Response(stream, {
     headers: {
       'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
+      'Cache-Control': 'no-cache, no-transform',
       'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no',
     },
   });
 }
