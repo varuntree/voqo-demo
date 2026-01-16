@@ -22,7 +22,13 @@ All Read/Write/Edit tool calls require absolute paths. Use ONLY the paths provid
 
 ## Required Outputs
 1. Update progressFilePath after every milestone.
-2. Append short activity messages to activityFilePath (read → append → write).
+2. Append short activity messages to activityFilePath (read → append → write) using this JSON shape:
+   {
+     "sessionId": "...",
+     "agencyId": "...",
+     "agencyName": "...",
+     "messages": [ ...ActivityMessage ]
+   }
 3. Write demo HTML to demoHtmlPath.
 4. Write full agency data JSON to agencyDataPath.
 

@@ -281,22 +281,45 @@ export async function GET(request: NextRequest) {
           for (const activityFile of agencyActivityFiles) {
             try {
               const content = await fs.readFile(activityFile, 'utf-8');
-              const activityData = JSON.parse(content) as {
-                sessionId?: string;
-                agencyId?: string;
-                agencyName?: string;
-                messages?: ActivityMessage[];
-              };
+              const parsed = JSON.parse(content) as unknown;
 
-              if (activityData.sessionId && activityData.sessionId !== sessionId) continue;
+              let activitySessionId: string | undefined;
+              let agencyId: string | undefined;
+              let agencyName: string | undefined;
+              let messages: ActivityMessage[] = [];
 
-              const label = activityData.agencyName
-                ? `Subagent: ${activityData.agencyName}`
-                : activityData.agencyId
-                  ? `Subagent: ${activityData.agencyId}`
-                  : 'Subagent';
+              if (Array.isArray(parsed)) {
+                messages = parsed as ActivityMessage[];
+              } else if (parsed && typeof parsed === 'object') {
+                const data = parsed as {
+                  sessionId?: string;
+                  agencyId?: string;
+                  agencyName?: string;
+                  messages?: ActivityMessage[];
+                };
+                activitySessionId = data.sessionId;
+                agencyId = data.agencyId;
+                agencyName = data.agencyName;
+                if (Array.isArray(data.messages)) {
+                  messages = data.messages;
+                }
+              }
 
-              const messages = Array.isArray(activityData.messages) ? activityData.messages : [];
+              if (activitySessionId && activitySessionId !== sessionId) continue;
+
+              const fallbackAgencyId = path
+                .basename(activityFile)
+                .replace(/^agency-activity-/, '')
+                .replace(/\.json$/, '');
+
+              const label = agencyName
+                ? `Subagent: ${agencyName}`
+                : agencyId
+                  ? `Subagent: ${agencyId}`
+                  : fallbackAgencyId
+                    ? `Subagent: ${fallbackAgencyId}`
+                    : 'Subagent';
+
               sendActivityMessages(activityFile, messages, foundCount, streamTarget, label);
             } catch {
               // Ignore activity file errors
