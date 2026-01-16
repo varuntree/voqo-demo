@@ -526,6 +526,28 @@
 
 ---
 
+## Phase 10: SMS Notification (Complete)
+
+**Goal:** Send SMS to caller with personalized page link after generation
+
+**Spec Reference:** `specs/10-sms-notification.md`
+
+### Steps
+
+- [x] 10.1 **Add normalizePhoneNumber() to lib/twilio.ts**
+- [x] 10.2 **Add sendPostcallSMS() function in lib/postcall-queue.ts**
+- [x] 10.3 **Integrate SMS into markCallCompleted()**
+- [x] 10.4 **Verify build succeeds**
+- [x] 10.5 **Git commit** (8c88df8)
+
+### Checkpoint 10
+- [x] SMS sent after successful page generation
+- [x] Message format: "{Agency} found properties for you: {url}"
+- [x] Error handling: log only, no retry
+- [x] Build passes
+
+---
+
 ## Quick Reference
 
 ### Key Files to Create

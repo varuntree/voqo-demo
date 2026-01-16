@@ -70,4 +70,6 @@
 **Actions:**
 - Commit SMS notification feature
 
-**Status**: [ ] Pending
+**Status**: [✓] Complete
+
+**Commit**: 8c88df8 - feat: SMS notification after postcall page generation
