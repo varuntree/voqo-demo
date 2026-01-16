@@ -145,7 +145,7 @@ Demo phone number comes from environment: NEXT_PUBLIC_DEMO_PHONE
 
 ## Output
 
-Save to: `/public/demo/[agency-id].html`
+Save to: `demoHtmlPath` (absolute path provided in the prompt)
 
 ## Quality Checklist
 

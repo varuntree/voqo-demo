@@ -3,7 +3,12 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { invokeClaudeCodeAsync } from '@/lib/claude';
 
-const PROGRESS_DIR = path.join(process.cwd(), 'data', 'progress');
+const PROJECT_ROOT = process.cwd();
+const PROGRESS_DIR = path.join(PROJECT_ROOT, 'data', 'progress');
+const AGENCIES_DIR = path.join(PROJECT_ROOT, 'data', 'agencies');
+const PUBLIC_DEMO_DIR = path.join(PROJECT_ROOT, 'public', 'demo');
+
+export const runtime = 'nodejs';
 
 function generateSessionId(): string {
   const timestamp = Date.now();
@@ -104,8 +109,10 @@ CRITICAL: You must write progress updates to files so the UI can display real-ti
 
 ## Session Info
 - Session ID: ${sessionId}
+- Project Root: ${PROJECT_ROOT}
 - Progress Directory: ${PROGRESS_DIR}
-- Working Directory: ${process.cwd()}
+- Agencies Directory: ${AGENCIES_DIR}
+- Public Demo Directory: ${PUBLIC_DEMO_DIR}
 
 ## Step 1: Pipeline Already Initialized
 The pipeline file has been created at ${PROGRESS_DIR}/pipeline-${sessionId}.json
@@ -152,11 +159,22 @@ For each agency found, write ${PROGRESS_DIR}/agency-{agencyId}.json with this fo
   "primaryColor": null,
   "secondaryColor": null,
   "phone": null,
+  "address": null,
   "teamSize": null,
   "listingCount": null,
+  "soldCount": null,
+  "priceRangeMin": null,
+  "priceRangeMax": null,
+  "forRentCount": null,
   "painScore": null,
   "htmlProgress": 0,
-  "demoUrl": null
+  "demoUrl": null,
+  "steps": [
+    { "id": "website", "label": "Found website", "status": "pending" },
+    { "id": "details", "label": "Extracted details", "status": "pending" },
+    { "id": "generating", "label": "Generating demo page", "status": "pending" },
+    { "id": "complete", "label": "Ready", "status": "pending" }
+  ]
 }
 
 ## Step 4: Spawn Subagents
@@ -167,7 +185,7 @@ IMPORTANT: Spawn all subagents in a SINGLE message with multiple Task tool calls
 For each agency, use:
 - subagent_type: "agency-processor"
 - description: "Process agency {name}"
-- prompt: Process agency {agencyId}. Session: ${sessionId}. Website: {url}. Name: {name}.
+- prompt: include agency details AND absolute paths for file operations.
 
 Use the agency-processor skill to:
 1. Extract agency details (logo, colors, phone, metrics)
@@ -180,8 +198,12 @@ The subagent prompt should be:
 "Process the agency {name} (ID: {agencyId}).
 Session ID: ${sessionId}
 Website: {website}
+progressFilePath: ${PROGRESS_DIR}/agency-{agencyId}.json
+activityFilePath: ${PROGRESS_DIR}/agency-activity-{agencyId}.json
+demoHtmlPath: ${PUBLIC_DEMO_DIR}/{agencyId}.html
+agencyDataPath: ${AGENCIES_DIR}/{agencyId}.json
 
-Use the agency-processor skill. Follow these steps:
+Use the agency-processor subagent instructions. Follow these steps:
 
 1. Update progress file to status='extracting'
 2. WebFetch the website to extract logo, colors, phone
@@ -189,13 +211,13 @@ Use the agency-processor skill. Follow these steps:
 4. WebSearch for team size and listing count if not found
 5. Calculate pain score
 6. Update progress to status='generating', htmlProgress=10
-7. Generate demo HTML page and save to /public/demo/{agencyId}.html
-8. Save agency data to /data/agencies/{agencyId}.json
+7. Generate demo HTML page and save to the absolute Demo HTML path above
+8. Save agency data to the absolute Agency data path above
 9. Update progress to status='complete', htmlProgress=100, demoUrl='/demo/{agencyId}'
 
 Progress file path: ${PROGRESS_DIR}/agency-{agencyId}.json
 
-CRITICAL: Update the progress file after EACH step so the UI shows real-time updates."
+CRITICAL: Use ONLY the absolute paths listed above for Read/Write/Edit. Update the progress file after EACH step so the UI shows real-time updates."
 
 ## Step 5: Wait and Complete
 After all subagents complete:

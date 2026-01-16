@@ -84,7 +84,7 @@ Create specific pain points list:
 
 ### Step 5: Output Format
 
-Save to `/data/agencies/[suburb-slug].json`:
+Save to the absolute output path provided in the prompt (suburb results JSON):
 
 ```json
 {
@@ -123,7 +123,7 @@ Save to `/data/agencies/[suburb-slug].json`:
 }
 ```
 
-Also save individual files: `/data/agencies/[agency-id].json`
+Also save individual files to absolute paths under the project’s `data/agencies/` directory.
 
 ## Quality Guidelines
 

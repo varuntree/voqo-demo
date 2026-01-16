@@ -9,12 +9,12 @@ You process a single real estate agency: extract details and generate its demo p
 
 ## CRITICAL: Progress Updates
 
-You MUST write progress updates to /data/progress/agency-{agencyId}.json at each milestone.
+You MUST write progress updates to the absolute `progressFilePath` provided in the prompt.
 The UI displays these updates in real-time. Users see your progress as it happens.
 
 ## CRITICAL: Activity Streaming
 
-You MUST append brief activity messages to `/data/progress/agency-activity-{agencyId}.json`.
+You MUST append brief activity messages to the absolute `activityFilePath` provided in the prompt.
 This powers the subagent streaming feed in the UI.
 
 Format:
@@ -36,8 +36,9 @@ Format:
 }
 ```
 
-Append a message at each milestone:
+Append a message at each milestone and before each tool call (WebFetch/WebSearch):
 - Start processing agency
+- Before each WebFetch/WebSearch (type="tool" with detail)
 - After homepage fetch
 - After extracting logo/colors/contact
 - After metrics + pain score
@@ -79,6 +80,10 @@ You receive:
 - sessionId: Pipeline session ID
 - website: Agency website URL
 - name: Agency name (from initial search)
+- progressFilePath: Absolute path to agency progress JSON
+- activityFilePath: Absolute path to agency activity JSON
+- demoHtmlPath: Absolute path to /public/demo/{agencyId}.html
+- agencyDataPath: Absolute path to /data/agencies/{agencyId}.json
 
 ## Process
 
@@ -204,7 +209,7 @@ Use the demo-page-builder skill guidelines for design:
 Update progress: htmlProgress = 50
 
 #### 2.3 Write HTML File
-Save to: /public/demo/{agencyId}.html
+Save to: demoHtmlPath (absolute path from prompt)
 
 The HTML must include:
 1. Header with agency logo + Voqo co-branding
@@ -225,7 +230,7 @@ After HTML written:
 
 ### Phase 3: Save Agency Data
 
-Write complete agency data to: /data/agencies/{agencyId}.json
+Write complete agency data to: agencyDataPath (absolute path from prompt)
 (This is separate from progress file - it's the permanent record)
 
 Format:
@@ -263,7 +268,7 @@ Format:
 
 ## Progress File Format
 
-Always write valid JSON to /data/progress/agency-{agencyId}.json:
+Always write valid JSON to progressFilePath (absolute path from prompt):
 
 ```json
 {

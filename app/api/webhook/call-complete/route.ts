@@ -327,6 +327,9 @@ function buildPostcallPrompt(callId: string, callData: {
   agencyId: string;
   agencyData: unknown;
 }) {
+  const postcallHtmlPath = path.join(process.cwd(), 'public', 'call', `${callId}.html`);
+  const callDataPath = path.join(process.cwd(), 'data', 'calls', `${callId}.json`);
+
   // NOTE: We pass only the transcript - Claude Code extracts ALL data
   return `
 Use the postcall-page-builder skill to generate a personalized page for this completed call.
@@ -341,12 +344,16 @@ Agency Context:
 - Agency ID: ${callData.agencyId}
 ${callData.agencyData ? JSON.stringify(callData.agencyData, null, 2) : ''}
 
+Absolute Paths:
+- postcallHtmlPath: ${postcallHtmlPath}
+- callDataPath: ${callDataPath}
+
 Instructions:
 1. EXTRACT from transcript: caller name, intent (buy/sell/rent), location, budget, property type, bedrooms, special requirements
 2. Search for matching property listings based on extracted requirements
 3. Generate a personalized HTML page using the postcall-page-builder skill
-4. Save the HTML to: public/call/${callId}.html
-5. Update data/calls/${callId}.json (preserve existing fields) with:
+4. Save the HTML to postcallHtmlPath (absolute path above)
+5. Update callDataPath (preserve existing fields) with:
    - extractedData (all extracted fields)
    - callerName, intent, location, budget
    - pageStatus: "completed"

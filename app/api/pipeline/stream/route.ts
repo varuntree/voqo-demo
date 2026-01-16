@@ -9,6 +9,9 @@ const POLL_INTERVAL_MS = 500;
 const HEARTBEAT_INTERVAL_MS = 15000;
 const MAX_STALE_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const sessionId = searchParams.get('session');

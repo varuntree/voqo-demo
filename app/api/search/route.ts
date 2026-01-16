@@ -47,11 +47,13 @@ export async function POST(request: NextRequest) {
     const prompt = `
 Use the agency-researcher skill to find and analyze real estate agencies in "${suburb}".
 
+Absolute output path: ${cacheFile}
+
 Instructions:
 1. Search for real estate agencies in ${suburb}
 2. Visit each agency's website to extract details
 3. Calculate pain scores based on the criteria in the skill
-4. Save results to: data/agencies/${slug}.json
+4. Save results to: ${cacheFile}
 5. Return a JSON summary of the agencies found
 
 Output format:

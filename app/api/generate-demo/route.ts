@@ -69,6 +69,8 @@ Use the demo-page-builder skill to generate a branded demo landing page for this
 Agency Data:
 ${JSON.stringify(agencyData, null, 2)}
 
+Demo HTML Path (absolute): ${demoFile}
+
 Instructions:
 1. Generate a creative, branded HTML landing page
 2. Use the agency's colors and logo
@@ -78,7 +80,7 @@ Instructions:
 6. Add a "Recent Calls" section that fetches /api/agency-calls?agency=${agencyId}
    - Render call list with callerName (if present), summary, and link to pageUrl (/call/<id>)
    - If no calls, show a friendly empty state
-7. Save to: public/demo/${agencyId}.html
+7. Save to: ${demoFile}
 8. The page should call /api/register-call when user clicks Call Demo
 
 Make the page visually impressive - this is a sales demo.

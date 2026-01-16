@@ -145,9 +145,9 @@ If no exact matches:
 
 ## Output Files
 
-1. **HTML page:** `/public/call/[call-id].html`
+1. **HTML page:** `postcallHtmlPath` (absolute path provided in the prompt)
 
-2. **Update existing call JSON:** `/data/calls/[call-id].json`
+2. **Update existing call JSON:** `callDataPath` (absolute path provided in the prompt)
 
    The webhook handler creates this file with the raw transcript. You must UPDATE it with:
    - `extractedData` - all fields you extracted from transcript

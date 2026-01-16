@@ -107,6 +107,42 @@ function mapToolMessage(toolName: string, toolInput: unknown): ActivityMessage {
   return base;
 }
 
+function mapToolResult(toolName: string, toolResponse: unknown): ActivityMessage | null {
+  if (!toolResponse) return null;
+  const base: ActivityMessage = {
+    id: buildActivityId(),
+    type: 'results',
+    text: `Received ${toolName} results`,
+    source: 'Main agent',
+    timestamp: new Date().toISOString(),
+  };
+
+  if (toolName === 'WebSearch') {
+    let count: number | null = null;
+    if (Array.isArray(toolResponse)) {
+      count = toolResponse.length;
+    } else if (typeof toolResponse === 'object' && toolResponse !== null) {
+      const maybeResults = (toolResponse as { results?: unknown }).results;
+      if (Array.isArray(maybeResults)) {
+        count = maybeResults.length;
+      }
+    }
+    return {
+      ...base,
+      text: count !== null ? `Found ${count} search results` : 'Search completed',
+    };
+  }
+
+  if (toolName === 'WebFetch') {
+    return {
+      ...base,
+      type: 'fetch',
+      text: 'Fetched webpage content',
+    };
+  }
+
+  return null;
+}
 async function appendActivity(sessionId: string, message: ActivityMessage, status?: 'active' | 'complete') {
   try {
     const filePath = activityPath(sessionId);
@@ -203,6 +239,20 @@ function buildActivityHooks(sessionId: string): Partial<Record<HookEvent, HookCa
               source: 'Main agent',
               timestamp: new Date().toISOString(),
             });
+            return { continue: true };
+          }
+        ]
+      }
+    ],
+    PostToolUse: [
+      {
+        hooks: [
+          async (input: HookInput) => {
+            if (input.hook_event_name !== 'PostToolUse') return { continue: true };
+            const message = mapToolResult(input.tool_name, input.tool_response);
+            if (message) {
+              await appendActivity(sessionId, message);
+            }
             return { continue: true };
           }
         ]
