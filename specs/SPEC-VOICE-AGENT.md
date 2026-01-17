@@ -1,19 +1,13 @@
-# 05 - Voice Agent Configuration
+# Voice Agent Specification
 
-## Overview
-
-This document specifies the ElevenLabs Conversational AI agent configuration, including the system prompt, voice settings, and dynamic variable handling.
-
----
-
-## Agent Configuration Summary
+## Agent Configuration
 
 | Setting | Value |
 |---------|-------|
 | Agent Name | Voqo Real Estate Demo |
-| LLM | GPT-4o (recommended for speed) |
+| LLM | GPT-4o |
 | Voice | Australian female (natural, professional) |
-| Max Duration | 180 seconds (3 minutes) |
+| Max Duration | 180 seconds |
 | Turn Timeout | 10 seconds |
 | Temperature | 0.7 |
 
@@ -212,35 +206,31 @@ Hi! Thanks for calling {{agency_name}}. I'm their AI assistant - how can I help 
 
 ## Dynamic Variables
 
-These variables are injected per-call via the personalization webhook:
+Injected per-call via personalization webhook:
 
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `{{agency_name}}` | Full agency name | Ray White Surry Hills |
 | `{{agency_location}}` | Suburb/area | Surry Hills, Sydney |
-| `{{agency_phone}}` | Agency phone number | +61 2 9361 6000 |
-| `{{demo_page_url}}` | URL caller came from | /demo/ray-white-surry-hills |
+| `{{agency_phone}}` | Agency phone | +61 2 9361 6000 |
+| `{{demo_page_url}}` | Source page | /demo/ray-white-surry-hills |
+| `{{context_id}}` | Context tracking ID | ctx-1705312100-x7k9m |
 
 ---
 
 ## Voice Selection
 
-### Recommended Voice Characteristics:
-- **Accent**: Australian (natural, not exaggerated)
-- **Gender**: Female (statistically more trusted for service calls)
-- **Age**: Mid 20s to early 30s (professional but approachable)
-- **Tone**: Warm, professional, conversational
+**Requirements:**
+- Accent: Australian (natural, not exaggerated)
+- Gender: Female (statistically more trusted for service)
+- Age: Mid 20s to early 30s
+- Tone: Warm, professional, conversational
 
-### ElevenLabs Voice Library Search:
-1. Go to Voice Library
-2. Filter: Australian accent
-3. Filter: Female
-4. Listen to samples for natural conversational tone
-5. Avoid: overly bubbly, news-reader style, or robotic voices
-
-### Suggested Voices (if available):
-- Look for names like "Charlotte", "Emily", "Sophie" with Australian accent tag
-- Test with sample phrases before selecting
+**ElevenLabs Voice Library:**
+1. Filter: Australian accent
+2. Filter: Female
+3. Listen for natural conversational tone
+4. Avoid: overly bubbly, news-reader, or robotic
 
 ---
 
@@ -253,7 +243,7 @@ These variables are injected per-call via the personalization webhook:
       "first_message": "Hi! Thanks for calling {{agency_name}}. I'm their AI assistant - how can I help you today?",
       "language": "en",
       "prompt": {
-        "prompt": "[SYSTEM PROMPT ABOVE]",
+        "prompt": "[SYSTEM PROMPT]",
         "llm": "gpt-4o",
         "temperature": 0.7
       }
@@ -272,47 +262,27 @@ These variables are injected per-call via the personalization webhook:
 
 ---
 
-## Testing Checklist
-
-Before going live, test these scenarios:
-
-- [ ] Basic buyer enquiry (intent + location + budget + name)
-- [ ] Renter enquiry
-- [ ] Seller enquiry
-- [ ] Caller who gives all info upfront
-- [ ] Caller who is vague/uncertain
-- [ ] Caller who asks if it's AI
-- [ ] Caller who wants a human
-- [ ] Caller who asks about specific property
-- [ ] Call lasting exactly 2 minutes (check timeout handling)
-- [ ] Different agency contexts (verify variable injection)
-
----
-
 ## Webhook Requirements
-
-For the agent to work with our system:
 
 ### Personalization Webhook
 - Called BEFORE each call starts
+- URL: `https://{domain}/api/webhook/personalize`
 - Must return `dynamic_variables` with agency context
-- URL: `https://[domain]/api/webhook/personalize`
 
 ### Post-Call Webhook
 - Called AFTER each call ends
-- Receives transcript and extracted variables
-- URL: `https://[domain]/api/webhook/call-complete`
+- URL: `https://{domain}/api/webhook/call-complete`
 - Event type: `post_call_transcription`
+- Receives transcript and extracted variables
 
 ---
 
-## Monitoring & Iteration
+## Monitoring
 
-After launch, monitor:
-
-1. **Average call duration** - Should be 60-90 seconds
-2. **Completion rate** - Callers who provide all info
-3. **Extraction accuracy** - Are variables being captured correctly?
-4. **Caller feedback** - Any complaints or confusion?
+Track:
+- Average call duration: Target 60-90 seconds
+- Completion rate: Callers who provide all info
+- Extraction accuracy: Variables captured correctly
+- Caller feedback: Complaints or confusion
 
 Iterate on prompt based on actual call transcripts.

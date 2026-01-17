@@ -1,0 +1,575 @@
+# Data Schemas & API Specification
+
+## Directory Structure
+
+```
+/data
+├── agencies/                    # Agency data from research
+│   └── {suburb-slug}.json       # Suburb search results
+│
+├── calls/                       # Call transcripts and results
+│   └── call-{timestamp}-{rand}.json
+│
+├── context/                     # Temporary call context
+│   └── pending-calls.json
+│
+├── agency-calls/                # Call history indexed by agency
+│   └── {agency-id}.json
+│
+├── progress/                    # Real-time pipeline progress
+│   ├── pipeline-{sessionId}.json
+│   └── agency-{agencyId}.json
+│
+├── history/                     # Search session history
+│   └── sessions.json
+│
+├── jobs/postcall/               # Background job queue
+│   └── {callId}.json
+│
+└── errors/                      # Error tracking
+    └── postcall-errors.json
+```
+
+---
+
+## 1. Agency Profile
+
+**File:** `/data/agencies/{agency-id}.json`
+
+```typescript
+interface AgencyProfile {
+  id: string;                        // URL-safe slug
+  name: string;
+
+  // Contact
+  website: string;
+  phone: string;
+  email: string | null;
+  address: string;
+
+  // Branding
+  branding: {
+    logoUrl: string | null;
+    primaryColor: string;            // Hex
+    secondaryColor: string;
+    logoBackgroundColor?: string;
+  };
+
+  // Metrics
+  metrics: {
+    teamSize: number;
+    listingCount: number;
+    soldCount: number | null;
+    forRentCount: number | null;
+    priceRangeMin: string | null;    // "$600,000"
+    priceRangeMax: string | null;
+    hasPropertyManagement: boolean;
+    hasAfterHoursNumber: boolean;
+    hasChatWidget: boolean;
+    hasOnlineBooking: boolean;
+    principalName: string | null;
+  };
+
+  // Qualification
+  painScore: number;                 // 0-100
+  painReasons: string[];
+
+  // Metadata
+  researchedAt: string;
+  dataQuality: 'complete' | 'partial' | 'minimal';
+  notes: string | null;
+
+  // Demo Page
+  demoPage?: {
+    generated: boolean;
+    generatedAt: string | null;
+    url: string | null;
+  };
+}
+```
+
+---
+
+## 2. Call Data
+
+**File:** `/data/calls/{callId}.json`
+
+```typescript
+interface CallData {
+  callId: string;                    // "call-{timestamp}-{rand}"
+  contextId: string;                 // Links to pending context
+  conversationId: string;            // ElevenLabs conversation ID
+
+  timestamp: string;
+  duration: number;                  // seconds
+
+  callerPhone: string;
+  callerName: string | null;
+  status: 'completed' | 'failed' | 'dropped';
+
+  // Agency Context
+  agencyId: string;
+  agencyName: string;
+  agencyData: AgencyProfile | null;
+
+  // Extracted from transcript (by Claude Code)
+  extractedData: {
+    caller_name?: string;
+    caller_intent?: 'buy' | 'sell' | 'rent' | 'other';
+    preferred_location?: string;
+    budget_range?: string;
+    property_type?: string;
+    bedrooms?: string;
+    additional_notes?: string;
+  };
+
+  // Convenience fields
+  intent: string | null;
+  location: string | null;
+  budget: string | null;
+
+  // Transcript
+  transcript: string;
+  transcriptRaw: Array<{
+    role: 'agent' | 'user';
+    message: string;
+  }>;
+  summary: string;
+
+  // Post-Call Page
+  pageStatus: 'pending' | 'generating' | 'completed' | 'failed';
+  pageUrl: string | null;
+  generatedAt: string | null;
+
+  // Listings shown
+  listingsShown?: Array<{
+    address: string;
+    price: string;
+    url: string;
+  }>;
+}
+```
+
+---
+
+## 3. Pending Call Context
+
+**File:** `/data/context/pending-calls.json`
+
+```typescript
+interface PendingCallsContext {
+  [contextId: string]: {
+    agencyData: AgencyProfile;
+    registeredAt: number;            // Unix timestamp
+    expiresAt: number;               // registeredAt + 5min
+    status: 'pending' | 'active' | 'completed';
+
+    // Added when call starts
+    callerId?: string;
+    callSid?: string;
+    activatedAt?: number;
+
+    // Added when call completes
+    callId?: string;
+    completedAt?: number;
+  };
+}
+```
+
+---
+
+## 4. Agency Call History
+
+**File:** `/data/agency-calls/{agency-id}.json`
+
+```typescript
+interface AgencyCallEntry {
+  callId: string;
+  createdAt: string;
+  pageUrl: string | null;
+  callerName: string | null;
+  summary: string | null;
+  status: 'pending' | 'completed' | 'failed';
+}
+
+type AgencyCallsFile = AgencyCallEntry[];
+```
+
+---
+
+## 5. Post-Call Job Queue
+
+**File:** `/data/jobs/postcall/{callId}.json`
+
+```typescript
+interface PostcallJob {
+  callId: string;
+  prompt: string;
+  createdAt: string;
+  attempts: number;                  // Max 3
+}
+```
+
+**Job States:**
+- `.json` file exists: Pending
+- `.processing` file exists: In progress
+- File deleted: Completed
+
+**Worker Configuration:**
+- `MAX_ATTEMPTS`: 3
+- `PROCESSING_TIMEOUT_MS`: 90 seconds
+- `POLLING_INTERVAL_MS`: 5 seconds
+- `STALE_THRESHOLD_MS`: 10 minutes
+
+---
+
+## 6. Error Log
+
+**File:** `/data/errors/postcall-errors.json`
+
+```typescript
+interface ErrorEntry {
+  callId: string;
+  error: string;
+  attempts: number;
+  timestamp: string;
+}
+
+type ErrorLog = ErrorEntry[];
+```
+
+---
+
+## 7. Search History
+
+**File:** `/data/history/sessions.json`
+
+```typescript
+interface SearchSession {
+  sessionId: string;
+  name: string;                      // User-editable
+  suburb: string;
+  requestedCount: number;
+  actualCount: number;
+  successCount: number;
+  createdAt: string;
+  completedAt: string | null;
+  status: 'running' | 'complete' | 'partial' | 'failed';
+
+  agencies: Array<{
+    id: string;
+    name: string;
+    logoUrl: string | null;
+    demoUrl: string | null;
+  }>;
+}
+
+interface HistoryFile {
+  sessions: SearchSession[];         // Max 50, newest first
+}
+```
+
+---
+
+## API Endpoints
+
+### POST /api/pipeline/start
+
+Start agency search + generation pipeline.
+
+**Request:**
+```typescript
+{ suburb: string; count: number; }  // count: 1-25
+```
+
+**Response:**
+```typescript
+{ success: boolean; sessionId: string; }
+```
+
+---
+
+### GET /api/pipeline/stream
+
+SSE endpoint for real-time progress.
+
+**Query:** `?session={sessionId}`
+
+**Events:**
+```typescript
+// Todo update
+{ type: 'todo_update'; todos: Array<{id, text, status}>; }
+
+// Activity message (pre-card phase)
+{ type: 'activity_message'; message: ActivityMessage; found: number; target: number; }
+
+// Activity complete, show cards
+{ type: 'activity_complete'; sessionId: string; agencies: Array<{id, name, website}>; }
+
+// Card update
+{ type: 'card_update'; agencyId: string; data: AgencyProgress; }
+
+// Card removed (error)
+{ type: 'card_remove'; agencyId: string; reason: string; }
+
+// Pipeline complete
+{ type: 'pipeline_complete'; sessionId: string; totalAgencies: number; successCount: number; }
+```
+
+---
+
+### POST /api/register-call
+
+Store agency context before user dials.
+
+**Request:**
+```typescript
+{
+  agencyData: { id, name, location, phone, ... };
+  timestamp: number;
+}
+```
+
+**Response:**
+```typescript
+{ success: boolean; contextId: string; expiresAt: number; phoneNumber: string; }
+```
+
+---
+
+### GET /api/call-status
+
+Poll for generated page status.
+
+**Query:** `?agency={agencyId}`
+
+**Response:**
+```typescript
+{
+  hasRecentCall: boolean;
+  callId?: string;
+  status?: 'generating' | 'completed' | 'failed';
+  pageUrl?: string;
+  callerName?: string;
+  generatedAt?: string;
+}
+```
+
+---
+
+### GET /api/agency-calls
+
+Get call history for an agency.
+
+**Query:** `?agency={agencyId}`
+
+**Response:**
+```typescript
+{ agencyId: string; calls: AgencyCallEntry[]; }
+```
+
+---
+
+### GET /api/history
+
+Fetch search session history.
+
+**Response:**
+```typescript
+{ sessions: SearchSession[]; }
+```
+
+---
+
+### PATCH /api/history/{sessionId}
+
+Rename a session.
+
+**Request:**
+```typescript
+{ name: string; }
+```
+
+---
+
+## Webhook Endpoints
+
+### POST /api/webhook/personalize
+
+ElevenLabs calls before each conversation.
+
+**Request (from ElevenLabs):**
+```typescript
+{
+  caller_id: string;
+  agent_id: string;
+  called_number: string;
+  call_sid: string;
+}
+```
+
+**Response:**
+```typescript
+{
+  type: 'conversation_initiation_client_data';
+  dynamic_variables: {
+    agency_name: string;
+    agency_location: string;
+    agency_phone: string;
+    demo_page_url: string;
+    context_id: string;
+  };
+  conversation_config_override?: {
+    agent?: { first_message?: string; };
+  };
+}
+```
+
+**Context Matching (ordered):**
+1. Recently active contexts (5-min window for retries)
+2. Pending contexts sorted by registration time
+3. Fallback to default agency
+
+---
+
+### POST /api/webhook/call-complete
+
+ElevenLabs calls after conversation ends.
+
+**Request (from ElevenLabs):**
+```typescript
+{
+  type: 'post_call_transcription';
+  event_timestamp: number;
+  data: {
+    agent_id: string;
+    conversation_id: string;
+    status: 'completed' | 'failed' | 'dropped';
+    transcript: Array<{ role: 'agent' | 'user'; message: string; }>;
+    metadata: {
+      call_duration_secs: number;
+      from_number: string;
+      to_number: string;
+    };
+    analysis: {
+      transcript_summary: string;
+      call_successful: boolean;
+    };
+    conversation_initiation_client_data?: {
+      dynamic_variables: {
+        agency_name: string;
+        context_id: string;
+        demo_page_url: string;
+      };
+    };
+  };
+}
+```
+
+**Response:**
+```typescript
+{ success: boolean; callId: string; pageGenerationStarted: boolean; }
+```
+
+**Context Matching (ordered):**
+1. `context_id` from dynamic_variables
+2. `callSid` match
+3. `callerId` phone number match
+4. Recent pending context fallback
+
+---
+
+## SMS Notification
+
+Sent after successful post-call page generation.
+
+**Trigger:** HTML file verified + call JSON updated
+
+**Message Format:**
+```
+{agencyName} found properties for you: {pageUrl}
+```
+
+**Example:**
+```
+Ray White Surry Hills found properties for you: https://theagentic.engineer/call/call-1768493009666-fe33yd
+```
+
+**Implementation:**
+```typescript
+interface SendPostcallSMSParams {
+  callerPhone: string;
+  agencyName: string;
+  callId: string;
+}
+
+// Phone normalization handles: +61, 0, 61 prefixes → E.164
+function normalizePhoneNumber(phone: string): string;
+```
+
+**Error Handling:**
+- SMS failure: Log error, don't retry (page still accessible)
+- Invalid phone: Log warning, skip
+- Missing callerPhone: Skip silently
+
+---
+
+## Webhook Security
+
+**HMAC-SHA256 Verification:**
+```typescript
+function verifyElevenLabsSignature(
+  payload: string,
+  signature: string,
+  secret: string
+): boolean {
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(payload)
+    .digest('hex');
+  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+}
+
+// Header: elevenlabs-signature
+// If ELEVENLABS_WEBHOOK_SECRET missing: warn but allow (dev mode)
+// In production: require valid signature or return 401
+```
+
+---
+
+## File Naming Conventions
+
+| Type | Pattern | Example |
+|------|---------|---------|
+| Suburb search | `{suburb-slug}.json` | `surry-hills.json` |
+| Agency | `{agency-slug}.json` | `ray-white-surry-hills.json` |
+| Call | `call-{timestamp}-{random}.json` | `call-1705312200-abc123.json` |
+| Demo page | `{agency-slug}.html` | `ray-white-surry-hills.html` |
+| Post-call page | `{call-id}.html` | `call-1705312200-abc123.html` |
+| Pipeline progress | `pipeline-{sessionId}.json` | `pipeline-pipe-1705312200-x7k9m.json` |
+| Agency progress | `agency-{agencyId}.json` | `agency-ray-white-surry-hills.json` |
+
+**Slug Generation:**
+```typescript
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+```
+
+---
+
+## Data Lifecycle
+
+| Data Type | Created | Updated | Retention |
+|-----------|---------|---------|-----------|
+| Agency | Suburb search | Demo generation | Indefinite |
+| Call | Webhook | Page generation | 30 days |
+| Context | Register call | Call complete | 5 min TTL + cleanup |
+| Progress | Pipeline start | Real-time | 24 hours |
+| History | Pipeline complete | Rename | 50 sessions max |
+| Jobs | Enqueue | Processing | Deleted on success |
