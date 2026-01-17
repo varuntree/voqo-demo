@@ -92,6 +92,7 @@ rsync -avz --progress \
   --exclude='node_modules' \
   --exclude='.next' \
   --exclude='.git' \
+  --exclude='.env' \
   --exclude='.env.local' \
   --exclude='data' \
   --exclude='public/demo' \
