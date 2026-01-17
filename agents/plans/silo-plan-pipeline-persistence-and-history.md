@@ -33,5 +33,4 @@ Use **ephemeral progress files** in `data/progress/*` for live streaming + **dur
 **Status**: [✓] Complete
 
 ### Step 7: Commit + deploy to VPS
-**Status**: [ ] Pending
-
+**Status**: [✓] Complete
