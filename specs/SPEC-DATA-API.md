@@ -371,6 +371,7 @@ Notes:
 {
   agencyData: { id, name, location, phone, ... };
   timestamp: number;
+  sessionId?: string;               // Optional pipeline session attribution (validated)
   settings?: VoiceAgentSettings;     // Optional voice agent customization
 }
 ```
@@ -535,17 +536,23 @@ ElevenLabs calls before each conversation.
     agency_phone: string;
     demo_page_url: string;
     context_id: string;
+    caller_name: string; // Present for templating; may be empty if unknown
   };
   conversation_config_override?: {
-    agent?: { first_message?: string; };
+    agent?: {
+      prompt?: { prompt: string };
+      first_message?: string;
+    };
   };
 }
 ```
 
 **Context Matching (ordered):**
-1. Recently active contexts (5-min window for retries)
-2. Pending contexts sorted by registration time
-3. Fallback to default agency
+1. Recently active context matching this `call_sid` (retry-safe)
+2. Recently active context matching this `caller_id`
+3. Most recent active context (5-min window)
+4. Most recent pending context (within TTL; marked active)
+5. Fallback to any valid unexpired context, else default
 
 ---
 
@@ -626,21 +633,18 @@ Ray White Surry Hills found properties for you: https://theagentic.engineer/call
 
 **HMAC-SHA256 Verification:**
 ```typescript
-function verifyElevenLabsSignature(
-  payload: string,
-  signature: string,
-  secret: string
-): boolean {
-  const expected = crypto
-    .createHmac('sha256', secret)
-    .update(payload)
-    .digest('hex');
-  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
-}
-
-// Header: elevenlabs-signature
-// If ELEVENLABS_WEBHOOK_SECRET missing: warn but allow (dev mode)
-// In production: require valid signature or return 401
+// Headers (accept either):
+// - elevenlabs-signature
+// - x-elevenlabs-signature
+//
+// Production behavior:
+// - If ELEVENLABS_WEBHOOK_SECRET is missing: return 500 (misconfiguration)
+// - If signature header is missing/invalid: return 401
+//
+// Signature formats supported:
+// - Raw HMAC-SHA256(payload) hex
+// - Stripe-like "t=<ts>,v0=<hmacHex(ts.payload)>"
+// - Base64 HMAC-SHA256(payload)
 ```
 
 ---

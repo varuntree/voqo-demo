@@ -516,12 +516,13 @@ async function cleanupProgressFiles() {
 - Search button
 - Disabled during processing
 
-### AgentActivityPanel
-- Auto-scroll to bottom
-- Max height with scroll
-- Animated streaming indicator (●●●)
-- Collapse/expand toggle
-- Progress counter
+### MainAgentWorkspace
+- Primary “workspace” container for the main UI
+- Hosts:
+  - Activity stream (main agent)
+  - Todo list / phase indicators
+  - Calls panel toggle + layout (when enabled)
+- Designed to keep all “system state” visible in one place (pipeline + calls)
 
 ### CallsPanel
 - Toggle in the “Engine Workspace” header
@@ -534,15 +535,15 @@ async function cleanupProgressFiles() {
 - Live post-call generation activity stream while the page is generating
 - Final generated page URL once complete
 
-### TodoPanel
-- Collapsible
-- Visual states: pending (☐), in_progress (◐), complete (☑)
+### Todo / Phase List
+- Rendered inside `MainAgentWorkspace` (not a standalone panel)
+- Visual states: pending / in_progress / complete
 - Smooth animation
 
 ### AgencyCard
 - Skeleton → Extracting → Generating → Complete states
 - Step checklist
-- Mock preview during generation
+- Shimmer preview during generation
 - [View Demo] button when complete
 
 ### HistoryList

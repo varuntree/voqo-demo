@@ -158,6 +158,8 @@ VoqoLeadEngine is a lead generation + demo system for Voqo AI. It finds real est
 3. Tertiary: `callerId` phone number match
 4. Fallback: Most recent pending context
 
+Note: `/api/webhook/personalize` additionally prefers “recent active” contexts that match the current `call_sid` or `caller_id` (to handle retries) before falling back to “most recent pending”.
+
 ---
 
 ## Technology Stack
@@ -274,5 +276,9 @@ Note: The demo phone number is enforced by the server (`04832945767` / `+6148329
 
 - No authentication (demo purposes only)
 - Environment variables for API keys
-- Webhook signature validation (HMAC-SHA256)
+- Webhook signature validation (HMAC-SHA256) enforced in production
 - VPS firewall: only 80, 443, 22 open
+
+Operational notes:
+- Webhook handlers avoid logging full payloads by default (set `DEBUG_WEBHOOKS=1` to enable verbose logging).
+- File-based state updates use atomic writes and lightweight lock files to reduce JSON corruption/lost updates under concurrency.

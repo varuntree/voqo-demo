@@ -215,6 +215,7 @@ Injected per-call via personalization webhook:
 | `{{agency_phone}}` | Agency phone | +61 2 9361 6000 |
 | `{{demo_page_url}}` | Source page | /demo/ray-white-surry-hills |
 | `{{context_id}}` | Context tracking ID | ctx-1705312100-x7k9m |
+| `{{caller_name}}` | Caller name (if known; may be empty) | Michael |
 
 ---
 
@@ -225,7 +226,7 @@ To ensure the voice agent receives the correct agency context:
 - Demo pages must dial the single enforced demo number:
   - Display: `04832945767`
   - Dial (E.164): `+614832945767`
-- The personalization webhook may return `conversation_config_override.agent.first_message` to ensure the first line reflects the matched agency.
+- The personalization webhook may return `conversation_config_override.agent.first_message` and/or `conversation_config_override.agent.prompt.prompt` for per-call overrides.
 
 ## Voice Selection
 
@@ -353,5 +354,6 @@ Custom prompts support the same dynamic variables as the default prompt:
 | `{{agency_phone}}` | Agency phone |
 | `{{demo_page_url}}` | Source demo page URL |
 | `{{context_id}}` | Context tracking ID |
+| `{{caller_name}}` | Caller name (may be empty) |
 
-Variables are substituted by ElevenLabs at runtime using `dynamic_variables` from the webhook response.
+Implementation note: for `conversation_config_override` prompts, the server substitutes these placeholders before returning the override (and also returns `dynamic_variables` for the voice agent runtime).
