@@ -17,7 +17,7 @@ export interface ClaudeCodeOptions {
 }
 
 const PROGRESS_DIR = path.join(process.cwd(), 'data', 'progress');
-const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'haiku';
+const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'sonnet';
 
 const logClaudeStderr = (data: string) => {
   if (!data) return;
