@@ -3,6 +3,7 @@ import { readdir, readFile } from 'fs/promises';
 import path from 'path';
 import { processPostcallJobsOnce } from '@/lib/postcall-queue';
 import { ensureSmsWorker, processSmsJobsOnce } from '@/lib/sms-queue';
+import { isSafeSessionId } from '@/lib/ids';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -12,6 +13,7 @@ const CALLS_DIR = path.join(process.cwd(), 'data', 'calls');
 type CallListItem = {
   callId: string;
   timestamp: string;
+  sessionId?: string | null;
   agencyId: string;
   agencyName: string;
   pageStatus: 'generating' | 'completed' | 'failed' | string;
@@ -42,6 +44,8 @@ function toListItem(raw: unknown): CallListItem | null {
 
   const callId = typeof obj.callId === 'string' ? obj.callId : null;
   const timestamp = asIsoString(obj.timestamp) ?? null;
+  const sessionId =
+    typeof obj.sessionId === 'string' && isSafeSessionId(obj.sessionId) ? (obj.sessionId as string) : null;
   const agencyId = typeof obj.agencyId === 'string' ? obj.agencyId : null;
   const agencyName = typeof obj.agencyName === 'string' ? obj.agencyName : null;
 
@@ -50,6 +54,7 @@ function toListItem(raw: unknown): CallListItem | null {
   return {
     callId,
     timestamp,
+    sessionId,
     agencyId,
     agencyName,
     pageStatus: (typeof obj.pageStatus === 'string' ? obj.pageStatus : 'generating') as any,
@@ -61,12 +66,16 @@ function toListItem(raw: unknown): CallListItem | null {
   };
 }
 
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     // Best-effort: keep postcall worker moving when clients are watching calls.
     void processPostcallJobsOnce();
     void processSmsJobsOnce();
     ensureSmsWorker();
+
+    const { searchParams } = new URL(request.url);
+    const session = searchParams.get('session');
+    const sessionId = session && isSafeSessionId(session) ? session : null;
 
     let files: string[] = [];
     try {
@@ -84,7 +93,10 @@ export async function GET(_request: NextRequest) {
         const raw = await readFile(path.join(CALLS_DIR, file), 'utf-8');
         const parsed = safeJsonParse<unknown>(raw);
         const item = toListItem(parsed);
-        if (item) items.push(item);
+        if (item) {
+          if (sessionId && item.sessionId !== sessionId) continue;
+          items.push(item);
+        }
       } catch {
         // ignore individual corrupt files
       }

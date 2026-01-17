@@ -4,6 +4,7 @@ import { watch as fsWatch } from 'fs';
 import path from 'path';
 import { processPostcallJobsOnce } from '@/lib/postcall-queue';
 import { ensureSmsWorker, processSmsJobsOnce } from '@/lib/sms-queue';
+import { isSafeSessionId } from '@/lib/ids';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -14,6 +15,7 @@ const HEARTBEAT_INTERVAL_MS = 15000;
 type CallListItem = {
   callId: string;
   timestamp: string;
+  sessionId?: string | null;
   agencyId: string;
   agencyName: string;
   pageStatus: string;
@@ -43,12 +45,15 @@ function toListItem(raw: unknown): CallListItem | null {
   const obj = raw as Record<string, unknown>;
   const callId = typeof obj.callId === 'string' ? obj.callId : null;
   const timestamp = isValidIsoTimestamp(obj.timestamp) ? (obj.timestamp as string) : null;
+  const sessionId =
+    typeof obj.sessionId === 'string' && isSafeSessionId(obj.sessionId) ? (obj.sessionId as string) : null;
   const agencyId = typeof obj.agencyId === 'string' ? obj.agencyId : null;
   const agencyName = typeof obj.agencyName === 'string' ? obj.agencyName : null;
   if (!callId || !timestamp || !agencyId || !agencyName) return null;
   return {
     callId,
     timestamp,
+    sessionId,
     agencyId,
     agencyName,
     pageStatus: typeof obj.pageStatus === 'string' ? obj.pageStatus : 'generating',
@@ -60,7 +65,7 @@ function toListItem(raw: unknown): CallListItem | null {
   };
 }
 
-async function readCalls(): Promise<CallListItem[]> {
+async function readCalls(sessionId?: string | null): Promise<CallListItem[]> {
   void processPostcallJobsOnce();
   void processSmsJobsOnce();
   ensureSmsWorker();
@@ -80,7 +85,10 @@ async function readCalls(): Promise<CallListItem[]> {
       const raw = await fs.readFile(path.join(CALLS_DIR, file), 'utf-8');
       const parsed = safeJsonParse<unknown>(raw);
       const item = toListItem(parsed);
-      if (item) items.push(item);
+      if (item) {
+        if (sessionId && item.sessionId !== sessionId) continue;
+        items.push(item);
+      }
     } catch {
       // ignore
     }
@@ -91,6 +99,10 @@ async function readCalls(): Promise<CallListItem[]> {
 }
 
 export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const session = searchParams.get('session');
+  const sessionId = session && isSafeSessionId(session) ? session : null;
+
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({
@@ -131,7 +143,7 @@ export async function GET(request: NextRequest) {
       };
 
       const emitCalls = async () => {
-        const calls = await readCalls();
+        const calls = await readCalls(sessionId);
         const hash = JSON.stringify(calls);
         if (hash === lastHash) return;
         lastHash = hash;

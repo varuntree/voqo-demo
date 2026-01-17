@@ -110,6 +110,7 @@ interface CallContext {
   };
   agencyId?: string;
   agencyName?: string;
+  sessionId?: string | null;
   registeredAt?: number | string;
   expiresAt?: number;
   callerId?: string;
@@ -245,6 +246,7 @@ export async function POST(request: NextRequest) {
     const callData = {
       callId,
       contextId: matchedId || contextId || null,
+      sessionId: matchedContext?.sessionId || null,
       conversationId: data.conversation_id,
       timestamp: new Date().toISOString(),
       duration: data.metadata?.call_duration_secs || dynamicVars?.system__call_duration_secs || null,

@@ -3,6 +3,7 @@ import { writeFile, readFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { getDemoPhone } from '@/lib/phone';
 import type { VoiceAgentSettings } from '@/lib/types';
+import { isSafeSessionId } from '@/lib/ids';
 
 const CONTEXT_FILE = path.join(process.cwd(), 'data/context/pending-calls.json');
 const CONTEXT_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -36,6 +37,8 @@ export async function POST(request: NextRequest) {
 
     // Parse optional settings field
     const settings: VoiceAgentSettings | null = body.settings ?? null;
+    const sessionId =
+      typeof body.sessionId === 'string' && isSafeSessionId(body.sessionId) ? body.sessionId : null;
 
     if (!agencyData?.id || !agencyData?.name) {
       return NextResponse.json(
@@ -74,6 +77,7 @@ export async function POST(request: NextRequest) {
       agencyId: agencyData.id,
       agencyName: agencyData.name,
       agencyData,
+      sessionId,
       registeredAt,
       expiresAt,
       status: 'pending',

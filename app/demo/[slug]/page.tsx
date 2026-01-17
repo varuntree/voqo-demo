@@ -2,9 +2,11 @@ import { notFound } from 'next/navigation';
 import { readFile } from 'fs/promises';
 import path from 'path';
 import { getDemoPhone } from '@/lib/phone';
+import { isSafeSessionId } from '@/lib/ids';
 
 interface Props {
   params: Promise<{ slug: string }>;
+  searchParams?: Record<string, string | string[] | undefined>;
 }
 
 type MinimalAgencyForCall = {
@@ -79,14 +81,24 @@ function normalizeAgencyForDemoCall(raw: unknown, slug: string): MinimalAgencyFo
   return { id, name, location, address, phone, website };
 }
 
-function injectDemoCallScript(html: string, config: { demoPhone: ReturnType<typeof getDemoPhone>; agency: MinimalAgencyForCall }) {
+function injectDemoCallScript(
+  html: string,
+  config: {
+    demoPhone: ReturnType<typeof getDemoPhone>;
+    agency: MinimalAgencyForCall;
+    sessionId?: string | null;
+  }
+) {
   const injectedMarker = 'window.__VOQO_DEMO_PHONE__';
   if (html.includes(injectedMarker)) return html;
+
+  const safeSessionId = config.sessionId && isSafeSessionId(config.sessionId) ? config.sessionId : null;
 
   const configScript =
     `<script>(function(){` +
     `window.__VOQO_DEMO_PHONE__=${JSON.stringify(config.demoPhone)};` +
     `window.__VOQO_AGENCY__=${JSON.stringify(config.agency)};` +
+    (safeSessionId ? `window.__VOQO_SESSION_ID__=${JSON.stringify(safeSessionId)};` : '') +
     `})();</script>` +
     `<script src="/voqo-demo-call.js" defer></script>`;
 
@@ -100,7 +112,7 @@ function injectDemoCallScript(html: string, config: { demoPhone: ReturnType<type
   return `${html}\n${configScript}\n`;
 }
 
-export default async function DemoPage({ params }: Props) {
+export default async function DemoPage({ params, searchParams }: Props) {
   const { slug: rawSlug } = await params;
   const slug = rawSlug.endsWith('.html') ? rawSlug.replace(/\.html$/, '') : rawSlug;
   const filePath = path.join(process.cwd(), 'public', 'demo', `${slug}.html`);
@@ -123,7 +135,14 @@ export default async function DemoPage({ params }: Props) {
   }
 
   const agency = normalizeAgencyForDemoCall(agencyRaw, slug);
-  const injected = injectDemoCallScript(html, { demoPhone, agency });
+  const sessionParamRaw = searchParams?.session;
+  const sessionId =
+    typeof sessionParamRaw === 'string'
+      ? sessionParamRaw
+      : Array.isArray(sessionParamRaw)
+        ? sessionParamRaw[0]
+        : null;
+  const injected = injectDemoCallScript(html, { demoPhone, agency, sessionId });
 
   return (
     <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: injected }} />

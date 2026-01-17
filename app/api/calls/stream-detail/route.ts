@@ -6,6 +6,7 @@ import type { Activity, ActivityMessage } from '@/lib/types';
 import { processPostcallJobsOnce } from '@/lib/postcall-queue';
 import { normalizeActivityMessage, stableActivityMessageId } from '@/lib/server/activity';
 import { ensureSmsWorker, processSmsJobsOnce } from '@/lib/sms-queue';
+import { isSafeSessionId } from '@/lib/ids';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -28,6 +29,8 @@ export async function GET(request: NextRequest) {
   if (!callId) {
     return new Response('callId required', { status: 400 });
   }
+  const session = searchParams.get('session');
+  const sessionId = session && isSafeSessionId(session) ? session : null;
 
   const encoder = new TextEncoder();
 
@@ -73,6 +76,7 @@ export async function GET(request: NextRequest) {
         if (!raw) return;
         const parsed = safeJsonParse<Record<string, unknown>>(raw);
         if (!parsed) return;
+        if (sessionId && parsed.sessionId !== sessionId) return;
         const hash = JSON.stringify({
           pageStatus: parsed.pageStatus,
           pageUrl: parsed.pageUrl,

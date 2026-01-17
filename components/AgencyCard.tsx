@@ -350,7 +350,7 @@ export default function AgencyCard({
               {data.status === 'complete' && demoUrl && (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <a
-                    href={demoUrl}
+                    href={`${demoUrl}${data.sessionId ? `?session=${encodeURIComponent(data.sessionId)}` : ''}`}
                     className="px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm font-medium hover:bg-white/15 transition-colors"
                   >
                     Open Demo Page

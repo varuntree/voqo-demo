@@ -126,9 +126,13 @@ export default function Home() {
     `${message.type}|${message.text}|${message.detail || ''}|${message.source || ''}|${message.timestamp}`;
 
   const fetchCalls = useCallback(async () => {
+    if (!sessionId) {
+      setCalls([]);
+      return;
+    }
     setCallsLoading(true);
     try {
-      const res = await fetch('/api/calls', { cache: 'no-store' });
+      const res = await fetch(`/api/calls?session=${encodeURIComponent(sessionId)}`, { cache: 'no-store' });
       const data = await res.json();
       setCalls(Array.isArray(data?.calls) ? (data.calls as CallListItem[]) : []);
     } catch {
@@ -136,7 +140,7 @@ export default function Home() {
     } finally {
       setCallsLoading(false);
     }
-  }, []);
+  }, [sessionId]);
 
   // Calls list streaming (only while the panel is open)
   useEffect(() => {
@@ -144,10 +148,14 @@ export default function Home() {
     callsEventSourceRef.current = null;
 
     if (!callsOpen) return;
+    if (!sessionId) {
+      setCalls([]);
+      return;
+    }
 
     void fetchCalls();
 
-    const es = new EventSource('/api/calls/stream');
+    const es = new EventSource(`/api/calls/stream?session=${encodeURIComponent(sessionId)}`);
     callsEventSourceRef.current = es;
 
     es.onmessage = (event) => {
@@ -169,7 +177,7 @@ export default function Home() {
       es.close();
       if (callsEventSourceRef.current === es) callsEventSourceRef.current = null;
     };
-  }, [callsOpen, fetchCalls]);
+  }, [callsOpen, fetchCalls, sessionId]);
 
   // Rehydrate an in-progress pipeline after reload
   useEffect(() => {

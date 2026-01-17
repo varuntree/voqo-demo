@@ -31,7 +31,8 @@
     var slug = getSlugFromPath();
     var agency = window.__VOQO_AGENCY__ || null;
     var demoPhone = window.__VOQO_DEMO_PHONE__ || null;
-    return { slug: slug, agency: agency, demoPhone: demoPhone };
+    var sessionId = window.__VOQO_SESSION_ID__ || null;
+    return { slug: slug, agency: agency, demoPhone: demoPhone, sessionId: sessionId };
   }
 
   function ensureStyles() {
@@ -162,6 +163,7 @@
 
       var payload = {
         timestamp: Date.now(),
+        sessionId: config.sessionId || undefined,
         agencyData: {
           id: agency.id || slug || 'unknown',
           name: agency.name || document.title || (slug || 'Agency'),
@@ -216,6 +218,7 @@
           var agency = config.agency || {};
           var payload = {
             timestamp: Date.now(),
+            sessionId: config.sessionId || undefined,
             agencyData: {
               id: agency.id || agency.agencyId || slug || 'unknown',
               name: agency.name || document.title || (slug || 'Agency'),
