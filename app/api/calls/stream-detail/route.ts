@@ -5,6 +5,7 @@ import path from 'path';
 import type { Activity, ActivityMessage } from '@/lib/types';
 import { processPostcallJobsOnce } from '@/lib/postcall-queue';
 import { normalizeActivityMessage, stableActivityMessageId } from '@/lib/server/activity';
+import { processSmsJobsOnce } from '@/lib/sms-queue';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -66,6 +67,7 @@ export async function GET(request: NextRequest) {
 
       const emitCall = async () => {
         void processPostcallJobsOnce();
+        void processSmsJobsOnce();
         const raw = await fs.readFile(callPath, 'utf-8').catch(() => null);
         if (!raw) return;
         const parsed = safeJsonParse<Record<string, unknown>>(raw);

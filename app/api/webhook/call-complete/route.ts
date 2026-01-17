@@ -4,6 +4,7 @@ import path from 'path';
 import crypto from 'crypto';
 import { appendAgencyCall } from '@/lib/agency-calls';
 import { enqueuePostcallJob, ensurePostcallWorker } from '@/lib/postcall-queue';
+import { ensureSmsWorker } from '@/lib/sms-queue';
 
 const CONTEXT_FILE = path.join(process.cwd(), 'data/context/pending-calls.json');
 const CALLS_DIR = path.join(process.cwd(), 'data/calls');
@@ -125,6 +126,7 @@ export async function POST(request: NextRequest) {
   console.log('='.repeat(60));
 
   ensurePostcallWorker();
+  ensureSmsWorker();
 
   // Log all headers for debugging
   const headers: Record<string, string> = {};

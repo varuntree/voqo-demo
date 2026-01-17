@@ -2,7 +2,7 @@ import { readFile, writeFile, mkdir, readdir, rename, unlink, access, stat } fro
 import path from 'path';
 import { invokeClaudeCode } from '@/lib/claude';
 import { updateAgencyCall } from '@/lib/agency-calls';
-import { sendSMS, normalizePhoneNumber } from '@/lib/twilio';
+import { enqueueSmsJob } from '@/lib/sms-queue';
 
 const JOBS_DIR = path.join(process.cwd(), 'data/jobs/postcall');
 const CALLS_DIR = path.join(process.cwd(), 'data/calls');
@@ -30,30 +30,7 @@ interface ErrorEntry {
 
 let workerStarted = false;
 
-interface SendPostcallSMSParams {
-  callerPhone: string;
-  agencyName: string;
-  callId: string;
-}
-
-async function sendPostcallSMS({
-  callerPhone,
-  agencyName,
-  callId,
-}: SendPostcallSMSParams): Promise<void> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  const pageUrl = `${baseUrl}/call/${callId}`;
-  const message = `${agencyName} found properties for you: ${pageUrl}`;
-
-  try {
-    const normalizedPhone = normalizePhoneNumber(callerPhone);
-    await sendSMS(normalizedPhone, message);
-    console.log(`[SMS] Sent to ${normalizedPhone} for call ${callId}`);
-  } catch (error) {
-    console.error(`[SMS] Failed for call ${callId}:`, error);
-    // Log error but don't throw - page generation succeeded
-  }
-}
+// NOTE: SMS sending is handled by lib/sms-queue.ts as a durable, idempotent job.
 
 export async function enqueuePostcallJob(callId: string, prompt: string): Promise<void> {
   await mkdir(JOBS_DIR, { recursive: true });
@@ -244,24 +221,9 @@ async function markCallCompleted(
 
     await writeFile(callFile, JSON.stringify(data, null, 2));
 
-    // Send SMS notification to caller
-    const callerPhone = typeof data.callerPhone === 'string' ? data.callerPhone : null;
-    const agencyName = typeof data.agencyName === 'string' ? data.agencyName : 'Voqo';
-    const smsSentAt = typeof data.smsSentAt === 'string' ? data.smsSentAt : null;
-
-    if (callerPhone && !smsSentAt) {
-      try {
-        await sendPostcallSMS({
-          callerPhone,
-          agencyName,
-          callId,
-        });
-        data.smsSentAt = new Date().toISOString();
-        await writeFile(callFile, JSON.stringify(data, null, 2));
-      } catch {
-        // sendPostcallSMS already logs; do not fail the job
-      }
-    }
+    // Queue SMS notification (durable + idempotent).
+    // The SMS worker will only send once pageStatus/pageUrl are ready and will dedupe by callId.
+    void enqueueSmsJob(callId);
 
     const agencyId = typeof data.agencyId === 'string' ? data.agencyId : null;
     if (agencyId) {

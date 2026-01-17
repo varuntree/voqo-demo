@@ -31,8 +31,12 @@
 ├── jobs/postcall/               # Background job queue
 │   └── {callId}.json
 │
+├── jobs/sms/                    # SMS notification queue (durable, idempotent)
+│   └── {callId}.json
+│
 └── errors/                      # Error tracking
     └── postcall-errors.json
+    └── sms-errors.json
 ```
 
 Note: `/data` and generated HTML under `/public/demo` and `/public/call` are runtime artifacts and should not be committed to git. Deploys must preserve these directories on the VPS.
@@ -147,6 +151,15 @@ interface CallData {
   pageStatus: 'pending' | 'generating' | 'completed' | 'failed';
   pageUrl: string | null;
   generatedAt: string | null;
+
+  // SMS Delivery (optional; written by sms worker)
+  sms?: {
+    status: 'pending' | 'sent' | 'failed';
+    sentAt?: string;
+    messageSid?: string;
+    to?: string;
+    error?: string;
+  };
 
   // Listings shown
   listingsShown?: Array<{
@@ -587,7 +600,7 @@ ElevenLabs calls after conversation ends.
 
 Sent after successful post-call page generation.
 
-**Trigger:** HTML file verified + call JSON updated
+**Trigger:** Call JSON indicates a completed page (`pageStatus="completed"` and `pageUrl` is set).
 
 **Message Format:**
 ```
@@ -600,21 +613,12 @@ Ray White Surry Hills found properties for you: https://theagentic.engineer/call
 ```
 
 **Implementation:**
-```typescript
-interface SendPostcallSMSParams {
-  callerPhone: string;
-  agencyName: string;
-  callId: string;
-}
-
-// Phone normalization handles: +61, 0, 61 prefixes → E.164
-function normalizePhoneNumber(phone: string): string;
-```
+- SMS is handled by a dedicated worker that processes `/data/jobs/sms/{callId}.json`.
+- The worker is idempotent and will not send twice for the same `callId` (writes `callData.sms.status="sent"`).
 
 **Error Handling:**
-- SMS failure: Log error, don't retry (page still accessible)
-- Invalid phone: Log warning, skip
-- Missing callerPhone: Skip silently
+- SMS failure: retry up to N attempts, then set `callData.sms.status="failed"` and log to `/data/errors/sms-errors.json`.
+- Missing prerequisites (no `callerPhone`, page not ready): keep job pending and retry later.
 
 ---
 

@@ -4,6 +4,7 @@ import path from 'path';
 import type { Activity } from '@/lib/types';
 import { processPostcallJobsOnce } from '@/lib/postcall-queue';
 import { normalizeActivityMessage } from '@/lib/server/activity';
+import { processSmsJobsOnce } from '@/lib/sms-queue';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -22,6 +23,7 @@ function safeJsonParse<T>(input: string): T | null {
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ callId: string }> }) {
   try {
     void processPostcallJobsOnce();
+    void processSmsJobsOnce();
 
     const { callId } = await params;
     if (!callId) {
