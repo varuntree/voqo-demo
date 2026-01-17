@@ -166,57 +166,50 @@ export default function Home() {
 
         const isTerminal = status === 'complete' || status === 'error' || status === 'cancelled';
 
-        if (isTerminal) {
-          const mainActivity = data.mainActivity as {
-            messages?: ActivityMessage[];
-            agenciesFound?: number;
-            agenciesTarget?: number;
-          } | null;
+        const mainActivity = data.mainActivity as {
+          messages?: ActivityMessage[];
+          agenciesFound?: number;
+          agenciesTarget?: number;
+        } | null;
 
-          if (mainActivity && Array.isArray(mainActivity.messages)) {
-            const ids = new Set(mainActivity.messages.map((m) => m.id));
-            seenMainMessageIdsRef.current = ids;
-            seenMainMessageKeysRef.current = new Set(mainActivity.messages.map(messageKey));
-            setMainActivityMessages(mainActivity.messages.slice(-400));
-          } else {
-            setMainActivityMessages([]);
-            seenMainMessageIdsRef.current = new Set();
-            seenMainMessageKeysRef.current = new Set();
-          }
-
-          setMainFound(typeof mainActivity?.agenciesFound === 'number' ? mainActivity.agenciesFound : 0);
-          setMainTarget(
-            typeof mainActivity?.agenciesTarget === 'number' ? mainActivity.agenciesTarget : requestedCount
-          );
-
-          const subagentActivityRaw =
-            data.subagentActivity && typeof data.subagentActivity === 'object'
-              ? (data.subagentActivity as Record<string, ActivityMessage[]>)
-              : {};
-
-          const nextSubagent = new Map<string, ActivityMessage[]>();
-          const nextSeen = new Map<string, Set<string>>();
-          const nextSeenKeys = new Map<string, Set<string>>();
-          for (const [agencyId, messages] of Object.entries(subagentActivityRaw)) {
-            if (!Array.isArray(messages)) continue;
-            nextSubagent.set(agencyId, messages.slice(-250));
-            nextSeen.set(agencyId, new Set(messages.map((m) => m.id)));
-            nextSeenKeys.set(agencyId, new Set(messages.map(messageKey)));
-          }
-          setSubagentActivity(nextSubagent);
-          seenSubagentMessageIdsRef.current = nextSeen;
-          seenSubagentMessageKeysRef.current = nextSeenKeys;
+        if (mainActivity && Array.isArray(mainActivity.messages)) {
+          seenMainMessageIdsRef.current = new Set(mainActivity.messages.map((m) => m.id));
+          seenMainMessageKeysRef.current = new Set(mainActivity.messages.map(messageKey));
+          setMainActivityMessages(mainActivity.messages.slice(-400));
         } else {
-          // For running sessions, let SSE repopulate activity streams to avoid duplication on reconnect.
           setMainActivityMessages([]);
-          setMainFound(0);
-          setMainTarget(requestedCount);
-          setSubagentActivity(new Map());
           seenMainMessageIdsRef.current = new Set();
           seenMainMessageKeysRef.current = new Set();
-          seenSubagentMessageIdsRef.current = new Map();
-          seenSubagentMessageKeysRef.current = new Map();
         }
+
+        const agenciesFoundFallback = Array.isArray(pipeline.agencyIds)
+          ? pipeline.agencyIds.length
+          : agencies.length;
+
+        setMainFound(
+          typeof mainActivity?.agenciesFound === 'number' ? mainActivity.agenciesFound : agenciesFoundFallback
+        );
+        setMainTarget(
+          typeof mainActivity?.agenciesTarget === 'number' ? mainActivity.agenciesTarget : requestedCount
+        );
+
+        const subagentActivityRaw =
+          data.subagentActivity && typeof data.subagentActivity === 'object'
+            ? (data.subagentActivity as Record<string, ActivityMessage[]>)
+            : {};
+
+        const nextSubagent = new Map<string, ActivityMessage[]>();
+        const nextSeen = new Map<string, Set<string>>();
+        const nextSeenKeys = new Map<string, Set<string>>();
+        for (const [agencyId, messages] of Object.entries(subagentActivityRaw)) {
+          if (!Array.isArray(messages)) continue;
+          nextSubagent.set(agencyId, messages.slice(-250));
+          nextSeen.set(agencyId, new Set(messages.map((m) => m.id)));
+          nextSeenKeys.set(agencyId, new Set(messages.map(messageKey)));
+        }
+        setSubagentActivity(nextSubagent);
+        seenSubagentMessageIdsRef.current = nextSeen;
+        seenSubagentMessageKeysRef.current = nextSeenKeys;
 
         if (status === 'complete' || status === 'error' || status === 'cancelled') {
           const success = agencies.filter((a) => a.status === 'complete').length;

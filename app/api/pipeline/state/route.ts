@@ -39,6 +39,12 @@ async function readSubagentActivity(agencyIds: string[]): Promise<Record<string,
   return out;
 }
 
+function isValidIsoTimestamp(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  const ts = Date.parse(value);
+  return Number.isFinite(ts);
+}
+
 function normalizeMessages(
   messages: ActivityMessage[],
   stablePrefix: string,
@@ -46,12 +52,19 @@ function normalizeMessages(
 ): ActivityMessage[] {
   return messages.map((message, index) => {
     const stableId = `${stablePrefix}-${index}`;
-    const originalId = typeof message.id === 'string' && message.id.length > 0 ? message.id : stableId;
+    const hasSuspiciousMidnightTimestamp =
+      typeof message.timestamp === 'string' && message.timestamp.endsWith('T00:00:00.000Z');
     return {
       ...message,
-      id: `${stableId}:${originalId}`,
+      id:
+        typeof message.id === 'string' && message.id.length > 0
+          ? `${stableId}:${message.id}`
+          : stableId,
       source: message.source ?? fallbackSource,
-      timestamp: typeof message.timestamp === 'string' ? message.timestamp : new Date().toISOString(),
+      timestamp:
+        isValidIsoTimestamp(message.timestamp) && !hasSuspiciousMidnightTimestamp
+          ? message.timestamp
+          : new Date().toISOString(),
     };
   });
 }
