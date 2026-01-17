@@ -8,9 +8,9 @@
 | **Droplet Name** | voqo-demo |
 | **IP Address** | 170.64.163.27 |
 | **Region** | Sydney (SYD1) |
-| **Size** | 2 GB RAM / 1 vCPU / 50 GB SSD |
+| **Size** | 8 GB RAM / 4 vCPUs / 50 GB SSD |
 | **OS** | Ubuntu 24.04 LTS |
-| **Cost** | $12/month |
+| **Cost** | $48/month |
 | **Created** | 2026-01-16 |
 
 ## Step Completion Status
@@ -164,6 +164,11 @@
 - **Symptom**: `ping theagentic.engineer` times out
 - **Cause**: ICMP blocked by firewall (only TCP 22/80/443 allowed)
 - **Status**: Expected behavior, not an issue
+
+### Issue 7: OOM killer crash (Jan 17, 2026)
+- **Symptom**: App crash-looping, `.next` build corrupted, 133+ PM2 restarts
+- **Cause**: 2GB RAM exhausted by parallel Claude Code subagents during agency pipeline
+- **Solution**: Upgraded VPS to 8GB RAM / 4 vCPUs ($48/mo)
 
 ---
 
