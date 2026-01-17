@@ -9,6 +9,7 @@ import type {
   PipelineState,
   SearchSession,
 } from './types';
+import { readJsonFile, updateJsonFileWithLock, writeJsonFileAtomic } from '@/lib/fs-json';
 
 const HISTORY_FILE = path.join(process.cwd(), 'data', 'history', 'sessions.json');
 const HISTORY_SESSIONS_DIR = path.join(process.cwd(), 'data', 'history', 'sessions');
@@ -36,42 +37,35 @@ function normalizeHistory(history: HistoryFile): HistoryFile {
 }
 
 export async function readHistory(): Promise<HistoryFile> {
-  try {
-    await fs.mkdir(path.dirname(HISTORY_FILE), { recursive: true });
-    const content = await fs.readFile(HISTORY_FILE, 'utf-8');
-    return normalizeHistory(JSON.parse(content) as HistoryFile);
-  } catch {
-    return { sessions: [] };
-  }
+  await fs.mkdir(path.dirname(HISTORY_FILE), { recursive: true });
+  const parsed = await readJsonFile<HistoryFile>(HISTORY_FILE);
+  if (!parsed || !Array.isArray(parsed.sessions)) return { sessions: [] };
+  return normalizeHistory(parsed);
 }
 
 export async function writeHistory(history: HistoryFile): Promise<void> {
-  await fs.mkdir(path.dirname(HISTORY_FILE), { recursive: true });
-  await fs.writeFile(HISTORY_FILE, JSON.stringify(history, null, 2));
+  await writeJsonFileAtomic(HISTORY_FILE, history);
 }
 
 export async function addToHistory(session: SearchSession): Promise<void> {
-  const history = await readHistory();
+  await updateJsonFileWithLock<HistoryFile>(HISTORY_FILE, (current) => {
+    const history = current && typeof current === 'object' && Array.isArray((current as any).sessions)
+      ? normalizeHistory(current as HistoryFile)
+      : ({ sessions: [] } satisfies HistoryFile);
 
-  // Check if session already exists (update it)
-  const existingIndex = history.sessions.findIndex(s => s.sessionId === session.sessionId);
-  if (existingIndex >= 0) {
-    const existingName = history.sessions[existingIndex].name;
-    history.sessions[existingIndex] = {
-      ...session,
-      name: existingName || session.name,
-    };
-  } else {
-    // Add to front
-    history.sessions.unshift(session);
-  }
+    const existingIndex = history.sessions.findIndex((s) => s.sessionId === session.sessionId);
+    if (existingIndex >= 0) {
+      const existingName = history.sessions[existingIndex].name;
+      history.sessions[existingIndex] = { ...session, name: existingName || session.name };
+    } else {
+      history.sessions.unshift(session);
+    }
 
-  // Keep only last MAX_SESSIONS
-  if (history.sessions.length > MAX_SESSIONS) {
-    history.sessions = history.sessions.slice(0, MAX_SESSIONS);
-  }
-
-  await writeHistory(history);
+    if (history.sessions.length > MAX_SESSIONS) {
+      history.sessions = history.sessions.slice(0, MAX_SESSIONS);
+    }
+    return history;
+  });
 }
 
 function sessionDetailPath(sessionId: string): string {
@@ -79,17 +73,12 @@ function sessionDetailPath(sessionId: string): string {
 }
 
 export async function readSessionDetail(sessionId: string): Promise<HistorySessionDetail | null> {
-  try {
-    const content = await fs.readFile(sessionDetailPath(sessionId), 'utf-8');
-    return JSON.parse(content) as HistorySessionDetail;
-  } catch {
-    return null;
-  }
+  return readJsonFile<HistorySessionDetail>(sessionDetailPath(sessionId));
 }
 
 export async function writeSessionDetail(sessionId: string, detail: HistorySessionDetail): Promise<void> {
   await fs.mkdir(HISTORY_SESSIONS_DIR, { recursive: true });
-  await fs.writeFile(sessionDetailPath(sessionId), JSON.stringify(detail, null, 2));
+  await writeJsonFileAtomic(sessionDetailPath(sessionId), detail);
 }
 
 export async function buildSessionDetailFromPipeline(

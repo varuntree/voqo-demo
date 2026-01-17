@@ -138,6 +138,7 @@ export const AVAILABLE_VARIABLES = [
   '{{agency_phone}}',
   '{{demo_page_url}}',
   '{{context_id}}',
+  '{{caller_name}}',
 ] as const;
 
 export const DEFAULT_VOICE_AGENT_SETTINGS: VoiceAgentSettings = {

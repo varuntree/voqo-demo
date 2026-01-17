@@ -5,6 +5,7 @@ import type { Activity } from '@/lib/types';
 import { processPostcallJobsOnce } from '@/lib/postcall-queue';
 import { normalizeActivityMessage } from '@/lib/server/activity';
 import { ensureSmsWorker, processSmsJobsOnce } from '@/lib/sms-queue';
+import { isSafeCallId } from '@/lib/ids';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -29,6 +30,9 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     const { callId } = await params;
     if (!callId) {
       return NextResponse.json({ error: 'callId required' }, { status: 400 });
+    }
+    if (!isSafeCallId(callId)) {
+      return NextResponse.json({ error: 'Invalid callId' }, { status: 400 });
     }
 
     const callPath = path.join(CALLS_DIR, `${callId}.json`);

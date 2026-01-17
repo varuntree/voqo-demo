@@ -1,5 +1,7 @@
 import Twilio from 'twilio';
 
+type TwilioClient = ReturnType<typeof Twilio>;
+
 export function normalizePhoneNumber(phone: string): string {
   // Remove all non-digit characters except leading +
   let cleaned = phone.replace(/[^\d+]/g, '');
@@ -19,17 +21,28 @@ export function normalizePhoneNumber(phone: string): string {
   return cleaned;
 }
 
-const client = Twilio(
-  process.env.TWILIO_ACCOUNT_SID!,
-  process.env.TWILIO_AUTH_TOKEN!
-);
+let client: TwilioClient | null = null;
 
-export async function sendSMS(to: string, message: string) {
-  return client.messages.create({
-    body: message,
-    to,
-    from: process.env.TWILIO_PHONE_NUMBER!,
-  });
+function getTwilioClient(): TwilioClient {
+  if (client) return client;
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  if (!accountSid || !authToken) {
+    throw new Error('Twilio is not configured (missing TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN)');
+  }
+  client = Twilio(accountSid, authToken);
+  return client;
 }
 
-export default client;
+export async function sendSMS(to: string, message: string) {
+  const from = process.env.TWILIO_PHONE_NUMBER;
+  if (!from) {
+    throw new Error('Twilio is not configured (missing TWILIO_PHONE_NUMBER)');
+  }
+  const twilio = getTwilioClient();
+  return twilio.messages.create({
+    body: message,
+    to,
+    from,
+  });
+}

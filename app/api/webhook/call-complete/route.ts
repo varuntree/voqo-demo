@@ -1,57 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readFile, writeFile, mkdir } from 'fs/promises';
+import { readFile, mkdir } from 'fs/promises';
 import path from 'path';
-import crypto from 'crypto';
-import { appendAgencyCall } from '@/lib/agency-calls';
+import { updateAgencyCall } from '@/lib/agency-calls';
 import { enqueuePostcallJob, ensurePostcallWorker } from '@/lib/postcall-queue';
 import { ensureSmsWorker } from '@/lib/sms-queue';
+import { safeJsonParse, updateJsonFileWithLock } from '@/lib/fs-json';
+import { verifyElevenLabsWebhookSignature } from '@/lib/elevenlabs-webhook';
+import { getOrCreateCallIdForConversation } from '@/lib/call-conversation-index';
 
 const CONTEXT_FILE = path.join(process.cwd(), 'data/context/pending-calls.json');
 const CALLS_DIR = path.join(process.cwd(), 'data/calls');
 const WEBHOOK_SECRET = process.env.ELEVENLABS_WEBHOOK_SECRET;
+const DEBUG_WEBHOOKS = process.env.DEBUG_WEBHOOKS === '1';
 
-function verifyWebhookSignature(payload: string, signature: string | null): boolean {
-  // TODO: Fix signature verification - skipping in dev for now
-  if (process.env.NODE_ENV !== 'production') {
-    console.warn('[Webhook] Dev mode - skipping signature verification');
-    return true;
-  }
-
-  if (!WEBHOOK_SECRET || !signature) {
-    console.warn('[Webhook] No secret configured or no signature provided, skipping verification');
-    return true; // Allow in dev if not configured
-  }
-
-  // ElevenLabs signature format: t=<timestamp>,v0=<signature>
-  const parts = signature.split(',');
-  const timestampPart = parts.find(p => p.startsWith('t='));
-  const sigPart = parts.find(p => p.startsWith('v0='));
-
-  if (!timestampPart || !sigPart) {
-    console.warn('[Webhook] Invalid signature format');
-    return false;
-  }
-
-  const timestamp = timestampPart.slice(2);
-  const providedSig = sigPart.slice(3);
-
-  // Compute expected signature: HMAC-SHA256(timestamp.payload)
-  const signedPayload = `${timestamp}.${payload}`;
-  const expectedSig = crypto
-    .createHmac('sha256', WEBHOOK_SECRET)
-    .update(signedPayload)
-    .digest('hex');
-
-  if (providedSig.length !== expectedSig.length) {
-    console.warn('[Webhook] Signature length mismatch');
-    return false;
-  }
-
-  return crypto.timingSafeEqual(
-    Buffer.from(providedSig),
-    Buffer.from(expectedSig)
-  );
-}
+export const runtime = 'nodejs';
 
 interface TranscriptEntry {
   role: 'agent' | 'user';
@@ -102,7 +64,7 @@ interface CallCompleteWebhook {
   };
 }
 
-interface CallContext {
+interface PendingCallContext {
   agencyData: {
     id: string;
     name: string;
@@ -122,44 +84,34 @@ interface CallContext {
 }
 
 export async function POST(request: NextRequest) {
-  console.log('\n' + '='.repeat(60));
-  console.log('[CALL-COMPLETE] Webhook triggered at', new Date().toISOString());
-  console.log('='.repeat(60));
-
   ensurePostcallWorker();
   ensureSmsWorker();
-
-  // Log all headers for debugging
-  const headers: Record<string, string> = {};
-  request.headers.forEach((value, key) => {
-    headers[key] = value;
-  });
-  console.log('[CALL-COMPLETE] Headers:', JSON.stringify(headers, null, 2));
 
   try {
     // Get raw body for signature verification
     const rawBody = await request.text();
-    console.log('[CALL-COMPLETE] Raw body length:', rawBody.length, 'bytes');
-
     const signature = request.headers.get('x-elevenlabs-signature') || request.headers.get('elevenlabs-signature');
-    console.log('[CALL-COMPLETE] Signature header:', signature ? 'present' : 'MISSING');
 
-    // Verify webhook signature
-    if (!verifyWebhookSignature(rawBody, signature)) {
-      console.error('[CALL-COMPLETE] ❌ Invalid webhook signature');
-      console.log('='.repeat(60) + '\n');
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+    if (process.env.NODE_ENV === 'production') {
+      const verification = verifyElevenLabsWebhookSignature(rawBody, signature, WEBHOOK_SECRET);
+      if (!verification.ok) {
+        console.error('[CALL-COMPLETE] Signature verification failed:', verification.reason);
+        const status = verification.reason.includes('Missing ELEVENLABS_WEBHOOK_SECRET') ? 500 : 401;
+        return NextResponse.json({ error: 'Signature verification failed' }, { status });
+      }
     }
-    console.log('[CALL-COMPLETE] ✅ Signature verified');
 
-    const body = JSON.parse(rawBody) as CallCompleteWebhook;
-
-    console.log('[CALL-COMPLETE] Event type:', body.type);
-    console.log('[CALL-COMPLETE] Full body:', JSON.stringify(body, null, 2));
+    const body = safeJsonParse<CallCompleteWebhook>(rawBody);
+    if (!body) {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
+    if (DEBUG_WEBHOOKS) {
+      console.log('[CALL-COMPLETE] Webhook triggered at', new Date().toISOString());
+      console.log('[CALL-COMPLETE] Event type:', body.type);
+    }
 
     if (body.type !== 'post_call_transcription') {
-      console.log('[CALL-COMPLETE] Ignoring event type:', body.type);
-      console.log('='.repeat(60) + '\n');
+      if (DEBUG_WEBHOOKS) console.log('[CALL-COMPLETE] Ignoring event type:', body.type);
       return NextResponse.json({ success: true, message: 'Event type ignored' });
     }
 
@@ -180,56 +132,65 @@ export async function POST(request: NextRequest) {
       data.conversation_id;
     const contextId = dynamicVars?.context_id;
 
-    // Generate call ID
-    const callId = `call-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+    // Generate or reuse call ID (idempotency across webhook retries).
+    const callIdResult = await getOrCreateCallIdForConversation(data.conversation_id, () => {
+      return `call-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+    }).catch(() => null);
+    const callId = callIdResult?.callId || `call-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
 
     // Find matching context
-    let contexts: Record<string, CallContext> = {};
-    let matchedContext: CallContext | null = null;
+    let matchedContext: PendingCallContext | null = null;
     let matchedId: string | null = null;
+    const now = Date.now();
 
-    try {
-      const existing = await readFile(CONTEXT_FILE, 'utf-8');
-      contexts = JSON.parse(existing);
-    } catch {
-      // No contexts file
-    }
+    await updateJsonFileWithLock<Record<string, PendingCallContext>>(CONTEXT_FILE, (current) => {
+      const contexts: Record<string, PendingCallContext> =
+        current && typeof current === 'object' ? { ...(current as Record<string, PendingCallContext>) } : {};
 
-    if (contextId && contexts[contextId]) {
-      matchedId = contextId;
-      matchedContext = contexts[contextId];
-      console.log('[CALL-COMPLETE] Matched context by context_id:', contextId);
-    } else {
-      const now = Date.now();
+      // Prune expired contexts
+      for (const key of Object.keys(contexts)) {
+        const ctx = contexts[key];
+        if (ctx && typeof ctx.expiresAt === 'number' && ctx.expiresAt < now) {
+          delete contexts[key];
+        }
+      }
 
-      const activeByCallSid = Object.entries(contexts).find(([, ctx]) => ctx.callSid === callSid);
-      if (activeByCallSid) {
-        [matchedId, matchedContext] = activeByCallSid;
-        console.log('[CALL-COMPLETE] Matched context by callSid:', matchedId);
+      if (contextId && contexts[contextId]) {
+        matchedId = contextId;
+        matchedContext = contexts[contextId];
       } else {
-        const activeByCaller = Object.entries(contexts).find(([, ctx]) => ctx.callerId === callerId && ctx.status === 'active');
-        if (activeByCaller) {
-          [matchedId, matchedContext] = activeByCaller;
-          console.log('[CALL-COMPLETE] Matched context by callerId:', matchedId);
+        const byCallSid = Object.entries(contexts).find(([, ctx]) => ctx.callSid === callSid);
+        if (byCallSid) {
+          [matchedId, matchedContext] = byCallSid;
         } else {
-          const recentPending = Object.entries(contexts)
-            .filter(([, ctx]) => {
-              if (ctx.expiresAt && ctx.expiresAt < now) return false;
-              return ctx.status === 'pending';
-            })
-            .sort((a, b) => {
-              const timeA = typeof a[1].registeredAt === 'number' ? a[1].registeredAt : new Date(a[1].registeredAt || 0).getTime();
-              const timeB = typeof b[1].registeredAt === 'number' ? b[1].registeredAt : new Date(b[1].registeredAt || 0).getTime();
-              return timeB - timeA;
-            });
-
-          if (recentPending.length > 0) {
-            [matchedId, matchedContext] = recentPending[0];
-            console.log('[CALL-COMPLETE] Matched recent pending context:', matchedId);
+          const byCaller = Object.entries(contexts).find(([, ctx]) => ctx.callerId === callerId && ctx.status === 'active');
+          if (byCaller) {
+            [matchedId, matchedContext] = byCaller;
+          } else {
+            const recentPending = Object.entries(contexts)
+              .filter(([, ctx]) => ctx.status === 'pending')
+              .sort((a, b) => {
+                const timeA = typeof a[1].registeredAt === 'number' ? a[1].registeredAt : new Date(a[1].registeredAt || 0).getTime();
+                const timeB = typeof b[1].registeredAt === 'number' ? b[1].registeredAt : new Date(b[1].registeredAt || 0).getTime();
+                return timeB - timeA;
+              });
+            if (recentPending.length > 0) {
+              [matchedId, matchedContext] = recentPending[0];
+            }
           }
         }
       }
-    }
+
+      if (matchedId && contexts[matchedId]) {
+        contexts[matchedId].status = 'completed';
+        contexts[matchedId].callId = callId;
+        contexts[matchedId].completedAt = now;
+        contexts[matchedId].callSid = contexts[matchedId].callSid || callSid;
+        contexts[matchedId].callerId = contexts[matchedId].callerId || callerId || undefined;
+      }
+
+      return contexts;
+    }).catch(() => undefined);
 
     // Build transcript string
     const transcriptText = data.transcript
@@ -239,14 +200,16 @@ export async function POST(request: NextRequest) {
     // Prepare call data
     // NOTE: We do NOT use data.analysis.data_collection_results
     // Claude Code skill extracts ALL data directly from the raw transcript
-    const agencyIdFromContext = matchedContext?.agencyData?.id || matchedContext?.agencyId;
-    const agencyNameFromContext = matchedContext?.agencyData?.name || matchedContext?.agencyName;
+    const matched = matchedContext as unknown as PendingCallContext | null;
+
+    const agencyIdFromContext = matched?.agencyData?.id || matched?.agencyId;
+    const agencyNameFromContext = matched?.agencyData?.name || matched?.agencyName;
     const agencyIdFromDemo = dynamicVars?.demo_page_url?.replace('/demo/', '');
 
     const callData = {
       callId,
       contextId: matchedId || contextId || null,
-      sessionId: matchedContext?.sessionId || null,
+      sessionId: matched?.sessionId || null,
       conversationId: data.conversation_id,
       timestamp: new Date().toISOString(),
       duration: data.metadata?.call_duration_secs || dynamicVars?.system__call_duration_secs || null,
@@ -258,7 +221,7 @@ export async function POST(request: NextRequest) {
       agencyName: agencyNameFromContext ||
                   dynamicVars?.agency_name ||
                   'Unknown Agency',
-      agencyData: matchedContext?.agencyData || null,
+      agencyData: matched?.agencyData || null,
 
       // Extracted data - Claude Code skill will populate these from transcript
       extractedData: null,
@@ -282,21 +245,26 @@ export async function POST(request: NextRequest) {
 
     // Save call data
     const callFilePath = path.join(CALLS_DIR, `${callId}.json`);
-    await writeFile(callFilePath, JSON.stringify(callData, null, 2));
+    await updateJsonFileWithLock<Record<string, unknown>>(callFilePath, (current) => {
+      if (!current || typeof current !== 'object') return callData as unknown as Record<string, unknown>;
+      const existing = current as Record<string, unknown>;
 
-    // Update context status
-    if (matchedId) {
-      contexts[matchedId].status = 'completed';
-      contexts[matchedId].callId = callId;
-      contexts[matchedId].completedAt = Date.now();
-      contexts[matchedId].callSid = contexts[matchedId].callSid || callSid;
-      contexts[matchedId].callerId = contexts[matchedId].callerId || callerId || undefined;
-      await writeFile(CONTEXT_FILE, JSON.stringify(contexts, null, 2));
-    }
+      // Prefer existing values for fields that may have been updated by workers.
+      return {
+        ...callData,
+        ...existing,
+        pageStatus: (existing.pageStatus ?? callData.pageStatus) as unknown,
+        pageUrl: (existing.pageUrl ?? callData.pageUrl) as unknown,
+        generatedAt: (existing.generatedAt ?? callData.generatedAt) as unknown,
+        extractedData: (existing.extractedData ?? callData.extractedData) as unknown,
+        listingsShown: (existing.listingsShown ?? (callData as any).listingsShown) as unknown,
+        sms: (existing.sms ?? (callData as any).sms) as unknown,
+        smsSentAt: (existing.smsSentAt ?? (callData as any).smsSentAt) as unknown,
+      } as Record<string, unknown>;
+    });
 
     if (callData.agencyId !== 'unknown') {
-      await appendAgencyCall(callData.agencyId, {
-        callId,
+      await updateAgencyCall(callData.agencyId, callId, {
         createdAt: callData.timestamp,
         status: 'generating',
         summary: callData.summary || null
@@ -304,7 +272,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Trigger page generation via durable queue
-    console.log('[CALL-COMPLETE] Enqueuing page generation for:', callId);
+    if (DEBUG_WEBHOOKS) console.log('[CALL-COMPLETE] Enqueuing page generation for:', callId);
     await enqueuePostcallJob(callId, buildPostcallPrompt(callId, callData));
 
     const response = {
@@ -312,15 +280,10 @@ export async function POST(request: NextRequest) {
       callId,
       pageGenerationStarted: true
     };
-    console.log('[CALL-COMPLETE] Response:', JSON.stringify(response, null, 2));
-    console.log('[CALL-COMPLETE] ✅ Webhook completed successfully');
-    console.log('='.repeat(60) + '\n');
-
     return NextResponse.json(response);
 
   } catch (error) {
-    console.error('[CALL-COMPLETE] ❌ Error:', error);
-    console.log('='.repeat(60) + '\n');
+    console.error('[CALL-COMPLETE] Error:', error);
     return NextResponse.json({ success: false, error: 'Internal error' }, { status: 500 });
   }
 }

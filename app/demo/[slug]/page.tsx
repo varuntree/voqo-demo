@@ -2,7 +2,10 @@ import { notFound } from 'next/navigation';
 import { readFile } from 'fs/promises';
 import path from 'path';
 import { getDemoPhone } from '@/lib/phone';
-import { isSafeSessionId } from '@/lib/ids';
+import { isSafeAgencyId, isSafeSessionId, stripHtmlSuffix } from '@/lib/ids';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -114,7 +117,8 @@ function injectDemoCallScript(
 
 export default async function DemoPage({ params, searchParams }: Props) {
   const { slug: rawSlug } = await params;
-  const slug = rawSlug.endsWith('.html') ? rawSlug.replace(/\.html$/, '') : rawSlug;
+  const slug = stripHtmlSuffix(rawSlug);
+  if (!isSafeAgencyId(slug)) notFound();
   const filePath = path.join(process.cwd(), 'public', 'demo', `${slug}.html`);
 
   let html: string;
@@ -151,7 +155,7 @@ export default async function DemoPage({ params, searchParams }: Props) {
 
 export async function generateMetadata({ params }: Props) {
   const { slug: rawSlug } = await params;
-  const slug = rawSlug.endsWith('.html') ? rawSlug.replace(/\.html$/, '') : rawSlug;
+  const slug = stripHtmlSuffix(rawSlug);
   return {
     title: `${slug} | Voqo AI Demo`,
   };

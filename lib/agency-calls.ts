@@ -1,5 +1,6 @@
-import { readFile, writeFile, mkdir } from 'fs/promises';
 import path from 'path';
+import { isSafeAgencyId } from '@/lib/ids';
+import { readJsonFile, updateJsonFileWithLock } from '@/lib/fs-json';
 
 const AGENCY_CALLS_DIR = path.join(process.cwd(), 'data/agency-calls');
 
@@ -18,21 +19,23 @@ interface AgencyCallsFile {
 }
 
 export async function getAgencyCalls(agencyId: string): Promise<AgencyCallsFile> {
-  await mkdir(AGENCY_CALLS_DIR, { recursive: true });
+  if (!isSafeAgencyId(agencyId)) return { agencyId, calls: [] };
   const filePath = path.join(AGENCY_CALLS_DIR, `${agencyId}.json`);
 
-  try {
-    const contents = await readFile(filePath, 'utf-8');
-    return JSON.parse(contents) as AgencyCallsFile;
-  } catch {
-    return { agencyId, calls: [] };
-  }
+  const parsed = await readJsonFile<AgencyCallsFile>(filePath);
+  if (!parsed || !Array.isArray(parsed.calls)) return { agencyId, calls: [] };
+  return { agencyId, calls: parsed.calls };
 }
 
 export async function appendAgencyCall(agencyId: string, entry: AgencyCallEntry): Promise<void> {
-  const existing = await getAgencyCalls(agencyId);
-  existing.calls.unshift(entry);
-  await writeAgencyCalls(existing);
+  if (!isSafeAgencyId(agencyId)) return;
+  const filePath = path.join(AGENCY_CALLS_DIR, `${agencyId}.json`);
+  await updateJsonFileWithLock<AgencyCallsFile>(filePath, (current) => {
+    const existing = current && typeof current === 'object' && Array.isArray((current as any).calls)
+      ? (current as AgencyCallsFile)
+      : ({ agencyId, calls: [] } satisfies AgencyCallsFile);
+    return { agencyId, calls: [entry, ...existing.calls].slice(0, 200) };
+  });
 }
 
 export async function updateAgencyCall(
@@ -40,18 +43,19 @@ export async function updateAgencyCall(
   callId: string,
   updates: Partial<AgencyCallEntry>
 ): Promise<void> {
-  const existing = await getAgencyCalls(agencyId);
-  const index = existing.calls.findIndex(call => call.callId === callId);
-  if (index === -1) {
-    existing.calls.unshift({ callId, createdAt: new Date().toISOString(), ...updates });
-  } else {
-    existing.calls[index] = { ...existing.calls[index], ...updates };
-  }
-  await writeAgencyCalls(existing);
-}
-
-async function writeAgencyCalls(data: AgencyCallsFile): Promise<void> {
-  await mkdir(AGENCY_CALLS_DIR, { recursive: true });
-  const filePath = path.join(AGENCY_CALLS_DIR, `${data.agencyId}.json`);
-  await writeFile(filePath, JSON.stringify(data, null, 2));
+  if (!isSafeAgencyId(agencyId)) return;
+  const filePath = path.join(AGENCY_CALLS_DIR, `${agencyId}.json`);
+  await updateJsonFileWithLock<AgencyCallsFile>(filePath, (current) => {
+    const existing = current && typeof current === 'object' && Array.isArray((current as any).calls)
+      ? (current as AgencyCallsFile)
+      : ({ agencyId, calls: [] } satisfies AgencyCallsFile);
+    const idx = existing.calls.findIndex((call) => call.callId === callId);
+    const nextCalls = [...existing.calls];
+    if (idx === -1) {
+      nextCalls.unshift({ callId, createdAt: new Date().toISOString(), ...updates });
+    } else {
+      nextCalls[idx] = { ...nextCalls[idx], ...updates };
+    }
+    return { agencyId, calls: nextCalls.slice(0, 200) };
+  });
 }

@@ -1,12 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, readFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { getDemoPhone } from '@/lib/phone';
 import type { VoiceAgentSettings } from '@/lib/types';
 import { isSafeSessionId } from '@/lib/ids';
+import { updateJsonFileWithLock } from '@/lib/fs-json';
 
 const CONTEXT_FILE = path.join(process.cwd(), 'data/context/pending-calls.json');
 const CONTEXT_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+export const runtime = 'nodejs';
+
+function parseVoiceAgentSettings(raw: unknown): VoiceAgentSettings | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const obj = raw as Record<string, unknown>;
+  if (typeof obj.systemPrompt !== 'string') return null;
+  if (typeof obj.firstMessage !== 'string') return null;
+  return { systemPrompt: obj.systemPrompt, firstMessage: obj.firstMessage };
+}
 
 export async function POST(request: NextRequest) {
   console.log('[REGISTER-CALL] Incoming request at', new Date().toISOString());
@@ -36,7 +46,7 @@ export async function POST(request: NextRequest) {
       typeof timestamp === 'number' ? timestamp : new Date(timestamp).getTime() || Date.now();
 
     // Parse optional settings field
-    const settings: VoiceAgentSettings | null = body.settings ?? null;
+    const settings = parseVoiceAgentSettings(body.settings);
     const sessionId =
       typeof body.sessionId === 'string' && isSafeSessionId(body.sessionId) ? body.sessionId : null;
 
@@ -50,42 +60,33 @@ export async function POST(request: NextRequest) {
     // Generate unique context ID
     const contextId = `ctx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    // Ensure directory exists
-    await mkdir(path.dirname(CONTEXT_FILE), { recursive: true });
-
-    // Load existing contexts
-    let contexts: Record<string, unknown> = {};
-    try {
-      const existing = await readFile(CONTEXT_FILE, 'utf-8');
-      contexts = JSON.parse(existing);
-    } catch {
-      // File doesn't exist yet
-    }
-
-    // Clean expired contexts
     const now = Date.now();
-    for (const key of Object.keys(contexts)) {
-      const ctx = contexts[key] as { expiresAt: number };
-      if (ctx.expiresAt < now) {
-        delete contexts[key];
-      }
-    }
-
-    // Store new context
     const expiresAt = now + CONTEXT_TTL_MS;
-    contexts[contextId] = {
-      agencyId: agencyData.id,
-      agencyName: agencyData.name,
-      agencyData,
-      sessionId,
-      registeredAt,
-      expiresAt,
-      status: 'pending',
-      ...(settings && { settings })
-    };
 
-    // Save
-    await writeFile(CONTEXT_FILE, JSON.stringify(contexts, null, 2));
+    await updateJsonFileWithLock<Record<string, unknown>>(CONTEXT_FILE, (current) => {
+      const contexts = current && typeof current === 'object' ? { ...(current as Record<string, unknown>) } : {};
+
+      // Clean expired contexts
+      for (const key of Object.keys(contexts)) {
+        const ctx = contexts[key] as { expiresAt?: number };
+        if (typeof ctx?.expiresAt === 'number' && ctx.expiresAt < now) {
+          delete contexts[key];
+        }
+      }
+
+      contexts[contextId] = {
+        agencyId: agencyData.id,
+        agencyName: agencyData.name,
+        agencyData,
+        sessionId,
+        registeredAt,
+        expiresAt,
+        status: 'pending',
+        ...(settings ? { settings } : {}),
+      };
+
+      return contexts;
+    });
     const demoPhone = getDemoPhone();
 
     const response = {

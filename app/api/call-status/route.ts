@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { readdir, readFile } from 'fs/promises';
 import path from 'path';
 import { processPostcallJobsOnce } from '@/lib/postcall-queue';
+import { isSafeAgencyId } from '@/lib/ids';
+import { safeJsonParse } from '@/lib/fs-json';
 
 const CALLS_DIR = path.join(process.cwd(), 'data/calls');
 
@@ -23,6 +25,9 @@ export async function GET(request: NextRequest) {
     if (!agencyId) {
       return NextResponse.json({ hasRecentCall: false });
     }
+    if (!isSafeAgencyId(agencyId)) {
+      return NextResponse.json({ error: 'Invalid agency id', hasRecentCall: false }, { status: 400 });
+    }
 
     // Find recent calls for this agency
     let files: string[];
@@ -40,9 +45,10 @@ export async function GET(request: NextRequest) {
 
     // Sort by filename (contains timestamp) descending
     for (const file of callFiles.sort().reverse()) {
-      const callData = JSON.parse(
-        await readFile(path.join(CALLS_DIR, file), 'utf-8')
-      ) as CallData;
+      const raw = await readFile(path.join(CALLS_DIR, file), 'utf-8').catch(() => null);
+      if (!raw) continue;
+      const callData = safeJsonParse<CallData>(raw);
+      if (!callData) continue;
 
       const callTime = new Date(callData.timestamp).getTime();
 

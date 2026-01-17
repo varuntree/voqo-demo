@@ -3,6 +3,7 @@ import path from 'path';
 import { invokeClaudeCode } from '@/lib/claude';
 import { updateAgencyCall } from '@/lib/agency-calls';
 import { enqueueSmsJob, ensureSmsWorker } from '@/lib/sms-queue';
+import { readJsonFile, updateJsonFileWithLock } from '@/lib/fs-json';
 
 const JOBS_DIR = path.join(process.cwd(), 'data/jobs/postcall');
 const CALLS_DIR = path.join(process.cwd(), 'data/calls');
@@ -28,7 +29,7 @@ interface ErrorEntry {
   timestamp: string;
 }
 
-let workerStarted = false;
+const WORKER_FLAG = '__voqoPostcallWorkerStarted';
 
 // NOTE: SMS sending is handled by lib/sms-queue.ts as a durable, idempotent job.
 
@@ -41,12 +42,17 @@ export async function enqueuePostcallJob(callId: string, prompt: string): Promis
     attempts: 0
   };
   const jobPath = path.join(JOBS_DIR, `${callId}.json`);
-  await writeFile(jobPath, JSON.stringify(job, null, 2));
+  try {
+    await writeFile(jobPath, JSON.stringify(job, null, 2), { flag: 'wx' });
+  } catch {
+    // Already enqueued (idempotent).
+  }
 }
 
 export function ensurePostcallWorker(): void {
-  if (workerStarted) return;
-  workerStarted = true;
+  const g = globalThis as unknown as Record<string, unknown>;
+  if (g[WORKER_FLAG]) return;
+  g[WORKER_FLAG] = true;
   // Ensure SMS worker is available whenever the postcall worker runs.
   ensureSmsWorker();
 
@@ -119,6 +125,7 @@ export async function processPostcallJobsOnce(): Promise<void> {
 
       const htmlPath = path.join(PUBLIC_CALL_DIR, `${job.callId}.html`);
       try {
+        await mkdir(PUBLIC_CALL_DIR, { recursive: true });
         await access(htmlPath);
       } catch {
         await appendPostcallError({
@@ -203,37 +210,30 @@ async function markCallCompleted(
 ): Promise<void> {
   const callFile = path.join(CALLS_DIR, `${callId}.json`);
   try {
-    const data = JSON.parse(await readFile(callFile, 'utf-8')) as Record<string, unknown>;
+    const updated = await updateJsonFileWithLock<Record<string, unknown>>(callFile, (current) => {
+      const data = current && typeof current === 'object' ? { ...(current as Record<string, unknown>) } : {};
 
-    if (!data.callerPhone && fallback?.callerPhone) {
-      data.callerPhone = fallback.callerPhone;
-    }
-    if (!data.agencyName && fallback?.agencyName) {
-      data.agencyName = fallback.agencyName;
-    }
-    if (!data.agencyId && fallback?.agencyId) {
-      data.agencyId = fallback.agencyId;
-    }
+      if (!data.callerPhone && fallback?.callerPhone) data.callerPhone = fallback.callerPhone;
+      if (!data.agencyName && fallback?.agencyName) data.agencyName = fallback.agencyName;
+      if (!data.agencyId && fallback?.agencyId) data.agencyId = fallback.agencyId;
 
-    data.pageStatus = 'completed';
-    data.pageUrl = `/call/${callId}`;
-    if (!data.generatedAt) {
-      data.generatedAt = new Date().toISOString();
-    }
-
-    await writeFile(callFile, JSON.stringify(data, null, 2));
+      data.pageStatus = 'completed';
+      data.pageUrl = `/call/${callId}`;
+      if (!data.generatedAt) data.generatedAt = new Date().toISOString();
+      return data;
+    });
 
     // Queue SMS notification (durable + idempotent).
     // The SMS worker will only send once pageStatus/pageUrl are ready and will dedupe by callId.
     void enqueueSmsJob(callId);
 
-    const agencyId = typeof data.agencyId === 'string' ? data.agencyId : null;
+    const agencyId = typeof updated.agencyId === 'string' ? (updated.agencyId as string) : null;
     if (agencyId) {
       await updateAgencyCall(agencyId, callId, {
-        pageUrl: typeof data.pageUrl === 'string' ? data.pageUrl : null,
+        pageUrl: typeof updated.pageUrl === 'string' ? (updated.pageUrl as string) : null,
         status: 'completed',
-        callerName: typeof data.callerName === 'string' ? data.callerName : null,
-        summary: typeof data.summary === 'string' ? data.summary : null
+        callerName: typeof updated.callerName === 'string' ? (updated.callerName as string) : null,
+        summary: typeof updated.summary === 'string' ? (updated.summary as string) : null
       });
     }
   } catch (error) {
@@ -256,14 +256,11 @@ async function isPostcallOutputReady(callId: string): Promise<boolean> {
     return false;
   }
 
-  try {
-    const data = JSON.parse(await readFile(callFile, 'utf-8')) as Record<string, unknown>;
-    const pageStatus = typeof data.pageStatus === 'string' ? data.pageStatus : null;
-    const pageUrl = typeof data.pageUrl === 'string' ? data.pageUrl : null;
-    return pageStatus === 'completed' && Boolean(pageUrl);
-  } catch {
-    return false;
-  }
+  const data = await readJsonFile<Record<string, unknown>>(callFile);
+  if (!data) return false;
+  const pageStatus = typeof data.pageStatus === 'string' ? data.pageStatus : null;
+  const pageUrl = typeof data.pageUrl === 'string' ? data.pageUrl : null;
+  return pageStatus === 'completed' && Boolean(pageUrl);
 }
 
 async function readCallSnapshot(callId: string): Promise<{
@@ -272,40 +269,33 @@ async function readCallSnapshot(callId: string): Promise<{
   agencyId?: string | null;
 } | undefined> {
   const callFile = path.join(CALLS_DIR, `${callId}.json`);
-  try {
-    const data = JSON.parse(await readFile(callFile, 'utf-8')) as {
-      callerPhone?: string | null;
-      agencyName?: string | null;
-      agencyId?: string | null;
-    };
-    return {
-      callerPhone: data.callerPhone ?? null,
-      agencyName: data.agencyName ?? null,
-      agencyId: data.agencyId ?? null
-    };
-  } catch {
-    return undefined;
-  }
+  const data = await readJsonFile<{
+    callerPhone?: string | null;
+    agencyName?: string | null;
+    agencyId?: string | null;
+  }>(callFile);
+  if (!data) return undefined;
+  return {
+    callerPhone: data.callerPhone ?? null,
+    agencyName: data.agencyName ?? null,
+    agencyId: data.agencyId ?? null
+  };
 }
 
 async function markCallFailed(callId: string): Promise<void> {
   const callFile = path.join(CALLS_DIR, `${callId}.json`);
   try {
-    const data = JSON.parse(await readFile(callFile, 'utf-8')) as {
-      agencyId?: string;
-      pageStatus?: string;
-      pageUrl?: string | null;
-      generatedAt?: string | null;
-    };
+    const updated = await updateJsonFileWithLock<Record<string, unknown>>(callFile, (current) => {
+      const data = current && typeof current === 'object' ? { ...(current as Record<string, unknown>) } : {};
+      data.pageStatus = 'failed';
+      data.pageUrl = null;
+      data.generatedAt = new Date().toISOString();
+      return data;
+    });
 
-    data.pageStatus = 'failed';
-    data.pageUrl = null;
-    data.generatedAt = new Date().toISOString();
-
-    await writeFile(callFile, JSON.stringify(data, null, 2));
-
-    if (data.agencyId) {
-      await updateAgencyCall(data.agencyId, callId, {
+    const agencyId = typeof updated.agencyId === 'string' ? (updated.agencyId as string) : null;
+    if (agencyId) {
+      await updateAgencyCall(agencyId, callId, {
         status: 'failed'
       });
     }
@@ -315,17 +305,9 @@ async function markCallFailed(callId: string): Promise<void> {
 }
 
 async function appendPostcallError(entry: ErrorEntry): Promise<void> {
-  const errorDir = path.dirname(ERROR_FILE);
-  await mkdir(errorDir, { recursive: true });
-
-  let existing: ErrorEntry[] = [];
-  try {
-    const contents = await readFile(ERROR_FILE, 'utf-8');
-    existing = JSON.parse(contents) as ErrorEntry[];
-  } catch {
-    // No existing file
-  }
-
-  existing.unshift(entry);
-  await writeFile(ERROR_FILE, JSON.stringify(existing, null, 2));
+  await mkdir(path.dirname(ERROR_FILE), { recursive: true });
+  await updateJsonFileWithLock<ErrorEntry[]>(ERROR_FILE, (current) => {
+    const existing = Array.isArray(current) ? current : [];
+    return [entry, ...existing].slice(0, 200);
+  });
 }

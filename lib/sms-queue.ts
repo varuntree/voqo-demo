@@ -1,6 +1,7 @@
 import { readFile, writeFile, mkdir, readdir, rename, unlink, stat } from 'fs/promises';
 import path from 'path';
 import { sendSMS, normalizePhoneNumber } from '@/lib/twilio';
+import { readJsonFile, safeJsonParse, updateJsonFileWithLock, writeJsonFileAtomic } from '@/lib/fs-json';
 
 const SMS_JOBS_DIR = path.join(process.cwd(), 'data/jobs/sms');
 const CALLS_DIR = path.join(process.cwd(), 'data/calls');
@@ -23,7 +24,7 @@ interface SmsErrorEntry {
   timestamp: string;
 }
 
-let workerStarted = false;
+const WORKER_FLAG = '__voqoSmsWorkerStarted';
 
 function buildBaseUrl(): string {
   const envUrl = process.env.NEXT_PUBLIC_APP_URL;
@@ -31,24 +32,12 @@ function buildBaseUrl(): string {
   return base.endsWith('/') ? base.slice(0, -1) : base;
 }
 
-function safeJsonParse<T>(input: string): T | null {
-  try {
-    return JSON.parse(input) as T;
-  } catch {
-    return null;
-  }
-}
-
 async function appendSmsError(entry: SmsErrorEntry): Promise<void> {
   await mkdir(path.dirname(SMS_ERROR_FILE), { recursive: true });
-  let existing: SmsErrorEntry[] = [];
-  try {
-    existing = JSON.parse(await readFile(SMS_ERROR_FILE, 'utf-8')) as SmsErrorEntry[];
-  } catch {
-    existing = [];
-  }
-  existing.unshift(entry);
-  await writeFile(SMS_ERROR_FILE, JSON.stringify(existing.slice(0, 200), null, 2));
+  await updateJsonFileWithLock<SmsErrorEntry[]>(SMS_ERROR_FILE, (current) => {
+    const existing = Array.isArray(current) ? current : [];
+    return [entry, ...existing].slice(0, 200);
+  });
 }
 
 async function recoverStaleProcessingJobs(files: string[]): Promise<void> {
@@ -81,24 +70,20 @@ export async function enqueueSmsJob(callId: string): Promise<void> {
 }
 
 export function ensureSmsWorker(): void {
-  if (workerStarted) return;
-  workerStarted = true;
+  const g = globalThis as unknown as Record<string, unknown>;
+  if (g[WORKER_FLAG]) return;
+  g[WORKER_FLAG] = true;
   setInterval(() => void processSmsJobsOnce(), INTERVAL_MS);
 }
 
 async function readCall(callId: string): Promise<Record<string, unknown> | null> {
   const callFile = path.join(CALLS_DIR, `${callId}.json`);
-  try {
-    const raw = await readFile(callFile, 'utf-8');
-    return safeJsonParse<Record<string, unknown>>(raw);
-  } catch {
-    return null;
-  }
+  return readJsonFile<Record<string, unknown>>(callFile);
 }
 
 async function writeCall(callId: string, data: Record<string, unknown>): Promise<void> {
   const callFile = path.join(CALLS_DIR, `${callId}.json`);
-  await writeFile(callFile, JSON.stringify(data, null, 2));
+  await writeJsonFileAtomic(callFile, data);
 }
 
 function smsState(data: Record<string, unknown>): { status: string | null; sentAt: string | null } {
@@ -119,14 +104,14 @@ async function markSms(
   callId: string,
   updates: Partial<{ status: string; sentAt: string; messageSid: string; error: string; to: string }>
 ): Promise<void> {
-  const data = await readCall(callId);
-  if (!data) return;
-  const existing = data.sms && typeof data.sms === 'object' ? (data.sms as Record<string, unknown>) : {};
-  data.sms = { ...existing, ...updates };
-  if (updates.status === 'sent' && updates.sentAt) {
-    data.smsSentAt = updates.sentAt;
-  }
-  await writeCall(callId, data);
+  const callFile = path.join(CALLS_DIR, `${callId}.json`);
+  await updateJsonFileWithLock<Record<string, unknown>>(callFile, (current) => {
+    const data = current && typeof current === 'object' ? { ...(current as Record<string, unknown>) } : {};
+    const existing = data.sms && typeof data.sms === 'object' ? (data.sms as Record<string, unknown>) : {};
+    data.sms = { ...existing, ...updates };
+    if (updates.status === 'sent' && updates.sentAt) data.smsSentAt = updates.sentAt;
+    return data;
+  }).catch(() => undefined);
 }
 
 function canSendSms(data: Record<string, unknown>): {

@@ -6,7 +6,7 @@ import type { Activity, ActivityMessage } from '@/lib/types';
 import { processPostcallJobsOnce } from '@/lib/postcall-queue';
 import { normalizeActivityMessage, stableActivityMessageId } from '@/lib/server/activity';
 import { ensureSmsWorker, processSmsJobsOnce } from '@/lib/sms-queue';
-import { isSafeSessionId } from '@/lib/ids';
+import { isSafeCallId, isSafeSessionId } from '@/lib/ids';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -28,6 +28,9 @@ export async function GET(request: NextRequest) {
   const callId = searchParams.get('callId');
   if (!callId) {
     return new Response('callId required', { status: 400 });
+  }
+  if (!isSafeCallId(callId)) {
+    return new Response('Invalid callId', { status: 400 });
   }
   const session = searchParams.get('session');
   const sessionId = session && isSafeSessionId(session) ? session : null;
