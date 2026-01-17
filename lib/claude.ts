@@ -17,6 +17,7 @@ export interface ClaudeCodeOptions {
 }
 
 const PROGRESS_DIR = path.join(process.cwd(), 'data', 'progress');
+const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'haiku';
 
 const logClaudeStderr = (data: string) => {
   if (!data) return;
@@ -325,6 +326,7 @@ export async function invokeClaudeCode(options: ClaudeCodeOptions): Promise<stri
     for await (const message of query({
       prompt,
       options: {
+        model: CLAUDE_MODEL,
         allowedTools: ['Read', 'Write', 'Edit', 'Bash', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Task', 'Skill'],
         allowDangerouslySkipPermissions: true,
         cwd: workingDir || process.cwd(),
@@ -380,6 +382,7 @@ export function invokeClaudeCodeAsync(options: ClaudeCodeOptions): void {
       for await (const message of query({
       prompt,
       options: {
+        model: CLAUDE_MODEL,
         allowedTools: ['Read', 'Write', 'Edit', 'Bash', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Task', 'Skill'],
         allowDangerouslySkipPermissions: true,
         cwd: workingDir || process.cwd(),
