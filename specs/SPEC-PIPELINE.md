@@ -4,6 +4,8 @@
 
 User selects N agencies (1-25), and N subagents run in parallel - each extracting agency details AND generating its demo page simultaneously. The UI streams progress in real-time via SSE.
 
+After a user places a demo call from a generated page, the system runs a background post-call generation pipeline (personalized listings page). The UI exposes this through a **Calls** panel in the main workspace so post-call work is visible end-to-end.
+
 ---
 
 ## System Architecture
@@ -520,6 +522,17 @@ async function cleanupProgressFiles() {
 - Animated streaming indicator (●●●)
 - Collapse/expand toggle
 - Progress counter
+
+### CallsPanel
+- Toggle in the “Engine Workspace” header
+- Hidden by default; when enabled, renders as a third column inside the workspace
+- Lists calls (newest first) with generation status
+- Selecting a call opens `CallDetailModal`
+
+### CallDetailModal
+- Formatted transcript
+- Live post-call generation activity stream while the page is generating
+- Final generated page URL once complete
 
 ### TodoPanel
 - Collapsible

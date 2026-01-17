@@ -3,6 +3,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import type { Activity, ActivityMessage, AgencyProgress, PipelineState } from '@/lib/types';
 import { isSafeSessionId } from '@/lib/ids';
+import { normalizeActivityMessage } from '@/lib/server/activity';
 
 const PROGRESS_DIR = path.join(process.cwd(), 'data', 'progress');
 
@@ -40,34 +41,12 @@ async function readSubagentActivity(agencyIds: string[]): Promise<Record<string,
   return out;
 }
 
-function isValidIsoTimestamp(value: unknown): value is string {
-  if (typeof value !== 'string') return false;
-  const ts = Date.parse(value);
-  return Number.isFinite(ts);
-}
-
 function normalizeMessages(
   messages: ActivityMessage[],
   stablePrefix: string,
   fallbackSource: string
 ): ActivityMessage[] {
-  return messages.map((message, index) => {
-    const stableId = `${stablePrefix}-${index}`;
-    const hasSuspiciousMidnightTimestamp =
-      typeof message.timestamp === 'string' && message.timestamp.endsWith('T00:00:00.000Z');
-    return {
-      ...message,
-      id:
-        typeof message.id === 'string' && message.id.length > 0
-          ? `${stableId}:${message.id}`
-          : stableId,
-      source: message.source ?? fallbackSource,
-      timestamp:
-        isValidIsoTimestamp(message.timestamp) && !hasSuspiciousMidnightTimestamp
-          ? message.timestamp
-          : new Date().toISOString(),
-    };
-  });
+  return messages.map((message) => normalizeActivityMessage(message, stablePrefix, fallbackSource));
 }
 
 export async function GET(request: NextRequest) {

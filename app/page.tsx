@@ -5,6 +5,8 @@ import AgencyCard from '@/components/AgencyCard';
 import TabNavigation from '@/components/TabNavigation';
 import HistoryList from '@/components/HistoryList';
 import MainAgentWorkspace from '@/components/MainAgentWorkspace';
+import CallsPanel, { type CallListItem } from '@/components/CallsPanel';
+import CallDetailModal from '@/components/CallDetailModal';
 import { AgencyProgress, SearchSession, ActivityMessage } from '@/lib/types';
 
 interface Todo {
@@ -53,6 +55,13 @@ export default function Home() {
   const seenMainMessageKeysRef = useRef<Set<string>>(new Set());
   const seenSubagentMessageIdsRef = useRef<Map<string, Set<string>>>(new Map());
   const seenSubagentMessageKeysRef = useRef<Map<string, Set<string>>>(new Map());
+
+  // Calls panel state (workspace)
+  const [callsOpen, setCallsOpen] = useState(false);
+  const [callsLoading, setCallsLoading] = useState(false);
+  const [calls, setCalls] = useState<CallListItem[]>([]);
+  const [selectedCallId, setSelectedCallId] = useState<string | null>(null);
+  const callsEventSourceRef = useRef<EventSource | null>(null);
 
   const persistActiveSessionId = useCallback((id: string) => {
     try {
@@ -111,6 +120,52 @@ export default function Home() {
 
   const messageKey = (message: ActivityMessage) =>
     `${message.type}|${message.text}|${message.detail || ''}|${message.source || ''}|${message.timestamp}`;
+
+  const fetchCalls = useCallback(async () => {
+    setCallsLoading(true);
+    try {
+      const res = await fetch('/api/calls', { cache: 'no-store' });
+      const data = await res.json();
+      setCalls(Array.isArray(data?.calls) ? (data.calls as CallListItem[]) : []);
+    } catch {
+      setCalls([]);
+    } finally {
+      setCallsLoading(false);
+    }
+  }, []);
+
+  // Calls list streaming (only while the panel is open)
+  useEffect(() => {
+    callsEventSourceRef.current?.close();
+    callsEventSourceRef.current = null;
+
+    if (!callsOpen) return;
+
+    void fetchCalls();
+
+    const es = new EventSource('/api/calls/stream');
+    callsEventSourceRef.current = es;
+
+    es.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data?.type === 'calls_update' && Array.isArray(data.calls)) {
+          setCalls(data.calls as CallListItem[]);
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    es.onerror = () => {
+      // ignore; panel still works with last-known list
+    };
+
+    return () => {
+      es.close();
+      if (callsEventSourceRef.current === es) callsEventSourceRef.current = null;
+    };
+  }, [callsOpen, fetchCalls]);
 
   // Rehydrate an in-progress pipeline after reload
   useEffect(() => {
@@ -447,6 +502,12 @@ export default function Home() {
     resetSeenMessageCaches();
     eventSourceRef.current?.close();
     eventSourceRef.current = null;
+    callsEventSourceRef.current?.close();
+    callsEventSourceRef.current = null;
+    setCallsOpen(false);
+    setCalls([]);
+    setSelectedCallId(null);
+    setCallsLoading(false);
     clearActiveSessionId();
   };
 
@@ -590,6 +651,30 @@ export default function Home() {
                   target={mainTarget}
                   onCancel={handleCancelAll}
                   canCancel={Boolean(sessionId) && (pipelineStatus === 'searching' || pipelineStatus === 'processing')}
+                  callsOpen={callsOpen}
+                  callsCount={calls.length}
+                  onToggleCalls={() => {
+                    setCallsOpen((prev) => {
+                      const next = !prev;
+                      if (!next) setSelectedCallId(null);
+                      return next;
+                    });
+                  }}
+                  callsPanel={
+                    <CallsPanel
+                      calls={calls}
+                      loading={callsLoading}
+                      selectedCallId={selectedCallId}
+                      onSelectCall={(id) => {
+                        setSelectedCallId(id);
+                      }}
+                      emptyState={
+                        <span>
+                          Calls appear here after someone dials the demo number from a generated page.
+                        </span>
+                      }
+                    />
+                  }
                 />
               </div>
             </section>
@@ -723,6 +808,13 @@ export default function Home() {
           animation: fadeIn 0.2s ease-out;
         }
       `}</style>
+
+      {selectedCallId && (
+        <CallDetailModal
+          callId={selectedCallId}
+          onClose={() => setSelectedCallId(null)}
+        />
+      )}
     </div>
   );
 }

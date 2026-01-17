@@ -119,7 +119,12 @@ export async function processPostcallJobsOnce(): Promise<void> {
       const callSnapshot = await readCallSnapshot(job.callId);
 
       await runWithTimeout(
-        invokeClaudeCode({ prompt: job.prompt, workingDir: process.cwd() }),
+        invokeClaudeCode({
+          prompt: job.prompt,
+          workingDir: process.cwd(),
+          activitySessionId: `postcall-${job.callId}`,
+          activitySourceLabel: 'Postcall agent',
+        }),
         PROCESSING_TIMEOUT_MS
       );
 

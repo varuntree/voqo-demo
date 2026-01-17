@@ -14,6 +14,10 @@ interface MainAgentWorkspaceProps {
   target: number;
   onCancel: () => void;
   canCancel: boolean;
+  callsOpen?: boolean;
+  callsCount?: number;
+  onToggleCalls?: () => void;
+  callsPanel?: React.ReactNode;
 }
 
 function StatusBadge({ status }: { status: MainAgentWorkspaceProps['status'] }) {
@@ -92,6 +96,10 @@ export default function MainAgentWorkspace({
   target,
   onCancel,
   canCancel,
+  callsOpen,
+  callsCount,
+  onToggleCalls,
+  callsPanel,
 }: MainAgentWorkspaceProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [collapsed, setCollapsed] = useState(false);
@@ -103,6 +111,7 @@ export default function MainAgentWorkspace({
 
   const running = status === 'searching' || status === 'processing';
   const completedCount = todos.filter((t) => t.status === 'complete').length;
+  const showCalls = Boolean(callsOpen && callsPanel);
 
   return (
     <div className="bg-slate-900/40 border border-slate-700 rounded-2xl overflow-hidden backdrop-blur">
@@ -127,6 +136,15 @@ export default function MainAgentWorkspace({
               {completedCount}/{todos.length}
             </span>
           )}
+          {onToggleCalls && (
+            <button
+              onClick={onToggleCalls}
+              className="text-xs text-slate-400 hover:text-white transition-colors"
+              type="button"
+            >
+              Calls{typeof callsCount === 'number' ? ` (${callsCount})` : ''}
+            </button>
+          )}
           <button
             onClick={() => setCollapsed((prev) => !prev)}
             className="text-xs text-slate-400 hover:text-white transition-colors"
@@ -145,8 +163,14 @@ export default function MainAgentWorkspace({
         </div>
       </div>
 
-      <div className={`${collapsed ? 'hidden' : 'grid'} grid-cols-1 lg:grid-cols-5`}>
-        <div className="lg:col-span-3 px-5 py-4 border-b lg:border-b-0 lg:border-r border-slate-700">
+      <div
+        className={`${collapsed ? 'hidden' : 'grid'} grid-cols-1 lg:grid-cols-7`}
+      >
+        <div
+          className={`px-5 py-4 border-b lg:border-b-0 border-slate-700 ${
+            showCalls ? 'lg:col-span-3 lg:border-r' : 'lg:col-span-4 lg:border-r'
+          }`}
+        >
           <div
             ref={scrollRef}
             className="max-h-72 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent"
@@ -168,7 +192,7 @@ export default function MainAgentWorkspace({
           )}
         </div>
 
-        <div className="lg:col-span-2 px-5 py-4">
+        <div className={`px-5 py-4 ${showCalls ? 'lg:col-span-2 lg:border-r border-slate-700' : 'lg:col-span-3'}`}>
           {todos.length === 0 ? (
             <p className="text-slate-500 text-sm">No tasks yet.</p>
           ) : (
@@ -182,8 +206,14 @@ export default function MainAgentWorkspace({
             </div>
           )}
         </div>
+
+        {showCalls && (
+          <div className="px-5 py-4 lg:col-span-2">
+            <h3 className="text-slate-300 font-medium text-sm mb-2">Calls</h3>
+            {callsPanel}
+          </div>
+        )}
       </div>
     </div>
   );
 }
-

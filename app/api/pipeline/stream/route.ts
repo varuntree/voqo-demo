@@ -6,6 +6,7 @@ import type { PipelineState, AgencyProgress, ActivityMessage } from '@/lib/types
 import { addToHistory, buildSessionFromPipeline } from '@/lib/history';
 import { DEFAULT_STEPS } from '@/lib/types';
 import { isSafeSessionId } from '@/lib/ids';
+import { normalizeActivityMessage, stableActivityMessageId } from '@/lib/server/activity';
 
 const PROGRESS_DIR = path.join(process.cwd(), 'data', 'progress');
 const PUBLIC_DEMO_DIR = path.join(process.cwd(), 'public', 'demo');
@@ -44,30 +45,6 @@ async function cleanupStaleFiles(): Promise<void> {
 
 function computeHash(value: unknown): string {
   return JSON.stringify(value);
-}
-
-function isValidIsoTimestamp(value: unknown): value is string {
-  if (typeof value !== 'string') return false;
-  const ts = Date.parse(value);
-  return Number.isFinite(ts);
-}
-
-function normalizeActivityMessage(
-  message: ActivityMessage,
-  stableId: string,
-  fallbackSource: string
-): ActivityMessage {
-  const hasSuspiciousMidnightTimestamp =
-    typeof message.timestamp === 'string' && message.timestamp.endsWith('T00:00:00.000Z');
-  return {
-    ...message,
-    id: typeof message.id === 'string' && message.id.length > 0 ? `${stableId}:${message.id}` : stableId,
-    timestamp:
-      isValidIsoTimestamp(message.timestamp) && !hasSuspiciousMidnightTimestamp
-        ? message.timestamp
-        : new Date().toISOString(),
-    source: message.source ?? fallbackSource,
-  };
 }
 
 function normalizeAgencyProgress(raw: unknown, agencyId: string, sessionId: string): AgencyProgress | null {
@@ -126,8 +103,8 @@ export async function GET(request: NextRequest) {
       const lastSeenHashes = new Map<string, string>();
       const agencyStatuses = new Map<string, AgencyProgress['status']>();
       const knownAgencyIds = new Set<string>();
-      const lastMainActivityCount = { value: 0 };
-      const lastSubagentActivityCount = new Map<string, number>();
+      let lastMainActivityId: string | null = null;
+      const lastSubagentActivityLastId = new Map<string, string | null>();
       let lastKnownTarget = 0;
       let historySaved = false;
 
@@ -268,22 +245,27 @@ export async function GET(request: NextRequest) {
 
       const emitNewMessages = (
         messages: ActivityMessage[],
-        startIndex: number,
+        lastSeenId: string | null,
         fallbackSource: string,
         stablePrefix: string,
         eventBuilder: (message: ActivityMessage) => JsonObject
-      ) => {
-        const safeStart = Math.max(0, Math.min(startIndex, messages.length));
-        const newMessages = messages.slice(safeStart);
-        for (let i = 0; i < newMessages.length; i += 1) {
-          const message = newMessages[i];
-          sendEvent(
-            eventBuilder(
-              normalizeActivityMessage(message, `${stablePrefix}-${safeStart + i}`, fallbackSource)
-            )
-          );
+      ): string | null => {
+        if (messages.length === 0) return lastSeenId;
+
+        const normalizedIds = messages.map((m) => stableActivityMessageId(stablePrefix, m));
+        let startIndex = 0;
+
+        if (lastSeenId) {
+          const idx = normalizedIds.lastIndexOf(lastSeenId);
+          startIndex = idx >= 0 ? idx + 1 : Math.max(0, messages.length - 50);
         }
-        return messages.length;
+
+        for (let i = startIndex; i < messages.length; i += 1) {
+          const message = normalizeActivityMessage(messages[i], stablePrefix, fallbackSource);
+          sendEvent(eventBuilder(message));
+        }
+
+        return normalizedIds[normalizedIds.length - 1] ?? lastSeenId;
       };
 
       const refreshMainActivity = async () => {
@@ -293,14 +275,12 @@ export async function GET(request: NextRequest) {
         if (!parsed) return;
 
         const messages = Array.isArray(parsed.messages) ? parsed.messages : [];
-        const nextCount = emitNewMessages(messages, lastMainActivityCount.value, 'Main agent', 'main', (message) => ({
+        lastMainActivityId = emitNewMessages(messages, lastMainActivityId, 'Main agent', 'main', (message) => ({
           type: 'main_activity_message',
           message,
           found: knownAgencyIds.size,
           target: parsed.agenciesTarget ?? lastKnownTarget ?? knownAgencyIds.size,
         }));
-
-        lastMainActivityCount.value = nextCount;
       };
 
       const refreshSubagentActivity = async (agencyId: string) => {
@@ -321,13 +301,13 @@ export async function GET(request: NextRequest) {
           }
         }
 
-        const prevCount = lastSubagentActivityCount.get(agencyId) ?? 0;
-        const nextCount = emitNewMessages(messages, prevCount, 'Subagent', `sub-${agencyId}`, (message) => ({
+        const prevLastId = lastSubagentActivityLastId.get(agencyId) ?? null;
+        const nextLastId = emitNewMessages(messages, prevLastId, 'Subagent', `sub-${agencyId}`, (message) => ({
           type: 'subagent_activity_message',
           agencyId,
           message,
         }));
-        lastSubagentActivityCount.set(agencyId, nextCount);
+        lastSubagentActivityLastId.set(agencyId, nextLastId);
       };
 
       const checkCompletion = async (pipelineData?: PipelineState) => {

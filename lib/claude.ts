@@ -16,6 +16,7 @@ export interface ClaudeCodeOptions {
   skills?: string[];
   workingDir?: string;
   activitySessionId?: string;
+  activitySourceLabel?: string;
 }
 
 const PROGRESS_DIR = path.join(process.cwd(), 'data', 'progress');
@@ -47,6 +48,7 @@ export function getClaudeModel(): string {
 
 function buildBaseOptions(options: ClaudeCodeOptions): Options {
   const { workingDir, activitySessionId } = options;
+  const activitySourceLabel = options.activitySourceLabel ?? 'Main agent';
 
   return {
     model: getClaudeModel(),
@@ -69,7 +71,7 @@ function buildBaseOptions(options: ClaudeCodeOptions): Options {
     stderr: logClaudeStderr,
     permissionMode: 'bypassPermissions',
     extraArgs: { debug: 'api' },
-    hooks: activitySessionId ? buildActivityHooks(activitySessionId) : undefined,
+    hooks: activitySessionId ? buildActivityHooks(activitySessionId, activitySourceLabel) : undefined,
   };
 }
 
@@ -122,14 +124,14 @@ function formatToolDetail(toolName: string, toolInput: unknown): string | undefi
   }
 }
 
-function mapToolMessage(toolName: string, toolInput: unknown): ActivityMessage {
+function mapToolMessage(toolName: string, toolInput: unknown, sourceLabel: string): ActivityMessage {
   const detail = formatToolDetail(toolName, toolInput);
   const base: ActivityMessage = {
     id: buildActivityId(),
     type: 'tool',
     text: `Using ${toolName}`,
     detail,
-    source: 'Main agent',
+    source: sourceLabel,
     timestamp: new Date().toISOString(),
   };
 
@@ -152,13 +154,13 @@ function mapToolMessage(toolName: string, toolInput: unknown): ActivityMessage {
   return base;
 }
 
-function mapToolResult(toolName: string, toolResponse: unknown): ActivityMessage | null {
+function mapToolResult(toolName: string, toolResponse: unknown, sourceLabel: string): ActivityMessage | null {
   if (!toolResponse) return null;
   const base: ActivityMessage = {
     id: buildActivityId(),
     type: 'results',
     text: `Received ${toolName} results`,
-    source: 'Main agent',
+    source: sourceLabel,
     timestamp: new Date().toISOString(),
   };
 
@@ -240,7 +242,7 @@ async function appendActivity(sessionId: string, message: ActivityMessage, statu
   }
 }
 
-function buildActivityHooks(sessionId: string): Partial<Record<HookEvent, HookCallbackMatcher[]>> {
+function buildActivityHooks(sessionId: string, sourceLabel: string): Partial<Record<HookEvent, HookCallbackMatcher[]>> {
   return {
     SessionStart: [
       {
@@ -264,7 +266,7 @@ function buildActivityHooks(sessionId: string): Partial<Record<HookEvent, HookCa
         hooks: [
           async (input: HookInput) => {
             if (input.hook_event_name !== 'PreToolUse') return { continue: true };
-            const message = mapToolMessage(input.tool_name, input.tool_input);
+            const message = mapToolMessage(input.tool_name, input.tool_input, sourceLabel);
             await appendActivity(sessionId, message);
             return { continue: true };
           }
@@ -281,7 +283,7 @@ function buildActivityHooks(sessionId: string): Partial<Record<HookEvent, HookCa
               type: 'warning',
               text: `Tool failed: ${input.tool_name}`,
               detail: typeof input.error === 'string' ? input.error : undefined,
-              source: 'Main agent',
+              source: sourceLabel,
               timestamp: new Date().toISOString(),
             });
             return { continue: true };
@@ -294,7 +296,7 @@ function buildActivityHooks(sessionId: string): Partial<Record<HookEvent, HookCa
         hooks: [
           async (input: HookInput) => {
             if (input.hook_event_name !== 'PostToolUse') return { continue: true };
-            const message = mapToolResult(input.tool_name, input.tool_response);
+            const message = mapToolResult(input.tool_name, input.tool_response, sourceLabel);
             if (message) {
               await appendActivity(sessionId, message);
             }

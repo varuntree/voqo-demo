@@ -45,6 +45,7 @@ VoqoLeadEngine is a lead generation + demo system for Voqo AI. It finds real est
 │  │  ├── agency-calls/          # Call history indexed by agency            │ │
 │  │  ├── progress/              # Real-time pipeline progress               │ │
 │  │  ├── history/               # Search session history                    │ │
+│  │  │   └── sessions/          # Durable per-session snapshots             │ │
 │  │  ├── jobs/postcall/         # Background job queue                      │ │
 │  │  └── errors/                # Error tracking                            │ │
 │  │                                                                         │ │
@@ -132,11 +133,17 @@ VoqoLeadEngine is a lead generation + demo system for Voqo AI. It finds real est
 8. WORKER PROCESSES JOB
    ├─► Claude Code extracts requirements from transcript
    ├─► Searches for matching listings
+   ├─► Writes post-call agent activity to /data/progress/activity-postcall-{callId}.json
    ├─► Generates personalized HTML
    └─► Saves to /public/call/{callId}.html
 
 9. SMS NOTIFICATION
    └─► "{Agency} found properties for you: {url}"
+
+10. UI VISIBILITY (CALLS PANEL)
+   ├─► Main UI exposes a “Calls” panel in the Engine Workspace
+   ├─► Lists all calls and their page generation status
+   └─► Call detail modal shows transcript + live post-call tool stream
 ```
 
 ---

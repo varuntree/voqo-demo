@@ -19,11 +19,14 @@
 ├── progress/                    # Real-time pipeline progress
 │   ├── pipeline-{sessionId}.json
 │   ├── activity-{sessionId}.json           # Main agent activity stream
+│   ├── activity-postcall-{callId}.json     # Post-call page generation activity stream
 │   ├── agency-{agencyId}.json
 │   └── agency-activity-{agencyId}.json     # Per-card subagent activity stream
 │
 ├── history/                     # Search session history
 │   └── sessions.json
+│   └── sessions/                # Durable per-session snapshots
+│       └── {sessionId}.json
 │
 ├── jobs/postcall/               # Background job queue
 │   └── {callId}.json
@@ -414,6 +417,72 @@ Rename a session.
 **Request:**
 ```typescript
 { name: string; }
+```
+
+---
+
+### GET /api/calls
+
+Fetch recent calls (newest first).
+
+**Response:**
+```typescript
+{
+  calls: Array<{
+    callId: string;
+    timestamp: string;
+    agencyId: string;
+    agencyName: string;
+    pageStatus: 'pending' | 'generating' | 'completed' | 'failed';
+    pageUrl: string | null;
+    duration?: number | null;
+    callerName?: string | null;
+    summary?: string | null;
+  }>;
+}
+```
+
+---
+
+### GET /api/calls/stream
+
+SSE endpoint for streaming call list updates.
+
+**Events:**
+```typescript
+{ type: 'calls_update'; calls: CallListItem[]; }
+```
+
+---
+
+### GET /api/calls/{callId}
+
+Fetch a call detail record and post-call generation activity (if present).
+
+**Response:**
+```typescript
+{
+  call: CallData;
+  postcallActivity: null | {
+    status: 'active' | 'complete';
+    messages: ActivityMessage[];
+  };
+}
+```
+
+---
+
+### GET /api/calls/stream-detail
+
+SSE endpoint for a single call.
+
+**Query:** `?callId={callId}`
+
+**Events:**
+```typescript
+{ type: 'call_update'; call: CallData; }
+{ type: 'postcall_activity_message'; callId: string; message: ActivityMessage; }
+{ type: 'postcall_activity_status'; callId: string; status: 'active' | 'complete'; }
 ```
 
 ---
