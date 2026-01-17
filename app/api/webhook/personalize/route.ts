@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
+import type { VoiceAgentSettings } from '@/lib/types';
 
 const CONTEXT_FILE = path.join(process.cwd(), 'data/context/pending-calls.json');
 const DEFAULT_AGENCY = {
@@ -25,6 +26,20 @@ interface CallContext {
   callerId?: string;
   callSid?: string;
   activatedAt?: number;
+  settings?: VoiceAgentSettings;
+}
+
+// Substitute variables in template strings
+function substituteVariables(
+  template: string,
+  vars: { agency_name: string; agency_location: string; agency_phone: string; demo_page_url: string; context_id: string }
+): string {
+  return template
+    .replace(/\{\{agency_name\}\}/g, vars.agency_name)
+    .replace(/\{\{agency_location\}\}/g, vars.agency_location)
+    .replace(/\{\{agency_phone\}\}/g, vars.agency_phone)
+    .replace(/\{\{demo_page_url\}\}/g, vars.demo_page_url)
+    .replace(/\{\{context_id\}\}/g, vars.context_id);
 }
 
 export async function POST(request: NextRequest) {
@@ -144,33 +159,40 @@ export async function POST(request: NextRequest) {
       agencyData.address?.split(',')[0] ||
       'Sydney';
 
+    const dynamicVars = {
+      agency_name: agencyData.name,
+      agency_location: agencyLocation,
+      agency_phone: agencyData.phone,
+      demo_page_url: `/demo/${agencyData.id || 'default'}`,
+      context_id: matchedId || 'default'
+    };
+
     const response: {
       type: string;
-      dynamic_variables: {
-        agency_name: string;
-        agency_location: string;
-        agency_phone: string;
-        demo_page_url: string;
-        context_id: string;
-      };
+      dynamic_variables: typeof dynamicVars;
       conversation_config_override?: {
         agent: {
-          first_message: string;
+          prompt?: { prompt: string };
+          first_message?: string;
         };
       };
     } = {
       type: 'conversation_initiation_client_data',
-      dynamic_variables: {
-        agency_name: agencyData.name,
-        agency_location: agencyLocation,
-        agency_phone: agencyData.phone,
-        demo_page_url: `/demo/${agencyData.id || 'default'}`,
-        context_id: matchedId || 'default'
-      }
+      dynamic_variables: dynamicVars
     };
 
-    // Custom first message if not default
-    if (agencyData.name !== DEFAULT_AGENCY.name) {
+    // Apply custom settings if provided, otherwise use default first message
+    const settings = matchedContext?.settings;
+    if (settings) {
+      console.log('[PERSONALIZE] Applying custom voice agent settings');
+      response.conversation_config_override = {
+        agent: {
+          prompt: { prompt: substituteVariables(settings.systemPrompt, dynamicVars) },
+          first_message: substituteVariables(settings.firstMessage, dynamicVars)
+        }
+      };
+    } else if (agencyData.name !== DEFAULT_AGENCY.name) {
+      // Fallback: custom first message only (legacy behavior)
       response.conversation_config_override = {
         agent: {
           first_message: `Hi! Thanks for calling ${agencyData.name}. I'm their AI assistant - how can I help you today?`

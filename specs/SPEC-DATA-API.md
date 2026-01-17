@@ -164,12 +164,20 @@ interface CallData {
 **File:** `/data/context/pending-calls.json`
 
 ```typescript
+interface VoiceAgentSettings {
+  systemPrompt: string;              // Custom system prompt with {{variable}} placeholders
+  firstMessage: string;              // Custom first message with {{variable}} placeholders
+}
+
 interface PendingCallsContext {
   [contextId: string]: {
     agencyData: AgencyProfile;
     registeredAt: number;            // Unix timestamp
     expiresAt: number;               // registeredAt + 5min
     status: 'pending' | 'active' | 'completed';
+
+    // Optional voice agent customization
+    settings?: VoiceAgentSettings;
 
     // Added when call starts
     callerId?: string;
@@ -350,6 +358,7 @@ Notes:
 {
   agencyData: { id, name, location, phone, ... };
   timestamp: number;
+  settings?: VoiceAgentSettings;     // Optional voice agent customization
 }
 ```
 

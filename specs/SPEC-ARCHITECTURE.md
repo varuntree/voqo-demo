@@ -107,18 +107,18 @@ VoqoLeadEngine is a lead generation + demo system for Voqo AI. It finds real est
 
 ```
 1. USER ON DEMO PAGE CLICKS "Call Demo"
-   └─► POST /api/register-call with agency data (sendBeacon/keepalive)
+   └─► POST /api/register-call with agency data + optional settings (sendBeacon/keepalive)
 
 2. SERVER STORES CONTEXT
-   └─► /data/context/pending-calls.json
+   └─► /data/context/pending-calls.json (includes settings if provided)
 
 3. USER DIALS THE DEMO NUMBER
    └─► Twilio routes to ElevenLabs
 
 4. ELEVENLABS PERSONALIZATION WEBHOOK
    ├─► Hits /api/webhook/personalize
-   ├─► Server looks up agency context
-   └─► Returns: { dynamic_variables: { agency_name, location, ... } }
+   ├─► Server looks up agency context (+ optional voice agent settings)
+   └─► Returns: { dynamic_variables, conversation_config_override? }
 
 5. VOICE AGENT CONVERSATION
    ├─► "Hi, thanks for calling [Agency Name]..."

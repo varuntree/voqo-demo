@@ -10,6 +10,15 @@
     }
   }
 
+  function getVoiceAgentSettings() {
+    try {
+      var raw = window.localStorage.getItem('voqo:voiceAgentSettings');
+      return raw ? safeJsonParse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
   function getSlugFromPath() {
     var parts = window.location.pathname.split('/').filter(Boolean);
     var demoIndex = parts.indexOf('demo');
@@ -164,6 +173,12 @@
         },
       };
 
+      // Include voice agent settings if available
+      var settings = getVoiceAgentSettings();
+      if (settings) {
+        payload.settings = settings;
+      }
+
       registerCallContext(payload)
         .then(function (res) {
           var telNumber = res && res.phoneNumber ? res.phoneNumber : (config.demoPhone?.tel || config.demoPhone?.display || '+614832945767');
@@ -211,6 +226,11 @@
               demoUrl: window.location.origin + window.location.pathname,
             },
           };
+          // Include voice agent settings if available
+          var settings = getVoiceAgentSettings();
+          if (settings) {
+            payload.settings = settings;
+          }
           void registerCallContext(payload);
         }, { passive: true });
       });

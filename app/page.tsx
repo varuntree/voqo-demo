@@ -7,6 +7,7 @@ import HistoryList from '@/components/HistoryList';
 import MainAgentWorkspace from '@/components/MainAgentWorkspace';
 import CallsPanel, { type CallListItem } from '@/components/CallsPanel';
 import CallDetailModal from '@/components/CallDetailModal';
+import SettingsModal from '@/components/SettingsModal';
 import { AgencyProgress, SearchSession, ActivityMessage } from '@/lib/types';
 
 interface Todo {
@@ -58,6 +59,9 @@ export default function Home() {
 
   // Calls panel state (workspace)
   const [callsOpen, setCallsOpen] = useState(false);
+
+  // Settings modal state
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [callsLoading, setCallsLoading] = useState(false);
   const [calls, setCalls] = useState<CallListItem[]>([]);
   const [selectedCallId, setSelectedCallId] = useState<string | null>(null);
@@ -577,14 +581,40 @@ export default function Home() {
             </div>
             <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
           </div>
-          {pipelineStatus !== 'idle' && activeTab === 'search' && (
+          <div className="flex items-center gap-3">
             <button
-              onClick={handleReset}
-              className="text-sm text-slate-400 hover:text-white transition-colors"
+              onClick={() => setSettingsOpen(true)}
+              className="p-2 text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-slate-700/50"
+              title="Settings"
             >
-              New Search
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
             </button>
-          )}
+            {pipelineStatus !== 'idle' && activeTab === 'search' && (
+              <button
+                onClick={handleReset}
+                className="text-sm text-slate-400 hover:text-white transition-colors"
+              >
+                New Search
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -815,6 +845,11 @@ export default function Home() {
           onClose={() => setSelectedCallId(null)}
         />
       )}
+
+      <SettingsModal
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+      />
     </div>
   );
 }

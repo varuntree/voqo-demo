@@ -295,3 +295,63 @@ Track:
 - Caller feedback: Complaints or confusion
 
 Iterate on prompt based on actual call transcripts.
+
+---
+
+## Settings Customization
+
+Voice agent behavior can be customized via the Settings modal in the header.
+
+### localStorage Key
+
+```
+voqo:voiceAgentSettings
+```
+
+**Schema:**
+```typescript
+interface VoiceAgentSettings {
+  systemPrompt: string;
+  firstMessage: string;
+}
+```
+
+### Settings Modal
+
+- Accessible via gear icon in the main UI header
+- Two text fields: System Prompt and First Message
+- Changes persist to localStorage
+- Reset button restores defaults from SPEC-VOICE-AGENT.md
+
+### Data Flow
+
+```
+1. User edits settings in modal
+   └─► Saved to localStorage
+
+2. User clicks "Call Demo" on demo page
+   └─► POST /api/register-call includes settings from localStorage
+
+3. Server stores settings in pending context
+   └─► /data/context/pending-calls.json
+
+4. ElevenLabs calls personalization webhook
+   └─► /api/webhook/personalize returns:
+       - dynamic_variables (agency context)
+       - conversation_config_override.agent.prompt (if custom systemPrompt)
+       - conversation_config_override.agent.first_message (if custom firstMessage)
+```
+
+### Variable Substitution
+
+Custom prompts support the same dynamic variables as the default prompt:
+
+| Variable | Description |
+|----------|-------------|
+| `{{agency_name}}` | Full agency name |
+| `{{agency_location}}` | Suburb/area |
+| `{{agency_phone}}` | Agency phone |
+| `{{demo_page_url}}` | Source demo page URL |
+| `{{context_id}}` | Context tracking ID |
+
+Variables are substituted by ElevenLabs at runtime using `dynamic_variables` from the webhook response.

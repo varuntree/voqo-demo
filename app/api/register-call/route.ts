@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { writeFile, readFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { getDemoPhone } from '@/lib/phone';
+import type { VoiceAgentSettings } from '@/lib/types';
 
 const CONTEXT_FILE = path.join(process.cwd(), 'data/context/pending-calls.json');
 const CONTEXT_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -32,6 +33,9 @@ export async function POST(request: NextRequest) {
     const timestamp = body.timestamp || body.context?.timestamp || Date.now();
     const registeredAt =
       typeof timestamp === 'number' ? timestamp : new Date(timestamp).getTime() || Date.now();
+
+    // Parse optional settings field
+    const settings: VoiceAgentSettings | null = body.settings ?? null;
 
     if (!agencyData?.id || !agencyData?.name) {
       return NextResponse.json(
@@ -72,7 +76,8 @@ export async function POST(request: NextRequest) {
       agencyData,
       registeredAt,
       expiresAt,
-      status: 'pending'
+      status: 'pending',
+      ...(settings && { settings })
     };
 
     // Save
