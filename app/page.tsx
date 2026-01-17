@@ -390,7 +390,7 @@ export default function Home() {
       // Reset activity state
       setMainActivityMessages([
         {
-          id: `msg-${Date.now()}`,
+          id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
           type: 'thinking',
           text: `Preparing workspace for ${suburb.trim()}...`,
           source: 'System',

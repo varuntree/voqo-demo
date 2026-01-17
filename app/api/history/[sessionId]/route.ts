@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
 import type { Activity, AgencyProgress, HistorySessionDetail, PipelineState, ActivityMessage } from '@/lib/types';
+import { isSafeSessionId } from '@/lib/ids';
 import {
   buildSessionDetailFromPipeline,
   readHistory,
@@ -74,6 +75,9 @@ export async function GET(
 ) {
   try {
     const { sessionId } = await params;
+    if (!isSafeSessionId(sessionId)) {
+      return NextResponse.json({ error: 'Invalid session ID' }, { status: 400 });
+    }
 
     const detail = await readSessionDetail(sessionId);
     if (detail) {
@@ -109,6 +113,9 @@ export async function PATCH(
 ) {
   try {
     const { sessionId } = await params;
+    if (!isSafeSessionId(sessionId)) {
+      return NextResponse.json({ error: 'Invalid session ID' }, { status: 400 });
+    }
     const body = await request.json();
     const { name } = body;
 
@@ -149,4 +156,3 @@ export async function PATCH(
     return NextResponse.json({ error: 'Failed to rename session' }, { status: 500 });
   }
 }
-

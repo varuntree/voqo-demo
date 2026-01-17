@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
 import type { Activity, ActivityMessage, AgencyProgress, PipelineState } from '@/lib/types';
+import { isSafeSessionId } from '@/lib/ids';
 
 const PROGRESS_DIR = path.join(process.cwd(), 'data', 'progress');
 
@@ -75,6 +76,9 @@ export async function GET(request: NextRequest) {
 
   if (!sessionId) {
     return NextResponse.json({ error: 'Session ID required' }, { status: 400 });
+  }
+  if (!isSafeSessionId(sessionId)) {
+    return NextResponse.json({ error: 'Invalid session ID' }, { status: 400 });
   }
 
   const pipelinePath = path.join(PROGRESS_DIR, `pipeline-${sessionId}.json`);

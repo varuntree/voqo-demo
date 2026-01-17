@@ -7,6 +7,7 @@ import { getPipelineRuns } from '@/lib/pipeline-registry';
 import type { PipelineRunStatus } from '@/lib/pipeline-registry';
 import type { Activity, ActivityMessage, AgencyProgress, PipelineState } from '@/lib/types';
 import { addToHistory, buildSessionDetailFromPipeline, buildSessionFromPipeline, writeSessionDetail } from '@/lib/history';
+import { buildActivityId } from '@/lib/ids';
 
 const PROJECT_ROOT = process.cwd();
 const PROGRESS_DIR = path.join(PROJECT_ROOT, 'data', 'progress');
@@ -30,10 +31,6 @@ function slugify(text: string): string {
 
 function activityPath(sessionId: string) {
   return path.join(PROGRESS_DIR, `activity-${sessionId}.json`);
-}
-
-function buildActivityId() {
-  return `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function formatToolDetail(toolName: string, toolInput: unknown): string | undefined {
@@ -206,7 +203,7 @@ export async function POST(request: NextRequest) {
       agenciesTarget: agencyCount,
       messages: [
         {
-          id: `msg-${Date.now()}`,
+          id: buildActivityId(),
           type: 'thinking',
           text: `Preparing workspace for ${suburb}...`,
           source: 'System',

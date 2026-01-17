@@ -4,6 +4,7 @@ import path from 'path';
 import type { Activity, ActivityMessage, AgencyProgress, PipelineState } from '@/lib/types';
 import { getPipelineRuns } from '@/lib/pipeline-registry';
 import { addToHistory, buildSessionDetailFromPipeline, buildSessionFromPipeline, writeSessionDetail } from '@/lib/history';
+import { buildActivityId, isSafeSessionId } from '@/lib/ids';
 
 export const runtime = 'nodejs';
 
@@ -35,6 +36,9 @@ export async function POST(request: NextRequest) {
 
     if (!sessionId || typeof sessionId !== 'string') {
       return NextResponse.json({ error: 'sessionId is required' }, { status: 400 });
+    }
+    if (!isSafeSessionId(sessionId)) {
+      return NextResponse.json({ error: 'Invalid session ID' }, { status: 400 });
     }
 
     const runs = getPipelineRuns();
@@ -83,7 +87,7 @@ export async function POST(request: NextRequest) {
       activity = JSON.parse(content) as Activity;
       activity.status = 'complete';
       const cancelMessage: ActivityMessage = {
-        id: `msg-${Date.now()}`,
+        id: buildActivityId(),
         type: 'warning',
         text: 'Pipeline cancelled by user',
         source: 'System',

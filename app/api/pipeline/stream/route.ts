@@ -5,6 +5,7 @@ import path from 'path';
 import type { PipelineState, AgencyProgress, ActivityMessage } from '@/lib/types';
 import { addToHistory, buildSessionFromPipeline } from '@/lib/history';
 import { DEFAULT_STEPS } from '@/lib/types';
+import { isSafeSessionId } from '@/lib/ids';
 
 const PROGRESS_DIR = path.join(process.cwd(), 'data', 'progress');
 const PUBLIC_DEMO_DIR = path.join(process.cwd(), 'public', 'demo');
@@ -108,6 +109,9 @@ export async function GET(request: NextRequest) {
 
   if (!sessionId) {
     return new Response('Session ID required', { status: 400 });
+  }
+  if (!isSafeSessionId(sessionId)) {
+    return new Response('Invalid session ID', { status: 400 });
   }
 
   const encoder = new TextEncoder();
