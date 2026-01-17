@@ -1,8 +1,17 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { HistoryFile, SearchSession, AgencyProgress, PipelineState } from './types';
+import type {
+  Activity,
+  ActivityMessage,
+  AgencyProgress,
+  HistoryFile,
+  HistorySessionDetail,
+  PipelineState,
+  SearchSession,
+} from './types';
 
 const HISTORY_FILE = path.join(process.cwd(), 'data', 'history', 'sessions.json');
+const HISTORY_SESSIONS_DIR = path.join(process.cwd(), 'data', 'history', 'sessions');
 const PROGRESS_DIR = path.join(process.cwd(), 'data', 'progress');
 const MAX_SESSIONS = 50;
 
@@ -47,7 +56,11 @@ export async function addToHistory(session: SearchSession): Promise<void> {
   // Check if session already exists (update it)
   const existingIndex = history.sessions.findIndex(s => s.sessionId === session.sessionId);
   if (existingIndex >= 0) {
-    history.sessions[existingIndex] = session;
+    const existingName = history.sessions[existingIndex].name;
+    history.sessions[existingIndex] = {
+      ...session,
+      name: existingName || session.name,
+    };
   } else {
     // Add to front
     history.sessions.unshift(session);
@@ -59,6 +72,43 @@ export async function addToHistory(session: SearchSession): Promise<void> {
   }
 
   await writeHistory(history);
+}
+
+function sessionDetailPath(sessionId: string): string {
+  return path.join(HISTORY_SESSIONS_DIR, `${sessionId}.json`);
+}
+
+export async function readSessionDetail(sessionId: string): Promise<HistorySessionDetail | null> {
+  try {
+    const content = await fs.readFile(sessionDetailPath(sessionId), 'utf-8');
+    return JSON.parse(content) as HistorySessionDetail;
+  } catch {
+    return null;
+  }
+}
+
+export async function writeSessionDetail(sessionId: string, detail: HistorySessionDetail): Promise<void> {
+  await fs.mkdir(HISTORY_SESSIONS_DIR, { recursive: true });
+  await fs.writeFile(sessionDetailPath(sessionId), JSON.stringify(detail, null, 2));
+}
+
+export async function buildSessionDetailFromPipeline(
+  pipelineState: PipelineState,
+  activity: Activity | null,
+  agencies: AgencyProgress[],
+  subagentActivity?: Record<string, ActivityMessage[]>
+): Promise<HistorySessionDetail> {
+  const session = await buildSessionFromPipeline(pipelineState);
+
+  return {
+    version: 1,
+    session,
+    pipeline: pipelineState,
+    activity,
+    agencies,
+    subagentActivity,
+    savedAt: new Date().toISOString(),
+  };
 }
 
 export function formatSessionName(suburb: string, date: Date): string {
@@ -104,14 +154,20 @@ export async function buildSessionFromPipeline(
   }
 
   const createdAt = pipelineState.startedAt;
-  const completedAt = pipelineState.completedAt || new Date().toISOString();
+
+  const isRunning = pipelineState.status === 'searching' || pipelineState.status === 'processing';
+  const completedAt = isRunning ? null : (pipelineState.completedAt || new Date().toISOString());
 
   // Determine status
-  let status: SearchSession['status'] = 'complete';
-  if (pipelineState.status === 'error' || pipelineState.status === 'cancelled') {
+  let status: SearchSession['status'];
+  if (isRunning) {
+    status = 'running';
+  } else if (pipelineState.status === 'error' || pipelineState.status === 'cancelled') {
     status = agencies.length > 0 ? 'partial' : 'failed';
   } else if (successCount < agencies.length) {
     status = 'partial';
+  } else {
+    status = 'complete';
   }
 
   return {

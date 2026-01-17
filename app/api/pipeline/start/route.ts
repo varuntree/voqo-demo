@@ -4,6 +4,9 @@ import path from 'path';
 import { query } from '@anthropic-ai/claude-agent-sdk';
 import { getClaudeEnv, getClaudeModel } from '@/lib/claude';
 import { getPipelineRuns } from '@/lib/pipeline-registry';
+import type { PipelineRunStatus } from '@/lib/pipeline-registry';
+import type { Activity, ActivityMessage, AgencyProgress, PipelineState } from '@/lib/types';
+import { addToHistory, buildSessionDetailFromPipeline, buildSessionFromPipeline, writeSessionDetail } from '@/lib/history';
 
 const PROJECT_ROOT = process.cwd();
 const PROGRESS_DIR = path.join(PROJECT_ROOT, 'data', 'progress');
@@ -86,6 +89,76 @@ async function appendMainActivityMessage(sessionId: string, message: {
   } catch {
     // Ignore activity failures
   }
+}
+
+async function readJsonFile<T>(filePath: string): Promise<T | null> {
+  try {
+    const content = await fs.readFile(filePath, 'utf-8');
+    return JSON.parse(content) as T;
+  } catch {
+    return null;
+  }
+}
+
+async function readSubagentActivity(agencyIds: string[]): Promise<Record<string, ActivityMessage[]>> {
+  const out: Record<string, ActivityMessage[]> = {};
+  for (const agencyId of agencyIds) {
+    const activityPath = path.join(PROGRESS_DIR, `agency-activity-${agencyId}.json`);
+    const parsed = await readJsonFile<{ messages?: ActivityMessage[] } | ActivityMessage[]>(activityPath);
+    if (!parsed) continue;
+    if (Array.isArray(parsed)) out[agencyId] = parsed;
+    else if (Array.isArray(parsed.messages)) out[agencyId] = parsed.messages;
+  }
+  return out;
+}
+
+async function persistSessionToHistory(
+  sessionId: string,
+  runStatus?: PipelineRunStatus,
+  runError?: string
+): Promise<void> {
+  const pipelinePath = path.join(PROGRESS_DIR, `pipeline-${sessionId}.json`);
+  const pipeline = await readJsonFile<PipelineState>(pipelinePath);
+  if (!pipeline) return;
+
+  // Best-effort reconciliation if the pipeline file didn't finalize (no SSE client connected).
+  if ((pipeline.status === 'searching' || pipeline.status === 'processing') && runStatus) {
+    const now = new Date().toISOString();
+    if (runStatus === 'completed') {
+      pipeline.status = 'complete';
+      pipeline.completedAt = pipeline.completedAt || now;
+    } else if (runStatus === 'cancelled') {
+      pipeline.status = 'cancelled';
+      pipeline.completedAt = pipeline.completedAt || now;
+      pipeline.error = pipeline.error || 'Cancelled';
+    } else if (runStatus === 'error') {
+      pipeline.status = 'error';
+      pipeline.completedAt = pipeline.completedAt || now;
+      pipeline.error = pipeline.error || runError || 'Pipeline failed';
+    }
+
+    try {
+      await fs.writeFile(pipelinePath, JSON.stringify(pipeline, null, 2));
+    } catch {
+      // ignore
+    }
+  }
+
+  const activity = await readJsonFile<Activity>(activityPath(sessionId));
+
+  const agencies: AgencyProgress[] = [];
+  for (const agencyId of pipeline.agencyIds || []) {
+    const agencyPath = path.join(PROGRESS_DIR, `agency-${agencyId}.json`);
+    const parsed = await readJsonFile<AgencyProgress>(agencyPath);
+    if (parsed && parsed.sessionId === sessionId) agencies.push(parsed);
+  }
+
+  const subagentActivity = await readSubagentActivity(pipeline.agencyIds || []);
+  const detail = await buildSessionDetailFromPipeline(pipeline, activity, agencies, subagentActivity);
+  await writeSessionDetail(sessionId, detail);
+
+  const indexEntry = await buildSessionFromPipeline(pipeline);
+  await addToHistory(indexEntry);
 }
 
 export async function POST(request: NextRequest) {
@@ -232,6 +305,14 @@ export async function POST(request: NextRequest) {
         }
         console.error('[Pipeline] Background run error:', error);
       } finally {
+        // Persist to history even if no SSE client is connected.
+        try {
+          const run = runs.get(sessionId);
+          await persistSessionToHistory(sessionId, run?.status, run?.error);
+        } catch (err) {
+          console.error('[Pipeline] Failed to persist session to history:', err);
+        }
+
         // Keep completed/cancelled runs around briefly for late cancel requests? For now, delete.
         runs.delete(sessionId);
       }

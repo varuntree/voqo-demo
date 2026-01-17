@@ -1,18 +1,5 @@
 import { NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
-import { HistoryFile } from '@/lib/types';
-
-const HISTORY_FILE = path.join(process.cwd(), 'data', 'history', 'sessions.json');
-
-async function readHistory(): Promise<HistoryFile> {
-  try {
-    const content = await fs.readFile(HISTORY_FILE, 'utf-8');
-    return JSON.parse(content) as HistoryFile;
-  } catch {
-    return { sessions: [] };
-  }
-}
+import { readHistory } from '@/lib/history';
 
 export async function GET() {
   try {

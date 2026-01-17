@@ -108,6 +108,16 @@ export interface HistoryFile {
   sessions: SearchSession[];
 }
 
+export interface HistorySessionDetail {
+  version: 1;
+  session: SearchSession;
+  pipeline: PipelineState;
+  activity: Activity | null;
+  agencies: AgencyProgress[];
+  subagentActivity?: Record<string, ActivityMessage[]>;
+  savedAt: string;
+}
+
 // Default steps for new agencies
 export const DEFAULT_STEPS: CardStep[] = [
   { id: 'website', label: 'Found website', status: 'pending' },

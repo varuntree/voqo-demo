@@ -15,6 +15,8 @@ interface Todo {
 
 type PipelineStatus = 'idle' | 'searching' | 'processing' | 'complete' | 'error' | 'cancelled';
 
+const ACTIVE_SESSION_STORAGE_KEY = 'voqo:activePipelineSessionId';
+
 export default function Home() {
   // Tab state
   const [activeTab, setActiveTab] = useState<'search' | 'history'>('search');
@@ -48,7 +50,25 @@ export default function Home() {
   const [collapsedAgencyIds, setCollapsedAgencyIds] = useState<Set<string>>(new Set());
   const eventSourceRef = useRef<EventSource | null>(null);
   const seenMainMessageIdsRef = useRef<Set<string>>(new Set());
+  const seenMainMessageKeysRef = useRef<Set<string>>(new Set());
   const seenSubagentMessageIdsRef = useRef<Map<string, Set<string>>>(new Map());
+  const seenSubagentMessageKeysRef = useRef<Map<string, Set<string>>>(new Map());
+
+  const persistActiveSessionId = useCallback((id: string) => {
+    try {
+      window.localStorage.setItem(ACTIVE_SESSION_STORAGE_KEY, id);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const clearActiveSessionId = useCallback(() => {
+    try {
+      window.localStorage.removeItem(ACTIVE_SESSION_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+  }, []);
 
   // Load history when tab changes to history
   useEffect(() => {
@@ -56,6 +76,18 @@ export default function Home() {
       loadHistory();
     }
   }, [activeTab]);
+
+  // Deep-link tab support: /?tab=history
+  useEffect(() => {
+    try {
+      const tab = new URLSearchParams(window.location.search).get('tab');
+      if (tab === 'history') {
+        setActiveTab('history');
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const loadHistory = async () => {
     setHistoryLoading(true);
@@ -72,8 +104,132 @@ export default function Home() {
 
   const resetSeenMessageCaches = () => {
     seenMainMessageIdsRef.current = new Set();
+    seenMainMessageKeysRef.current = new Set();
     seenSubagentMessageIdsRef.current = new Map();
+    seenSubagentMessageKeysRef.current = new Map();
   };
+
+  const messageKey = (message: ActivityMessage) =>
+    `${message.type}|${message.text}|${message.detail || ''}|${message.source || ''}|${message.timestamp}`;
+
+  // Rehydrate an in-progress pipeline after reload
+  useEffect(() => {
+    if (sessionId) return;
+
+    let storedSessionId: string | null = null;
+    try {
+      storedSessionId = window.localStorage.getItem(ACTIVE_SESSION_STORAGE_KEY);
+    } catch {
+      storedSessionId = null;
+    }
+
+    if (!storedSessionId) return;
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/pipeline/state?session=${encodeURIComponent(storedSessionId!)}`);
+        if (!res.ok) {
+          clearActiveSessionId();
+          return;
+        }
+
+        const data = await res.json();
+        const pipeline = data.pipeline as {
+          suburb?: string;
+          requestedCount?: number;
+          status?: PipelineStatus;
+          todos?: Todo[];
+          agencyIds?: string[];
+        };
+
+        const pipelineSuburb = typeof pipeline.suburb === 'string' ? pipeline.suburb : '';
+        const requestedCount = typeof pipeline.requestedCount === 'number' ? pipeline.requestedCount : agencyCount;
+        const status = (pipeline.status as PipelineStatus) || 'searching';
+
+        setSuburb(pipelineSuburb);
+        setAgencyCount(requestedCount);
+        setSessionId(storedSessionId);
+        setPipelineStatus(status);
+        setTodos(Array.isArray(pipeline.todos) ? pipeline.todos : []);
+        setError('');
+        setCompletionStats(null);
+        setRemovingCards(new Set());
+        setCollapsedAgencyIds(new Set());
+        resetSeenMessageCaches();
+
+        const agencies = (Array.isArray(data.agencies) ? data.agencies : []) as AgencyProgress[];
+        const nextCards = new Map<string, AgencyProgress>();
+        for (const agency of agencies) {
+          nextCards.set(agency.agencyId, agency);
+        }
+        setCards(nextCards);
+
+        const isTerminal = status === 'complete' || status === 'error' || status === 'cancelled';
+
+        if (isTerminal) {
+          const mainActivity = data.mainActivity as {
+            messages?: ActivityMessage[];
+            agenciesFound?: number;
+            agenciesTarget?: number;
+          } | null;
+
+          if (mainActivity && Array.isArray(mainActivity.messages)) {
+            const ids = new Set(mainActivity.messages.map((m) => m.id));
+            seenMainMessageIdsRef.current = ids;
+            seenMainMessageKeysRef.current = new Set(mainActivity.messages.map(messageKey));
+            setMainActivityMessages(mainActivity.messages.slice(-400));
+          } else {
+            setMainActivityMessages([]);
+            seenMainMessageIdsRef.current = new Set();
+            seenMainMessageKeysRef.current = new Set();
+          }
+
+          setMainFound(typeof mainActivity?.agenciesFound === 'number' ? mainActivity.agenciesFound : 0);
+          setMainTarget(
+            typeof mainActivity?.agenciesTarget === 'number' ? mainActivity.agenciesTarget : requestedCount
+          );
+
+          const subagentActivityRaw =
+            data.subagentActivity && typeof data.subagentActivity === 'object'
+              ? (data.subagentActivity as Record<string, ActivityMessage[]>)
+              : {};
+
+          const nextSubagent = new Map<string, ActivityMessage[]>();
+          const nextSeen = new Map<string, Set<string>>();
+          const nextSeenKeys = new Map<string, Set<string>>();
+          for (const [agencyId, messages] of Object.entries(subagentActivityRaw)) {
+            if (!Array.isArray(messages)) continue;
+            nextSubagent.set(agencyId, messages.slice(-250));
+            nextSeen.set(agencyId, new Set(messages.map((m) => m.id)));
+            nextSeenKeys.set(agencyId, new Set(messages.map(messageKey)));
+          }
+          setSubagentActivity(nextSubagent);
+          seenSubagentMessageIdsRef.current = nextSeen;
+          seenSubagentMessageKeysRef.current = nextSeenKeys;
+        } else {
+          // For running sessions, let SSE repopulate activity streams to avoid duplication on reconnect.
+          setMainActivityMessages([]);
+          setMainFound(0);
+          setMainTarget(requestedCount);
+          setSubagentActivity(new Map());
+          seenMainMessageIdsRef.current = new Set();
+          seenMainMessageKeysRef.current = new Set();
+          seenSubagentMessageIdsRef.current = new Map();
+          seenSubagentMessageKeysRef.current = new Map();
+        }
+
+        if (status === 'complete' || status === 'error' || status === 'cancelled') {
+          const success = agencies.filter((a) => a.status === 'complete').length;
+          const failed = agencies.filter((a) => a.status === 'error').length;
+          setCompletionStats({ total: agencies.length, success, failed });
+          clearActiveSessionId();
+        }
+      } catch (err) {
+        console.error('Failed to rehydrate pipeline:', err);
+        clearActiveSessionId();
+      }
+    })();
+  }, [agencyCount, clearActiveSessionId, sessionId]);
 
   // SSE connection
   useEffect(() => {
@@ -132,11 +288,17 @@ export default function Home() {
           case 'main_activity_message':
             if (data?.message?.id && typeof data.message.id === 'string') {
               const seen = seenMainMessageIdsRef.current;
-              if (!seen.has(data.message.id)) {
+              const keys = seenMainMessageKeysRef.current;
+              const key = messageKey(data.message);
+              if (!seen.has(data.message.id) && !keys.has(key)) {
                 seen.add(data.message.id);
+                keys.add(key);
                 // Prevent unbounded growth on long runs / reconnections.
                 if (seen.size > 5000) {
                   seenMainMessageIdsRef.current = new Set(Array.from(seen).slice(-2000));
+                }
+                if (keys.size > 5000) {
+                  seenMainMessageKeysRef.current = new Set(Array.from(keys).slice(-2000));
                 }
                 setMainActivityMessages((prev) => [...prev, data.message].slice(-400));
               }
@@ -150,12 +312,21 @@ export default function Home() {
               const agencyId = String(data.agencyId);
               const map = seenSubagentMessageIdsRef.current;
               const seen = map.get(agencyId) ?? new Set<string>();
-              if (!seen.has(data.message.id)) {
+              const keyMap = seenSubagentMessageKeysRef.current;
+              const keys = keyMap.get(agencyId) ?? new Set<string>();
+              const key = messageKey(data.message);
+              if (!seen.has(data.message.id) && !keys.has(key)) {
                 seen.add(data.message.id);
+                keys.add(key);
                 if (seen.size > 5000) {
                   map.set(agencyId, new Set(Array.from(seen).slice(-2000)));
                 } else {
                   map.set(agencyId, seen);
+                }
+                if (keys.size > 5000) {
+                  keyMap.set(agencyId, new Set(Array.from(keys).slice(-2000)));
+                } else {
+                  keyMap.set(agencyId, keys);
                 }
                 setSubagentActivity((prev) => {
                   const next = new Map(prev);
@@ -183,6 +354,7 @@ export default function Home() {
             if (data.error) {
               setError(data.error);
             }
+            clearActiveSessionId();
             eventSource.close();
             eventSourceRef.current = null;
             break;
@@ -248,18 +420,21 @@ export default function Home() {
         const data = await res.json();
         if (data.success && data.sessionId) {
           setSessionId(data.sessionId);
+          persistActiveSessionId(data.sessionId);
         } else {
           setError(data.error || 'Failed to start pipeline');
           setPipelineStatus('error');
           setCards(new Map());
+          clearActiveSessionId();
         }
       } catch (err) {
         setError('Failed to start search. Please try again.');
         setPipelineStatus('error');
         setCards(new Map());
+        clearActiveSessionId();
       }
     },
-    [suburb, agencyCount]
+    [suburb, agencyCount, clearActiveSessionId, persistActiveSessionId]
   );
 
   const handleReset = () => {
@@ -279,6 +454,7 @@ export default function Home() {
     resetSeenMessageCaches();
     eventSourceRef.current?.close();
     eventSourceRef.current = null;
+    clearActiveSessionId();
   };
 
   const handleAgencyClick = (agencyId: string, demoUrl: string | null) => {
@@ -304,6 +480,7 @@ export default function Home() {
       eventSourceRef.current?.close();
       eventSourceRef.current = null;
       setPipelineStatus('cancelled');
+      clearActiveSessionId();
     }
   };
 

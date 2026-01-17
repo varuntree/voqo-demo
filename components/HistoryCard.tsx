@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { SearchSession } from '@/lib/types';
 
 interface HistoryCardProps {
@@ -99,9 +100,17 @@ export default function HistoryCard({ session, onAgencyClick, onRename }: Histor
       </div>
 
       {/* Stats */}
-      <p className="text-sm text-slate-400 mb-4">
-        {session.actualCount} agencies • {session.successCount} demos generated
-      </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+        <p className="text-sm text-slate-400">
+          {session.actualCount} agencies • {session.successCount} demos generated
+        </p>
+        <Link
+          href={`/history/${session.sessionId}`}
+          className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+        >
+          View run →
+        </Link>
+      </div>
 
       {/* Agency Chips */}
       <div className="flex flex-wrap gap-2">
