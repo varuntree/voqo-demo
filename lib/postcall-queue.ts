@@ -11,8 +11,8 @@ const ERROR_FILE = path.join(process.cwd(), 'data/errors/postcall-errors.json');
 
 const MAX_ATTEMPTS = 3;
 const INTERVAL_MS = 5000;
-const PROCESSING_TIMEOUT_MS = 90_000;
-const STALE_PROCESSING_MS = 10 * 60 * 1000;
+const PROCESSING_TIMEOUT_MS = 5 * 60 * 1000;
+const STALE_PROCESSING_MS = 20 * 60 * 1000;
 
 interface PostcallJob {
   callId: string;
@@ -103,6 +103,7 @@ export async function processPostcallJobsOnce(): Promise<void> {
       const job = JSON.parse(contents) as PostcallJob;
 
       const updatedJob = { ...job, attempts: job.attempts + 1 };
+      await writeFile(processingPath, JSON.stringify(updatedJob, null, 2));
 
       if (updatedJob.attempts > MAX_ATTEMPTS) {
         await appendPostcallError({
@@ -117,6 +118,15 @@ export async function processPostcallJobsOnce(): Promise<void> {
       }
 
       const callSnapshot = await readCallSnapshot(job.callId);
+
+      // If the call page is already generated (for example, Claude Code wrote the HTML before the job timed out),
+      // finalize the job without re-running Claude Code. This is critical for sending the SMS and preventing
+      // infinite retries.
+      if (await isPostcallOutputReady(job.callId)) {
+        await markCallCompleted(job.callId, callSnapshot);
+        await unlink(processingPath);
+        continue;
+      }
 
       await runWithTimeout(
         invokeClaudeCode({
@@ -146,10 +156,21 @@ export async function processPostcallJobsOnce(): Promise<void> {
       await markCallCompleted(job.callId, callSnapshot);
       await unlink(processingPath);
     } catch (error) {
+      let callId = file.replace(/\.json$/, '');
+      let attempts = 1;
+      try {
+        const contents = await readFile(processingPath, 'utf-8');
+        const job = JSON.parse(contents) as Partial<PostcallJob>;
+        if (typeof job.callId === 'string') callId = job.callId;
+        if (typeof job.attempts === 'number') attempts = job.attempts;
+      } catch {
+        // ignore
+      }
+
       await appendPostcallError({
-        callId: file.replace(/\.json$/, ''),
+        callId,
         error: error instanceof Error ? error.message : 'Unknown error',
-        attempts: 1,
+        attempts,
         timestamp: new Date().toISOString()
       });
 
@@ -203,16 +224,7 @@ async function markCallCompleted(
 ): Promise<void> {
   const callFile = path.join(CALLS_DIR, `${callId}.json`);
   try {
-    const data = JSON.parse(await readFile(callFile, 'utf-8')) as {
-      agencyId?: string;
-      agencyName?: string;
-      callerPhone?: string;
-      pageStatus?: string;
-      pageUrl?: string | null;
-      generatedAt?: string | null;
-      callerName?: string | null;
-      summary?: string | null;
-    };
+    const data = JSON.parse(await readFile(callFile, 'utf-8')) as Record<string, unknown>;
 
     if (!data.callerPhone && fallback?.callerPhone) {
       data.callerPhone = fallback.callerPhone;
@@ -226,25 +238,38 @@ async function markCallCompleted(
 
     data.pageStatus = 'completed';
     data.pageUrl = `/call/${callId}`;
-    data.generatedAt = new Date().toISOString();
+    if (!data.generatedAt) {
+      data.generatedAt = new Date().toISOString();
+    }
 
     await writeFile(callFile, JSON.stringify(data, null, 2));
 
     // Send SMS notification to caller
-    if (data.callerPhone) {
-      await sendPostcallSMS({
-        callerPhone: data.callerPhone,
-        agencyName: data.agencyName || 'Voqo',
-        callId,
-      });
+    const callerPhone = typeof data.callerPhone === 'string' ? data.callerPhone : null;
+    const agencyName = typeof data.agencyName === 'string' ? data.agencyName : 'Voqo';
+    const smsSentAt = typeof data.smsSentAt === 'string' ? data.smsSentAt : null;
+
+    if (callerPhone && !smsSentAt) {
+      try {
+        await sendPostcallSMS({
+          callerPhone,
+          agencyName,
+          callId,
+        });
+        data.smsSentAt = new Date().toISOString();
+        await writeFile(callFile, JSON.stringify(data, null, 2));
+      } catch {
+        // sendPostcallSMS already logs; do not fail the job
+      }
     }
 
-    if (data.agencyId) {
-      await updateAgencyCall(data.agencyId, callId, {
-        pageUrl: data.pageUrl,
+    const agencyId = typeof data.agencyId === 'string' ? data.agencyId : null;
+    if (agencyId) {
+      await updateAgencyCall(agencyId, callId, {
+        pageUrl: typeof data.pageUrl === 'string' ? data.pageUrl : null,
         status: 'completed',
-        callerName: data.callerName || null,
-        summary: data.summary || null
+        callerName: typeof data.callerName === 'string' ? data.callerName : null,
+        summary: typeof data.summary === 'string' ? data.summary : null
       });
     }
   } catch (error) {
@@ -254,6 +279,26 @@ async function markCallCompleted(
       attempts: 0,
       timestamp: new Date().toISOString()
     });
+  }
+}
+
+async function isPostcallOutputReady(callId: string): Promise<boolean> {
+  const callFile = path.join(CALLS_DIR, `${callId}.json`);
+  const htmlPath = path.join(PUBLIC_CALL_DIR, `${callId}.html`);
+
+  try {
+    await access(htmlPath);
+  } catch {
+    return false;
+  }
+
+  try {
+    const data = JSON.parse(await readFile(callFile, 'utf-8')) as Record<string, unknown>;
+    const pageStatus = typeof data.pageStatus === 'string' ? data.pageStatus : null;
+    const pageUrl = typeof data.pageUrl === 'string' ? data.pageUrl : null;
+    return pageStatus === 'completed' && Boolean(pageUrl);
+  } catch {
+    return false;
   }
 }
 
