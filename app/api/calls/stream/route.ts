@@ -3,7 +3,7 @@ import { promises as fs } from 'fs';
 import { watch as fsWatch } from 'fs';
 import path from 'path';
 import { processPostcallJobsOnce } from '@/lib/postcall-queue';
-import { processSmsJobsOnce } from '@/lib/sms-queue';
+import { ensureSmsWorker, processSmsJobsOnce } from '@/lib/sms-queue';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -63,6 +63,7 @@ function toListItem(raw: unknown): CallListItem | null {
 async function readCalls(): Promise<CallListItem[]> {
   void processPostcallJobsOnce();
   void processSmsJobsOnce();
+  ensureSmsWorker();
 
   let files: string[] = [];
   try {

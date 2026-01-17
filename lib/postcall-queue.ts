@@ -2,7 +2,7 @@ import { readFile, writeFile, mkdir, readdir, rename, unlink, access, stat } fro
 import path from 'path';
 import { invokeClaudeCode } from '@/lib/claude';
 import { updateAgencyCall } from '@/lib/agency-calls';
-import { enqueueSmsJob } from '@/lib/sms-queue';
+import { enqueueSmsJob, ensureSmsWorker } from '@/lib/sms-queue';
 
 const JOBS_DIR = path.join(process.cwd(), 'data/jobs/postcall');
 const CALLS_DIR = path.join(process.cwd(), 'data/calls');
@@ -47,6 +47,8 @@ export async function enqueuePostcallJob(callId: string, prompt: string): Promis
 export function ensurePostcallWorker(): void {
   if (workerStarted) return;
   workerStarted = true;
+  // Ensure SMS worker is available whenever the postcall worker runs.
+  ensureSmsWorker();
 
   // Use a single interval per process
   setInterval(() => {

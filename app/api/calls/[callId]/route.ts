@@ -4,7 +4,7 @@ import path from 'path';
 import type { Activity } from '@/lib/types';
 import { processPostcallJobsOnce } from '@/lib/postcall-queue';
 import { normalizeActivityMessage } from '@/lib/server/activity';
-import { processSmsJobsOnce } from '@/lib/sms-queue';
+import { ensureSmsWorker, processSmsJobsOnce } from '@/lib/sms-queue';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,6 +24,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   try {
     void processPostcallJobsOnce();
     void processSmsJobsOnce();
+    ensureSmsWorker();
 
     const { callId } = await params;
     if (!callId) {

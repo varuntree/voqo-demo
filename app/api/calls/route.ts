@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { readdir, readFile } from 'fs/promises';
 import path from 'path';
 import { processPostcallJobsOnce } from '@/lib/postcall-queue';
-import { processSmsJobsOnce } from '@/lib/sms-queue';
+import { ensureSmsWorker, processSmsJobsOnce } from '@/lib/sms-queue';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -66,6 +66,7 @@ export async function GET(_request: NextRequest) {
     // Best-effort: keep postcall worker moving when clients are watching calls.
     void processPostcallJobsOnce();
     void processSmsJobsOnce();
+    ensureSmsWorker();
 
     let files: string[] = [];
     try {
