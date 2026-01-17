@@ -218,6 +218,15 @@ Injected per-call via personalization webhook:
 
 ---
 
+## Demo Call Activation (Frontend Requirements)
+
+To ensure the voice agent receives the correct agency context:
+- Demo pages must call `POST /api/register-call` immediately before dialing.
+- Demo pages must dial the single enforced demo number:
+  - Display: `04832945767`
+  - Dial (E.164): `+614832945767`
+- The personalization webhook may return `conversation_config_override.agent.first_message` to ensure the first line reflects the matched agency.
+
 ## Voice Selection
 
 **Requirements:**

@@ -50,7 +50,7 @@
 | Main Site | https://theagentic.engineer |
 | Personalize Webhook | https://theagentic.engineer/api/webhook/personalize |
 | Call Complete Webhook | https://theagentic.engineer/api/webhook/call-complete |
-| Demo Phone | +61 483 943 567 |
+| Demo Phone | +614832945767 (display: 04832945767) |
 
 ---
 
@@ -93,6 +93,10 @@ rsync -avz --progress \
   --exclude='.next' \
   --exclude='.git' \
   --exclude='.env.local' \
+  --exclude='data' \
+  --exclude='public/demo' \
+  --exclude='public/call' \
+  --exclude='pnpm-lock.yaml' \
   /Users/varunprasad/code/prjs/voqo-demo/ \
   root@170.64.163.27:/var/www/voqo-demo/
 
@@ -100,6 +104,16 @@ rsync -avz --progress \
 ssh root@170.64.163.27
 chown -R voqo:voqo /var/www/voqo-demo
 su - voqo -c "cd /var/www/voqo-demo && npm install && npm run build && pm2 restart voqo-demo"
+```
+
+Alternative (preferred if `/var/www/voqo-demo` is a git clone):
+```bash
+ssh voqo@170.64.163.27
+cd /var/www/voqo-demo
+git pull --ff-only
+npm ci
+npm run build
+pm2 restart voqo-demo
 ```
 
 ---

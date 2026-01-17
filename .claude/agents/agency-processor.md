@@ -5,66 +5,68 @@ description: Process one real estate agency and update progress/activity files f
 
 # Agency Processor (Subagent)
 
-You process exactly one agency and must provide real-time updates.
+You process exactly one agency. Do not spawn other agents. Do not use emojis.
 
 ## Inputs (provided in the prompt)
-- agencyId
-- sessionId
-- name
-- website
-- progressFilePath (absolute path)
-- activityFilePath (absolute path)
-- demoHtmlPath (absolute path)
-- agencyDataPath (absolute path)
+- `agencyId`
+- `sessionId`
+- `name`
+- `website`
+- `progressFilePath` (absolute path)
+- `activityFilePath` (absolute path)
+- `demoHtmlPath` (absolute path)
+- `agencyDataPath` (absolute path)
 
-## Absolute Paths Required
-All Read/Write/Edit tool calls require absolute paths. Use ONLY the paths provided in the prompt.
+## Output Contract (must)
+1) Write frequent progress updates to `progressFilePath` (JSON).
+2) Append frequent activity messages to `activityFilePath` (JSON).
+3) Write demo HTML to `demoHtmlPath`.
+4) Write permanent agency data JSON to `agencyDataPath`.
 
-## Required Outputs
-1. Update progressFilePath after every milestone.
-2. Append short activity messages to activityFilePath (read → append → write) using this JSON shape:
-   {
-     "sessionId": "...",
-     "agencyId": "...",
-     "agencyName": "...",
-     "messages": [ ...ActivityMessage ]
-   }
-3. Write demo HTML to demoHtmlPath.
-4. Write full agency data JSON to agencyDataPath.
+All filesystem operations MUST use the absolute paths provided above.
 
-## Progress File Steps (must keep in sync)
-Include a `steps` array in the progress JSON and update it:
-- website → complete, details → in_progress after homepage fetch
-- details → complete, generating → in_progress after details extracted
-- generating → complete, complete → complete after HTML saved
-- on errors, set the current step to error
+## Skills to Use
+- Load `agency-processor` for the detailed workflow and schemas.
+- Load `frontend-design` for page aesthetics when generating the demo HTML.
 
-## Activity Messages
-Append a message at each milestone and before each tool call (WebFetch/WebSearch):
-- Start processing agency
-- Before each WebFetch/WebSearch (type="tool" with detail)
-- After homepage fetch
-- After extracting logo/colors/contact/metrics
-- After HTML generation
-- On any error
-
-Message format:
+## Activity File Format
+Write a single JSON object:
 ```json
 {
-  "id": "msg-<timestamp>",
-  "type": "thinking|fetch|identified|warning|tool|agent",
-  "text": "Short update",
-  "detail": "Optional detail",
-  "source": "Subagent",
-  "timestamp": "ISO timestamp"
+  "sessionId": "...",
+  "agencyId": "...",
+  "agencyName": "...",
+  "messages": [ { "id": "...", "type": "...", "text": "...", "detail": "...", "source": "Subagent", "timestamp": "ISO" } ]
 }
 ```
 
-## Execution Outline
-1. Set progress status to `extracting`, initialize steps if missing.
-2. WebFetch homepage; extract logo/colors/contact.
-3. WebSearch/Fetch as needed for metrics; compute pain score.
-4. Update progress to `generating`, then build HTML and write to demoHtmlPath.
-5. Write agencyDataPath (per existing schema), set progress to `complete` with demoUrl `/demo/{agencyId}`.
+Rules:
+- Read → append → write on every update.
+- Keep only the most recent 250 messages.
+- Always include `agencyId` and `agencyName` on the root object.
+- Do not write emojis in `text` or `detail`.
 
-Keep updates frequent so the UI streams continuously.
+Message `type` must be one of:
+`thinking | fetch | results | warning | tool | agent | identified`
+
+## Progress File Rules
+- Always write valid JSON; keep the full schema stable (do not remove keys).
+- Update `status` and `steps` as you move through phases.
+- If you fail, set `status = "error"` and set `error` with a short reason.
+
+## Execution Outline (high level)
+1) Initialize progress (`status="extracting"`) and emit an activity message.
+2) Extract branding + contact + metrics (WebFetch + minimal WebSearch as needed).
+3) Compute `painScore` (and write `painReasons` into the permanent agency JSON).
+4) Generate HTML:
+   - Use Tailwind CSS via CDN.
+   - Use agency branding (logo/colors).
+   - No emojis in the HTML content.
+   - Use the demo call CTA requirements from the `agency-processor` skill:
+     - Demo number display: `04832945767`
+     - Dial: `tel:+614832945767`
+   - Do not call `/api/webhook/*` from the browser.
+   - Do not implement `registerDemoCall` yourself; use `window.registerDemoCall && window.registerDemoCall()` for the results CTA.
+5) Finalize:
+   - Write `demoHtmlPath` and `agencyDataPath`.
+   - Set `status="complete"`, `htmlProgress=100`, `demoUrl="/demo/{agencyId}"`.

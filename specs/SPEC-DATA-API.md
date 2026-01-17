@@ -4,8 +4,8 @@
 
 ```
 /data
-├── agencies/                    # Agency data from research
-│   └── {suburb-slug}.json       # Suburb search results
+├── agencies/                    # Durable agency records (one per agency)
+│   └── {agency-id}.json
 │
 ├── calls/                       # Call transcripts and results
 │   └── call-{timestamp}-{rand}.json
@@ -18,7 +18,9 @@
 │
 ├── progress/                    # Real-time pipeline progress
 │   ├── pipeline-{sessionId}.json
-│   └── agency-{agencyId}.json
+│   ├── activity-{sessionId}.json           # Main agent activity stream
+│   ├── agency-{agencyId}.json
+│   └── agency-activity-{agencyId}.json     # Per-card subagent activity stream
 │
 ├── history/                     # Search session history
 │   └── sessions.json
@@ -29,6 +31,8 @@
 └── errors/                      # Error tracking
     └── postcall-errors.json
 ```
+
+Note: `/data` and generated HTML under `/public/demo` and `/public/call` are runtime artifacts and should not be committed to git. Deploys must preserve these directories on the VPS.
 
 ---
 
@@ -189,10 +193,13 @@ interface AgencyCallEntry {
   pageUrl: string | null;
   callerName: string | null;
   summary: string | null;
-  status: 'pending' | 'completed' | 'failed';
+  status: 'generating' | 'completed' | 'failed';
 }
 
-type AgencyCallsFile = AgencyCallEntry[];
+interface AgencyCallsFile {
+  agencyId: string;
+  calls: AgencyCallEntry[];          // Newest first
+}
 ```
 
 ---
@@ -300,11 +307,11 @@ SSE endpoint for real-time progress.
 // Todo update
 { type: 'todo_update'; todos: Array<{id, text, status}>; }
 
-// Activity message (pre-card phase)
-{ type: 'activity_message'; message: ActivityMessage; found: number; target: number; }
+// Main agent activity (workspace stream)
+{ type: 'main_activity_message'; message: ActivityMessage; found: number; target: number; }
 
-// Activity complete, show cards
-{ type: 'activity_complete'; sessionId: string; agencies: Array<{id, name, website}>; }
+// Subagent activity (per-card stream)
+{ type: 'subagent_activity_message'; agencyId: string; message: ActivityMessage; }
 
 // Card update
 { type: 'card_update'; agencyId: string; data: AgencyProgress; }
@@ -313,7 +320,15 @@ SSE endpoint for real-time progress.
 { type: 'card_remove'; agencyId: string; reason: string; }
 
 // Pipeline complete
-{ type: 'pipeline_complete'; sessionId: string; totalAgencies: number; successCount: number; }
+{
+  type: 'pipeline_complete';
+  sessionId: string;
+  totalAgencies: number;
+  successCount: number;
+  failedCount: number;
+  status: 'complete' | 'error' | 'cancelled';
+  error?: string;
+}
 ```
 
 ---
@@ -321,6 +336,11 @@ SSE endpoint for real-time progress.
 ### POST /api/register-call
 
 Store agency context before user dials.
+
+Notes:
+- Demo pages should call this immediately before `tel:` navigation.
+- The server supports payloads sent via `navigator.sendBeacon` (raw JSON body) and `fetch(..., { keepalive: true })`.
+- The demo phone number is enforced by the server and returned in the response (do not hardcode agency phone numbers in `tel:` links for the demo call).
 
 **Request:**
 ```typescript
@@ -332,7 +352,13 @@ Store agency context before user dials.
 
 **Response:**
 ```typescript
-{ success: boolean; contextId: string; expiresAt: number; phoneNumber: string; }
+{
+  success: boolean;
+  contextId: string;
+  expiresAt: number;
+  phoneNumber: string;         // E.164, example: "+614832945767"
+  displayPhoneNumber: string;  // Example: "04832945767"
+}
 ```
 
 ---

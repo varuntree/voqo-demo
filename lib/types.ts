@@ -73,7 +73,7 @@ export interface PipelineState {
   sessionId: string;
   suburb: string;
   requestedCount: number;
-  status: 'searching' | 'processing' | 'complete' | 'error';
+  status: 'searching' | 'processing' | 'complete' | 'error' | 'cancelled';
   startedAt: string;
   completedAt: string | null;
   todos: Array<{

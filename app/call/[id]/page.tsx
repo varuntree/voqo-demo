@@ -18,7 +18,7 @@ export default async function CallPage({ params }: Props) {
   }
 
   return (
-    <div dangerouslySetInnerHTML={{ __html: html }} />
+    <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: html }} />
   );
 }
 

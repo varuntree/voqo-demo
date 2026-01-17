@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import TodoPanel from '@/components/TodoPanel';
 import AgencyCard from '@/components/AgencyCard';
 import TabNavigation from '@/components/TabNavigation';
 import HistoryList from '@/components/HistoryList';
-import AgentActivityPanel from '@/components/AgentActivityPanel';
+import MainAgentWorkspace from '@/components/MainAgentWorkspace';
 import { AgencyProgress, SearchSession, ActivityMessage } from '@/lib/types';
 
 interface Todo {
@@ -14,7 +13,7 @@ interface Todo {
   status: 'pending' | 'in_progress' | 'complete';
 }
 
-type PipelineStatus = 'idle' | 'searching' | 'processing' | 'complete' | 'error';
+type PipelineStatus = 'idle' | 'searching' | 'processing' | 'complete' | 'error' | 'cancelled';
 
 export default function Home() {
   // Tab state
@@ -28,7 +27,6 @@ export default function Home() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [cards, setCards] = useState<Map<string, AgencyProgress>>(new Map());
   const [removingCards, setRemovingCards] = useState<Set<string>>(new Set());
-  const placeholderIdsRef = useRef<Set<string>>(new Set());
   const [error, setError] = useState('');
   const [completionStats, setCompletionStats] = useState<{
     total: number;
@@ -41,10 +39,16 @@ export default function Home() {
   const [historyLoading, setHistoryLoading] = useState(false);
 
   // Activity state
-  const [activityMessages, setActivityMessages] = useState<ActivityMessage[]>([]);
-  const [activityFound, setActivityFound] = useState(0);
-  const [activityTarget, setActivityTarget] = useState(0);
-  const [activityPanelStatus, setActivityPanelStatus] = useState<'active' | 'complete' | 'collapsed'>('active');
+  const [mainActivityMessages, setMainActivityMessages] = useState<ActivityMessage[]>([]);
+  const [mainFound, setMainFound] = useState(0);
+  const [mainTarget, setMainTarget] = useState(0);
+  const [subagentActivity, setSubagentActivity] = useState<Map<string, ActivityMessage[]>>(
+    new Map()
+  );
+  const [collapsedAgencyIds, setCollapsedAgencyIds] = useState<Set<string>>(new Set());
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const seenMainMessageIdsRef = useRef<Set<string>>(new Set());
+  const seenSubagentMessageIdsRef = useRef<Map<string, Set<string>>>(new Map());
 
   // Load history when tab changes to history
   useEffect(() => {
@@ -66,49 +70,25 @@ export default function Home() {
     }
   };
 
-  const buildPlaceholderCards = useCallback((count: number) => {
-    const now = new Date().toISOString();
-    const placeholders = new Map<string, AgencyProgress>();
-    const ids = new Set<string>();
-
-    for (let i = 0; i < count; i += 1) {
-      const id = `placeholder-${Date.now()}-${i}`;
-      ids.add(id);
-      placeholders.set(id, {
-        agencyId: id,
-        sessionId: 'pending',
-        isPlaceholder: true,
-        status: 'skeleton',
-        updatedAt: now,
-        name: null,
-        website: null,
-        phone: null,
-        address: null,
-        logoUrl: null,
-        primaryColor: null,
-        secondaryColor: null,
-        teamSize: null,
-        listingCount: null,
-        painScore: null,
-        soldCount: null,
-        priceRangeMin: null,
-        priceRangeMax: null,
-        forRentCount: null,
-        htmlProgress: 0,
-        demoUrl: null,
-      });
-    }
-
-    return { placeholders, ids };
-  }, []);
+  const resetSeenMessageCaches = () => {
+    seenMainMessageIdsRef.current = new Set();
+    seenSubagentMessageIdsRef.current = new Map();
+  };
 
   // SSE connection
   useEffect(() => {
-    if (!sessionId || pipelineStatus === 'idle' || pipelineStatus === 'complete') {
+    if (
+      !sessionId ||
+      pipelineStatus === 'idle' ||
+      pipelineStatus === 'complete' ||
+      pipelineStatus === 'error' ||
+      pipelineStatus === 'cancelled'
+    ) {
       return;
     }
 
     const eventSource = new EventSource(`/api/pipeline/stream?session=${sessionId}`);
+    eventSourceRef.current = eventSource;
 
     eventSource.onmessage = (event) => {
       try {
@@ -126,13 +106,6 @@ export default function Home() {
             setCards((prev) => {
               const next = new Map(prev);
               const incoming = data.data as AgencyProgress;
-
-              if (!incoming.isPlaceholder && placeholderIdsRef.current.size > 0) {
-                for (const id of placeholderIdsRef.current) {
-                  next.delete(id);
-                }
-                placeholderIdsRef.current = new Set();
-              }
 
               next.set(data.agencyId, incoming);
               return next;
@@ -156,30 +129,62 @@ export default function Home() {
             }, 500);
             break;
 
-          case 'activity_message':
-            setActivityMessages((prev) => [...prev, data.message]);
-            setActivityFound(data.found);
-            setActivityTarget(data.target);
+          case 'main_activity_message':
+            if (data?.message?.id && typeof data.message.id === 'string') {
+              const seen = seenMainMessageIdsRef.current;
+              if (!seen.has(data.message.id)) {
+                seen.add(data.message.id);
+                // Prevent unbounded growth on long runs / reconnections.
+                if (seen.size > 5000) {
+                  seenMainMessageIdsRef.current = new Set(Array.from(seen).slice(-2000));
+                }
+                setMainActivityMessages((prev) => [...prev, data.message].slice(-400));
+              }
+            }
+            setMainFound(data.found ?? 0);
+            setMainTarget(data.target ?? 0);
             break;
 
-          case 'activity_complete':
-            setActivityFound(data.found);
-            setActivityTarget(data.target);
-            setActivityPanelStatus('complete');
+          case 'subagent_activity_message':
+            if (data?.message?.id && typeof data.message.id === 'string') {
+              const agencyId = String(data.agencyId);
+              const map = seenSubagentMessageIdsRef.current;
+              const seen = map.get(agencyId) ?? new Set<string>();
+              if (!seen.has(data.message.id)) {
+                seen.add(data.message.id);
+                if (seen.size > 5000) {
+                  map.set(agencyId, new Set(Array.from(seen).slice(-2000)));
+                } else {
+                  map.set(agencyId, seen);
+                }
+                setSubagentActivity((prev) => {
+                  const next = new Map(prev);
+                  const existing = next.get(agencyId) ?? [];
+                  next.set(agencyId, [...existing, data.message].slice(-250));
+                  return next;
+                });
+              }
+            }
             break;
 
           case 'pipeline_complete':
-            setPipelineStatus(data.status === 'error' ? 'error' : 'complete');
+            setPipelineStatus(
+              data.status === 'error'
+                ? 'error'
+                : data.status === 'cancelled'
+                  ? 'cancelled'
+                  : 'complete'
+            );
             setCompletionStats({
               total: data.totalAgencies,
               success: data.successCount,
               failed: data.failedCount,
             });
-            setActivityPanelStatus('complete');
             if (data.error) {
               setError(data.error);
             }
             eventSource.close();
+            eventSourceRef.current = null;
             break;
         }
       } catch (err) {
@@ -193,6 +198,9 @@ export default function Home() {
 
     return () => {
       eventSource.close();
+      if (eventSourceRef.current === eventSource) {
+        eventSourceRef.current = null;
+      }
     };
   }, [sessionId, pipelineStatus]);
 
@@ -204,20 +212,31 @@ export default function Home() {
       // Reset state
       setError('');
       setCards(new Map());
-      setTodos([]);
+      setTodos([
+        { id: 'setup', text: 'Setting up workspace', status: 'complete' },
+        { id: 'search', text: `Finding agencies in ${suburb.trim()}`, status: 'in_progress' },
+        { id: 'spawn', text: `Starting ${agencyCount} parallel agency jobs`, status: 'pending' },
+        { id: 'generate', text: 'Generating demo pages', status: 'pending' },
+      ]);
       setCompletionStats(null);
       setRemovingCards(new Set());
       setPipelineStatus('searching');
       setActiveTab('search');
       // Reset activity state
-      setActivityMessages([]);
-      setActivityFound(0);
-      setActivityTarget(agencyCount);
-      setActivityPanelStatus('active');
-
-      const { placeholders, ids } = buildPlaceholderCards(agencyCount);
-      setCards(placeholders);
-      placeholderIdsRef.current = ids;
+      setMainActivityMessages([
+        {
+          id: `msg-${Date.now()}`,
+          type: 'thinking',
+          text: `Preparing workspace for ${suburb.trim()}...`,
+          source: 'System',
+          timestamp: new Date().toISOString(),
+        },
+      ]);
+      setMainFound(0);
+      setMainTarget(agencyCount);
+      setSubagentActivity(new Map());
+      setCollapsedAgencyIds(new Set());
+      resetSeenMessageCaches();
 
       try {
         const res = await fetch('/api/pipeline/start', {
@@ -233,16 +252,14 @@ export default function Home() {
           setError(data.error || 'Failed to start pipeline');
           setPipelineStatus('error');
           setCards(new Map());
-          placeholderIdsRef.current = new Set();
         }
       } catch (err) {
         setError('Failed to start search. Please try again.');
         setPipelineStatus('error');
         setCards(new Map());
-        placeholderIdsRef.current = new Set();
       }
     },
-    [suburb, agencyCount, buildPlaceholderCards]
+    [suburb, agencyCount]
   );
 
   const handleReset = () => {
@@ -253,12 +270,15 @@ export default function Home() {
     setCompletionStats(null);
     setError('');
     setRemovingCards(new Set());
-    placeholderIdsRef.current = new Set();
     // Reset activity state
-    setActivityMessages([]);
-    setActivityFound(0);
-    setActivityTarget(0);
-    setActivityPanelStatus('active');
+    setMainActivityMessages([]);
+    setMainFound(0);
+    setMainTarget(0);
+    setSubagentActivity(new Map());
+    setCollapsedAgencyIds(new Set());
+    resetSeenMessageCaches();
+    eventSourceRef.current?.close();
+    eventSourceRef.current = null;
   };
 
   const handleAgencyClick = (agencyId: string, demoUrl: string | null) => {
@@ -270,10 +290,21 @@ export default function Home() {
     }
   };
 
-  const handleActivityPanelToggle = () => {
-    setActivityPanelStatus((prev) =>
-      prev === 'collapsed' ? 'complete' : 'collapsed'
-    );
+  const handleCancelAll = async () => {
+    if (!sessionId) return;
+    try {
+      await fetch('/api/pipeline/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      });
+    } catch {
+      // ignore
+    } finally {
+      eventSourceRef.current?.close();
+      eventSourceRef.current = null;
+      setPipelineStatus('cancelled');
+    }
   };
 
   const handleRename = async (sessionIdToRename: string, newName: string) => {
@@ -378,30 +409,17 @@ export default function Home() {
             </div>
           </section>
 
-          {/* Todo Panel */}
-          {todos.length > 0 && (
+          {(pipelineStatus !== 'idle' || todos.length > 0 || mainActivityMessages.length > 0) && (
             <section className="px-4 pb-6">
-              <div className="max-w-6xl mx-auto">
-                <TodoPanel
+              <div className="max-w-6xl mx-auto sticky top-20 z-10">
+                <MainAgentWorkspace
+                  status={pipelineStatus}
                   todos={todos}
-                  pipelineStatus={
-                    pipelineStatus as 'searching' | 'processing' | 'complete' | 'error'
-                  }
-                />
-              </div>
-            </section>
-          )}
-
-          {/* Agent Activity Panel */}
-          {(pipelineStatus === 'searching' || pipelineStatus === 'processing') && (
-            <section className="px-4 pb-6">
-              <div className="max-w-6xl mx-auto">
-                <AgentActivityPanel
-                  status={activityPanelStatus}
-                  messages={activityMessages}
-                  found={activityFound}
-                  target={activityTarget}
-                  onToggle={handleActivityPanelToggle}
+                  messages={mainActivityMessages.slice(-200)}
+                  found={mainFound}
+                  target={mainTarget}
+                  onCancel={handleCancelAll}
+                  canCancel={Boolean(sessionId) && (pipelineStatus === 'searching' || pipelineStatus === 'processing')}
                 />
               </div>
             </section>
@@ -455,6 +473,16 @@ export default function Home() {
                       key={card.agencyId}
                       data={card}
                       isRemoving={removingCards.has(card.agencyId)}
+                      activity={subagentActivity.get(card.agencyId) ?? []}
+                      isExpanded={!collapsedAgencyIds.has(card.agencyId)}
+                      onToggleExpand={() => {
+                        setCollapsedAgencyIds((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(card.agencyId)) next.delete(card.agencyId);
+                          else next.add(card.agencyId);
+                          return next;
+                        });
+                      }}
                     />
                   ))}
                 </div>
@@ -462,8 +490,8 @@ export default function Home() {
             </section>
           )}
 
-          {/* Empty state during search - only show if no activity panel */}
-          {isSearching && cardsArray.length === 0 && activityMessages.length === 0 && (
+          {/* Empty state during search */}
+          {isSearching && cardsArray.length === 0 && mainActivityMessages.length === 0 && (
             <section className="px-4 py-12">
               <div className="max-w-6xl mx-auto text-center">
                 <div className="inline-flex items-center gap-3 px-6 py-3 bg-slate-800 rounded-full">

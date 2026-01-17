@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { invokeClaudeCodeAsync } from '@/lib/claude';
+import { query } from '@anthropic-ai/claude-agent-sdk';
+import { getClaudeEnv, getClaudeModel } from '@/lib/claude';
+import { getPipelineRuns } from '@/lib/pipeline-registry';
 
 const PROJECT_ROOT = process.cwd();
 const PROGRESS_DIR = path.join(PROJECT_ROOT, 'data', 'progress');
@@ -23,6 +25,69 @@ function slugify(text: string): string {
     .replace(/^-|-$/g, '');
 }
 
+function activityPath(sessionId: string) {
+  return path.join(PROGRESS_DIR, `activity-${sessionId}.json`);
+}
+
+function buildActivityId() {
+  return `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function formatToolDetail(toolName: string, toolInput: unknown): string | undefined {
+  if (!toolInput || typeof toolInput !== 'object') return undefined;
+  const input = toolInput as Record<string, unknown>;
+
+  switch (toolName) {
+    case 'WebSearch':
+      return typeof input.query === 'string' ? input.query : undefined;
+    case 'WebFetch':
+      return typeof input.url === 'string' ? input.url : undefined;
+    case 'Read':
+    case 'Write':
+    case 'Edit':
+      return typeof input.path === 'string' ? input.path : undefined;
+    case 'Glob':
+      return typeof input.pattern === 'string' ? input.pattern : undefined;
+    case 'Task':
+      return typeof input.prompt === 'string' ? input.prompt.slice(0, 140) : undefined;
+    case 'Skill':
+      return typeof input.name === 'string' ? input.name : undefined;
+    default:
+      return undefined;
+  }
+}
+
+async function appendMainActivityMessage(sessionId: string, message: {
+  type: 'search' | 'results' | 'fetch' | 'identified' | 'warning' | 'thinking' | 'tool' | 'agent';
+  text: string;
+  detail?: string;
+  source?: string;
+  timestamp?: string;
+}) {
+  const filePath = activityPath(sessionId);
+  const timestamp = message.timestamp ?? new Date().toISOString();
+  const nextMessage = {
+    id: buildActivityId(),
+    ...message,
+    source: message.source ?? 'Main agent',
+    timestamp,
+  };
+
+  try {
+    const content = await fs.readFile(filePath, 'utf-8').catch(() => null);
+    const parsed = content ? (JSON.parse(content) as { messages?: unknown[] }) : null;
+    const existingMessages = Array.isArray(parsed?.messages) ? parsed!.messages : [];
+    const updated = {
+      ...(parsed && typeof parsed === 'object' ? parsed : {}),
+      sessionId,
+      messages: [...existingMessages, nextMessage].slice(-250),
+    };
+    await fs.writeFile(filePath, JSON.stringify(updated, null, 2));
+  } catch {
+    // Ignore activity failures
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -38,6 +103,8 @@ export async function POST(request: NextRequest) {
 
     // Ensure progress directory exists
     await fs.mkdir(PROGRESS_DIR, { recursive: true });
+    await fs.mkdir(AGENCIES_DIR, { recursive: true });
+    await fs.mkdir(PUBLIC_DEMO_DIR, { recursive: true });
 
     // Create initial pipeline state file
     const pipelineState = {
@@ -48,9 +115,10 @@ export async function POST(request: NextRequest) {
       startedAt,
       completedAt: null,
       todos: [
-        { id: 't1', text: `Searching for agencies in ${suburb}`, status: 'in_progress' },
-        { id: 't2', text: `Processing ${agencyCount} agencies in parallel`, status: 'pending' },
-        { id: 't3', text: 'Generating demo pages', status: 'pending' },
+        { id: 'setup', text: 'Setting up workspace', status: 'complete' },
+        { id: 'search', text: `Finding agencies in ${suburb}`, status: 'in_progress' },
+        { id: 'spawn', text: `Starting ${agencyCount} parallel agency jobs`, status: 'pending' },
+        { id: 'generate', text: 'Generating demo pages', status: 'pending' },
       ],
       agencyIds: [],
     };
@@ -67,26 +135,107 @@ export async function POST(request: NextRequest) {
         {
           id: `msg-${Date.now()}`,
           type: 'thinking',
-          text: `Starting search in ${suburb}...`,
+          text: `Preparing workspace for ${suburb}...`,
           source: 'System',
           timestamp: startedAt,
         },
       ],
     };
-    const activityPath = path.join(PROGRESS_DIR, `activity-${sessionId}.json`);
-    await fs.writeFile(activityPath, JSON.stringify(activityState, null, 2));
+    await fs.writeFile(activityPath(sessionId), JSON.stringify(activityState, null, 2));
 
     console.log(`[Pipeline] Created session ${sessionId} for ${suburb} (${agencyCount} agencies)`);
 
     // Build orchestrator prompt
     const orchestratorPrompt = buildOrchestratorPrompt(sessionId, suburb, agencyCount, startedAt);
 
-    // Invoke Claude Code asynchronously (fire-and-forget)
-    invokeClaudeCodeAsync({
+    const pipelineQuery = query({
       prompt: orchestratorPrompt,
-      workingDir: process.cwd(),
-      activitySessionId: sessionId,
+      options: {
+        model: getClaudeModel(),
+        allowedTools: ['Read', 'Write', 'Edit', 'Glob', 'WebSearch', 'WebFetch', 'Task', 'Skill'],
+        disallowedTools: ['Bash', 'Grep'],
+        includePartialMessages: true,
+        persistSession: false,
+        allowDangerouslySkipPermissions: true,
+        cwd: process.cwd(),
+        env: getClaudeEnv(),
+        settingSources: ['project'],
+        permissionMode: 'bypassPermissions',
+        extraArgs: { debug: 'api' },
+      },
     });
+
+    const runs = getPipelineRuns();
+    runs.set(sessionId, {
+      sessionId,
+      query: pipelineQuery,
+      status: 'running',
+      startedAt,
+    });
+
+    // Drain the query in the background so the pipeline runs even after returning.
+    void (async () => {
+      const seenToolUse = new Set<string>();
+      try {
+        for await (const message of pipelineQuery) {
+          if (message.type === 'assistant' && message.parent_tool_use_id === null) {
+            const content = (message.message as unknown as { content?: unknown }).content;
+            if (Array.isArray(content)) {
+              for (const block of content as Array<{ type?: string; name?: string; input?: unknown; id?: string }>) {
+                if (block?.type !== 'tool_use' || !block.id || !block.name) continue;
+                if (seenToolUse.has(block.id)) continue;
+                seenToolUse.add(block.id);
+
+                const toolName = block.name;
+                const detail = formatToolDetail(toolName, block.input);
+                const mappedType =
+                  toolName === 'WebSearch'
+                    ? 'search'
+                    : toolName === 'WebFetch'
+                      ? 'fetch'
+                      : 'tool';
+
+                await appendMainActivityMessage(sessionId, {
+                  type: mappedType,
+                  text:
+                    toolName === 'WebSearch'
+                      ? detail
+                        ? `Searching: ${detail}`
+                        : 'Searching the web...'
+                      : toolName === 'WebFetch'
+                        ? detail
+                          ? `Fetching: ${detail}`
+                          : 'Fetching webpage...'
+                        : `Using ${toolName}`,
+                  detail,
+                });
+              }
+            }
+          }
+
+          if (message.type === 'result') {
+            console.log('[Pipeline] Session result:', message.subtype);
+          }
+        }
+
+        const run = runs.get(sessionId);
+        if (run && run.status === 'running') {
+          run.status = 'completed';
+          run.finishedAt = new Date().toISOString();
+        }
+      } catch (error) {
+        const run = runs.get(sessionId);
+        if (run && run.status !== 'cancelled') {
+          run.status = 'error';
+          run.error = error instanceof Error ? error.message : String(error);
+          run.finishedAt = new Date().toISOString();
+        }
+        console.error('[Pipeline] Background run error:', error);
+      } finally {
+        // Keep completed/cancelled runs around briefly for late cancel requests? For now, delete.
+        runs.delete(sessionId);
+      }
+    })();
 
     return NextResponse.json({
       success: true,
@@ -103,9 +252,11 @@ export async function POST(request: NextRequest) {
 }
 
 function buildOrchestratorPrompt(sessionId: string, suburb: string, count: number, startedAt: string): string {
-  return `You are the Agency Pipeline Orchestrator. Your task is to find and process ${count} real estate agencies in ${suburb}.
+  return `You are the Agency Pipeline Orchestrator. Your task is to identify and process ${count} real estate agencies in ${suburb}.
 
 CRITICAL: You must write progress updates to files so the UI can display real-time feedback.
+CRITICAL: Do not use emojis anywhere (messages, file output, HTML).
+CRITICAL: Do not do deep research yourself. Your job is ONLY to identify agencies (name + website) and spawn subagents.
 
 ## Session Info
 - Session ID: ${sessionId}
@@ -122,31 +273,39 @@ Current status: searching
 Tool usage and subagent lifecycle events are streamed automatically via hooks.
 Do NOT edit any activity stream files manually.
 
-## Step 2: Search for Agencies
-Use WebSearch to find real estate agencies in ${suburb}. Find at least ${count} agencies.
+## Step 2: Find Agencies (FAST, incremental)
+Use WebSearch to find real estate agencies in ${suburb}. Stop as soon as you have ${count} agencies.
+Do NOT use WebFetch for agency websites at this stage.
+De-duplicate agencies by website domain and by agencyId slug (skip duplicates).
 
 Search queries to use:
 - "${suburb} real estate agents Sydney"
 - "${suburb} real estate agencies"
 - "best real estate agents ${suburb}"
 
-For each agency found:
-Extract:
-- Name (official business name)
-- Website URL
-- Generate a URL-safe slug/ID (e.g., "ray-white-surry-hills")
+As you identify each agency (one-by-one), do ALL of the following immediately (do not wait until you have all ${count}):
+1) Generate a URL-safe slug/ID (e.g., "ray-white-surry-hills").
+2) Update the pipeline file:
+   - Append the agencyId to agencyIds (keep order of discovery)
+   - Keep todos[1] ("search") as in_progress
+3) Create / update the skeleton progress file for that agency at:
+   ${PROGRESS_DIR}/agency-{agencyId}.json
+   - status: "skeleton"
+   - name and website filled in
+   - everything else null/0
+   - include steps array exactly as provided below
 
-After finding all ${count} agencies, update the pipeline file:
-1. Read ${PROGRESS_DIR}/pipeline-${sessionId}.json
-2. Update:
-   - todos[0].status = "complete"
-   - todos[1].status = "in_progress"
-   - agencyIds = [list of agency slugs]
+This is what causes agency cards to appear quickly with real names (no blank placeholders).
+
+Once you have exactly ${count} agencies:
+1) Update pipeline file:
+   - set todo with id "search" to status "complete"
+   - set todo with id "spawn" to status "in_progress"
    - status = "processing"
-3. Write back to the file
+2) Proceed to Step 3.
 
-## Step 3: Create Skeleton Progress Files
-For each agency found, write ${PROGRESS_DIR}/agency-{agencyId}.json with this format:
+## Skeleton Progress File Format
+Write ${PROGRESS_DIR}/agency-{agencyId}.json with this format:
 
 {
   "agencyId": "agency-slug",
@@ -177,7 +336,7 @@ For each agency found, write ${PROGRESS_DIR}/agency-{agencyId}.json with this fo
   ]
 }
 
-## Step 4: Spawn Subagents
+## Step 3: Spawn Subagents (ONE message, N tasks)
 Use the Task tool to spawn ${count} parallel subagents. Each subagent processes ONE agency.
 
 IMPORTANT: Spawn all subagents in a SINGLE message with multiple Task tool calls.
@@ -195,7 +354,8 @@ Use the agency-processor skill to:
 
 The subagent prompt should be:
 
-"Process the agency {name} (ID: {agencyId}).
+"Process the agency {name}.
+agencyId: {agencyId}
 Session ID: ${sessionId}
 Website: {website}
 progressFilePath: ${PROGRESS_DIR}/agency-{agencyId}.json
@@ -219,15 +379,19 @@ Progress file path: ${PROGRESS_DIR}/agency-{agencyId}.json
 
 CRITICAL: Use ONLY the absolute paths listed above for Read/Write/Edit. Update the progress file after EACH step so the UI shows real-time updates."
 
-## Step 5: Wait and Complete
+Immediately after spawning all tasks:
+1) Update pipeline file:
+   - set todo with id "spawn" to status "complete"
+   - set todo with id "generate" to status "in_progress"
+
+## Step 4: Wait and Complete
 After all subagents complete:
-1. Read the pipeline file
-2. Update:
-   - todos[1].status = "complete"
-   - todos[2].status = "complete"
+1) Read the pipeline file
+2) Update:
+   - set todo with id "generate" to status "complete"
    - status = "complete"
    - completedAt = current ISO timestamp
-3. Write back to the file
+3) Write back to the file
 
 ## Tool Restrictions
 - DO NOT use Chrome, Playwright, or any browser automation tools

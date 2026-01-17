@@ -1,5 +1,7 @@
 import { query } from '@anthropic-ai/claude-agent-sdk';
 import type {
+  Options,
+  Query,
   HookCallbackMatcher,
   HookEvent,
   HookInput
@@ -17,7 +19,6 @@ export interface ClaudeCodeOptions {
 }
 
 const PROGRESS_DIR = path.join(process.cwd(), 'data', 'progress');
-const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'sonnet';
 
 const logClaudeStderr = (data: string) => {
   if (!data) return;
@@ -34,6 +35,49 @@ function buildClaudeEnv(): Record<string, string | undefined> {
   pathEntries.add('/home/voqo/.local/bin');
   env.PATH = Array.from(pathEntries).join(':');
   return env;
+}
+
+export function getClaudeEnv(): Record<string, string | undefined> {
+  return buildClaudeEnv();
+}
+
+export function getClaudeModel(): string {
+  return process.env.CLAUDE_MODEL || 'sonnet';
+}
+
+function buildBaseOptions(options: ClaudeCodeOptions): Options {
+  const { workingDir, activitySessionId } = options;
+
+  return {
+    model: getClaudeModel(),
+    allowedTools: options.tools ?? [
+      'Read',
+      'Write',
+      'Edit',
+      'Bash',
+      'Glob',
+      'Grep',
+      'WebSearch',
+      'WebFetch',
+      'Task',
+      'Skill',
+    ],
+    allowDangerouslySkipPermissions: true,
+    cwd: workingDir || process.cwd(),
+    env: getClaudeEnv(),
+    settingSources: ['project'],
+    stderr: logClaudeStderr,
+    permissionMode: 'bypassPermissions',
+    extraArgs: { debug: 'api' },
+    hooks: activitySessionId ? buildActivityHooks(activitySessionId) : undefined,
+  };
+}
+
+export function createClaudeQuery(options: ClaudeCodeOptions): Query {
+  return query({
+    prompt: options.prompt,
+    options: buildBaseOptions(options),
+  });
 }
 
 function pipelinePath(sessionId: string) {
@@ -259,42 +303,6 @@ function buildActivityHooks(sessionId: string): Partial<Record<HookEvent, HookCa
         ]
       }
     ],
-    SubagentStart: [
-      {
-        hooks: [
-          async (input: HookInput) => {
-            if (input.hook_event_name !== 'SubagentStart') return { continue: true };
-            await appendActivity(sessionId, {
-              id: buildActivityId(),
-              type: 'agent',
-              text: `Subagent started (${input.agent_type})`,
-              detail: input.agent_id,
-              source: 'System',
-              timestamp: new Date().toISOString(),
-            });
-            return { continue: true };
-          }
-        ]
-      }
-    ],
-    SubagentStop: [
-      {
-        hooks: [
-          async (input: HookInput) => {
-            if (input.hook_event_name !== 'SubagentStop') return { continue: true };
-            await appendActivity(sessionId, {
-              id: buildActivityId(),
-              type: 'agent',
-              text: 'Subagent finished',
-              detail: input.agent_id,
-              source: 'System',
-              timestamp: new Date().toISOString(),
-            });
-            return { continue: true };
-          }
-        ]
-      }
-    ],
     SessionEnd: [
       {
         hooks: [
@@ -316,28 +324,14 @@ function buildActivityHooks(sessionId: string): Partial<Record<HookEvent, HookCa
 }
 
 export async function invokeClaudeCode(options: ClaudeCodeOptions): Promise<string> {
-  const { prompt, workingDir, activitySessionId } = options;
+  const { prompt } = options;
 
   console.log('[Claude Code] Invoking with prompt:', prompt.substring(0, 100) + '...');
 
   let result = '';
 
   try {
-    for await (const message of query({
-      prompt,
-      options: {
-        model: CLAUDE_MODEL,
-        allowedTools: ['Read', 'Write', 'Edit', 'Bash', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Task', 'Skill'],
-        allowDangerouslySkipPermissions: true,
-        cwd: workingDir || process.cwd(),
-        env: buildClaudeEnv(),
-        settingSources: ['project'],
-        stderr: logClaudeStderr,
-        permissionMode: 'bypassPermissions',
-        extraArgs: { debug: 'api' },
-        hooks: activitySessionId ? buildActivityHooks(activitySessionId) : undefined,
-      }
-    })) {
+    for await (const message of createClaudeQuery(options)) {
       // Log message types for debugging
       if ('type' in message) {
         console.log('[Claude Code] Message type:', message.type);
@@ -372,28 +366,14 @@ export async function invokeClaudeCode(options: ClaudeCodeOptions): Promise<stri
 
 // Fire-and-forget version for background tasks
 export function invokeClaudeCodeAsync(options: ClaudeCodeOptions): void {
-  const { prompt, workingDir, activitySessionId } = options;
+  const { prompt } = options;
 
   console.log('[Claude Code Async] Starting background task');
 
   // Run in background without waiting
   (async () => {
     try {
-      for await (const message of query({
-      prompt,
-      options: {
-        model: CLAUDE_MODEL,
-        allowedTools: ['Read', 'Write', 'Edit', 'Bash', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Task', 'Skill'],
-        allowDangerouslySkipPermissions: true,
-        cwd: workingDir || process.cwd(),
-        env: buildClaudeEnv(),
-        settingSources: ['project'],
-        stderr: logClaudeStderr,
-        permissionMode: 'bypassPermissions',
-        extraArgs: { debug: 'api' },
-        hooks: activitySessionId ? buildActivityHooks(activitySessionId) : undefined,
-      }
-    })) {
+      for await (const message of createClaudeQuery(options)) {
         if ('result' in message) {
           console.log('[Claude Code Async] Completed with result');
         }

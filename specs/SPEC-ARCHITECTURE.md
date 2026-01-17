@@ -97,7 +97,7 @@ VoqoLeadEngine is a lead generation + demo system for Voqo AI. It finds real est
    └─► Cards animate: skeleton → extracting → generating → complete
 
 6. USER CLICKS [View Demo]
-   └─► Opens /demo/{agency-slug}
+   └─► Opens /demo/{agency-slug} (injects demo-call script + minimal agency context)
 ```
 
 ---
@@ -106,12 +106,12 @@ VoqoLeadEngine is a lead generation + demo system for Voqo AI. It finds real est
 
 ```
 1. USER ON DEMO PAGE CLICKS "Call Demo"
-   └─► POST /api/register-call with agency data
+   └─► POST /api/register-call with agency data (sendBeacon/keepalive)
 
 2. SERVER STORES CONTEXT
    └─► /data/context/pending-calls.json
 
-3. USER DIALS TWILIO NUMBER
+3. USER DIALS THE DEMO NUMBER
    └─► Twilio routes to ElevenLabs
 
 4. ELEVENLABS PERSONALIZATION WEBHOOK
@@ -157,7 +157,7 @@ VoqoLeadEngine is a lead generation + demo system for Voqo AI. It finds real est
 
 | Component | Technology | Purpose |
 |-----------|------------|---------|
-| Framework | Next.js 14 (App Router) | UI + API routes |
+| Framework | Next.js 16 (App Router) | UI + API routes |
 | Hosting | DigitalOcean Droplet | Single VPS |
 | Styling | Tailwind CSS | Fast UI development |
 | AI Execution | Claude Code (Claude Max) | All agent tasks |
@@ -178,6 +178,7 @@ voqo-demo/
 │   └── api/
 │       ├── pipeline/
 │       │   ├── start/route.ts      # Start agency search
+│       │   ├── cancel/route.ts     # Cancel pipeline
 │       │   └── stream/route.ts     # SSE progress streaming
 │       ├── search/route.ts         # Legacy search (deprecated)
 │       ├── generate-demo/route.ts  # Legacy generation (deprecated)
@@ -194,12 +195,17 @@ voqo-demo/
 │   └── postcall-page-builder/SKILL.md
 │
 ├── data/                           # Runtime data
-├── public/                         # Generated HTML
+├── public/                         # Generated HTML + client scripts
+│   └── voqo-demo-call.js           # Demo call activation + legacy CTA patching
 ├── lib/                            # Utilities
 │   ├── twilio.ts
 │   ├── claude.ts
+│   ├── phone.ts
+│   ├── pipeline-registry.ts
 │   ├── postcall-queue.ts
 │   └── agency-calls.ts
+│
+├── proxy.ts                        # Redirect /demo/*.html and /call/*.html
 │
 └── specs/                          # This documentation
 ```
@@ -215,8 +221,8 @@ voqo-demo/
 
 2. **Static HTML generation**
    - Claude Code generates complete HTML files
-   - Served directly from /public
-   - Fast loading, cacheable
+   - Stored under `/public/demo` and `/public/call`
+   - Served via `/demo/[slug]` and `/call/[id]` to allow runtime script injection and safe redirects from `*.html`
 
 3. **Single VPS architecture**
    - Everything on one machine
@@ -250,8 +256,10 @@ ELEVENLABS_WEBHOOK_SECRET=...
 
 # App
 NEXT_PUBLIC_APP_URL=https://theagentic.engineer
-NEXT_PUBLIC_DEMO_PHONE=+61 483 943 567
+NEXT_PUBLIC_DEMO_PHONE=+614832945767
 ```
+
+Note: The demo phone number is enforced by the server (`04832945767` / `+614832945767`). Other values are ignored to avoid broken demo pages.
 
 ---
 

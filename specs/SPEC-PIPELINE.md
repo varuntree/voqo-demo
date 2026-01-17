@@ -18,18 +18,18 @@ User selects N agencies (1-25), and N subagents run in parallel - each extractin
 │                                                                                      │
 │  ┌────────────────────────────────────────────────────────────────────────────────┐ │
 │  │                         AGENT ACTIVITY PANEL                                    │ │
-│  │  🔍 Searching for real estate agencies in Surry Hills...                        │ │
-│  │  📄 Found 12 search results                                                     │ │
-│  │  🌐 Checking Ray White Surry Hills website...                                   │ │
-│  │  ✓ Identified: Ray White Surry Hills                                            │ │
-│  │  Found 8 of 15 agencies...                                                       │ │
+│  │  Searching for real estate agencies in Surry Hills...                           │ │
+│  │  Found 12 search results                                                        │ │
+│  │  Checking Ray White Surry Hills website...                                      │ │
+│  │  Identified: Ray White Surry Hills                                              │ │
+│  │  Found 8 of 15 agencies...                                                      │ │
 │  └────────────────────────────────────────────────────────────────────────────────┘ │
 │                                                                                      │
 │  ┌────────────────────────────────────────────────────────────────────────────────┐ │
 │  │                         TODO PANEL (Collapsible)                                │ │
-│  │  ☑ Searching for agencies in Surry Hills                                        │ │
-│  │  ◐ Processing 15 agencies in parallel                                           │ │
-│  │  ☐ Generating demo pages                                                        │ │
+│  │  [Done] Searching for agencies in Surry Hills                                   │ │
+│  │  [Doing] Processing 15 agencies in parallel                                     │ │
+│  │  [Todo] Generating demo pages                                                   │ │
 │  └────────────────────────────────────────────────────────────────────────────────┘ │
 │                                                                                      │
 │  ┌────────────────────────────────────────────────────────────────────────────────┐ │
@@ -48,7 +48,7 @@ User selects N agencies (1-25), and N subagents run in parallel - each extractin
 │                                                                                      │
 │  ┌────────────────────────────────────────────────────────────────────────────────┐ │
 │  │                         HISTORY TAB                                             │ │
-│  │  Surry Hills - Jan 17, 2:30pm          15 agencies • 12 demos    [✏️]          │ │
+│  │  Surry Hills - Jan 17, 2:30pm          15 agencies • 12 demos     [Rename]     │ │
 │  │  [Ray White] [LJ Hooker] [Belle] [+9 more]                                      │ │
 │  └────────────────────────────────────────────────────────────────────────────────┘ │
 │                                                                                      │
@@ -60,8 +60,8 @@ User selects N agencies (1-25), and N subagents run in parallel - each extractin
 │                                    BACKEND                                           │
 │                                                                                      │
 │  GET /api/pipeline/stream                                                            │
-│  • Reads /data/progress/*.json every 500ms                                          │
-│  • Pushes changes to connected clients                                               │
+│  • Watches /data/progress via fs.watch (debounced)                                   │
+│  • Pushes incremental deltas to connected clients                                    │
 │                                                                                      │
 │  CLAUDE CODE ORCHESTRATION                                                           │
 │  ┌─────────────────────────────────────────────────────────────────────────────┐    │
@@ -89,13 +89,13 @@ User selects N agencies (1-25), and N subagents run in parallel - each extractin
 **Location:** `/data/progress/pipeline-{sessionId}.json`
 
 ```typescript
-interface PipelineState {
-  sessionId: string;
-  suburb: string;
-  requestedCount: number;
-  status: 'searching' | 'processing' | 'complete' | 'error';
-  startedAt: string;
-  completedAt: string | null;
+	interface PipelineState {
+	  sessionId: string;
+	  suburb: string;
+	  requestedCount: number;
+	  status: 'searching' | 'processing' | 'complete' | 'error' | 'cancelled';
+	  startedAt: string;
+	  completedAt: string | null;
 
   todos: Array<{
     id: string;
@@ -103,31 +103,40 @@ interface PipelineState {
     status: 'pending' | 'in_progress' | 'complete';
   }>;
 
-  agencyIds: string[];
+	  agencyIds: string[];
 
-  // Activity tracking (pre-card phase)
-  activity: {
-    status: 'active' | 'complete';
-    agenciesFound: number;
-    agenciesTarget: number;
-    messages: ActivityMessage[];
-  };
+	  error?: string;
+	}
 
-  error?: string;
-}
+	interface ActivityMessage {
+	  id: string;
+	  type: 'search' | 'results' | 'fetch' | 'identified' | 'warning' | 'thinking';
+	  text: string;
+	  detail?: string;
+	  timestamp: string;
+	  source?: string;
+	}
+	```
 
-interface ActivityMessage {
-  id: string;
-  type: 'search' | 'results' | 'fetch' | 'identified' | 'warning' | 'thinking';
-  text: string;
-  detail?: string;
-  timestamp: string;
-}
-```
+	---
 
----
-
-## Agency Progress File
+	## Main Activity File
+	
+	Main-agent activity (workspace stream) is stored separately from the pipeline JSON to avoid large rewrites.
+	
+	**Location:** `/data/progress/activity-{sessionId}.json`
+	
+	```typescript
+	interface MainActivityFile {
+	  sessionId: string;
+	  agenciesTarget: number;
+	  messages: ActivityMessage[];
+	}
+	```
+	
+	---
+	
+	## Agency Progress File
 
 **Location:** `/data/progress/agency-{agencyId}.json`
 
@@ -187,17 +196,14 @@ interface AgencyProgress {
 
 ## SSE Event Types
 
-### Activity Events (Pre-Card Phase)
+### Activity Events
 
 ```typescript
-// Activity panel started
-{ type: 'activity_start'; sessionId: string; target: number; }
+// Main agent activity message (workspace stream)
+{ type: 'main_activity_message'; message: ActivityMessage; found: number; target: number; }
 
-// New activity message
-{ type: 'activity_message'; message: ActivityMessage; found: number; target: number; }
-
-// Activity complete, show cards
-{ type: 'activity_complete'; sessionId: string; agencies: Array<{id, name, website}>; }
+// Subagent activity message (routed to a single agency card)
+{ type: 'subagent_activity_message'; agencyId: string; message: ActivityMessage; }
 ```
 
 ### Card Events
@@ -213,21 +219,29 @@ interface AgencyProgress {
 { type: 'card_remove'; agencyId: string; reason: string; }
 
 // Pipeline complete
-{ type: 'pipeline_complete'; sessionId: string; totalAgencies: number; successCount: number; failedCount: number; }
+{
+  type: 'pipeline_complete';
+  sessionId: string;
+  totalAgencies: number;
+  successCount: number;
+  failedCount: number;
+  status: 'complete' | 'error' | 'cancelled';
+  error?: string;
+}
 ```
 
 ---
 
 ## Activity Message Types
 
-| Icon | Type | When | Example |
-|------|------|------|---------|
-| 🔍 | search | Agent uses WebSearch | "Searching for real estate agencies in Surry Hills..." |
-| 📄 | results | Search returns | "Found 12 search results" |
-| 🌐 | fetch | Agent uses WebFetch | "Checking Ray White Surry Hills website..." |
-| ✓ | identified | Agency confirmed | "Identified: Ray White Surry Hills" |
-| ⚠️ | warning | Non-critical issue | "Skipping: Site unavailable" |
-| 💭 | thinking | Agent reasoning | "Looking for more agencies to reach 15..." |
+| Type | When | Example |
+|------|------|---------|
+| `search` | Agent uses WebSearch | "Searching for real estate agencies in Surry Hills..." |
+| `results` | Search returns | "Found 12 search results" |
+| `fetch` | Agent uses WebFetch | "Checking Ray White Surry Hills website..." |
+| `identified` | Agency confirmed | "Identified: Ray White Surry Hills" |
+| `warning` | Non-critical issue | "Skipping: Site unavailable" |
+| `thinking` | Agent reasoning | "Looking for more agencies to reach 15..." |
 
 ---
 
@@ -267,12 +281,12 @@ interface AgencyProgress {
 │  [Logo]   Ray White Surry Hills     │
 │           ─────────────────────     │
 │                                     │
-│  📍 Surry Hills, Sydney             │  Location
-│  💰 $600K - $2.1M                   │  Price range
-│  🏠 45 for sale • 12 sold           │  Listing stats
-│  🏢 28 rentals                      │  PM load (if > 0)
-│  👥 8 agents                        │  Team size
-│  🎯 Pain Score: 87                  │  Qualification
+│  Surry Hills, Sydney                │  Location
+│  $600K - $2.1M                      │  Price range
+│  45 for sale • 12 sold              │  Listing stats
+│  28 rentals                         │  PM load (if > 0)
+│  8 agents                           │  Team size
+│  Pain Score: 87                     │  Qualification
 │                                     │
 │  ✓ Found website                    │  Steps
 │  ✓ Extracted details                │
@@ -299,17 +313,19 @@ CRITICAL: Write progress updates to files so the UI displays real-time feedback.
 ## Step 1: Initialize Pipeline
 Write to /data/progress/pipeline-{sessionId}.json with:
 - status: "searching"
-- todos (3 items)
-- activity.status: "active"
+- todos (4 items)
+
+Also write to /data/progress/activity-{sessionId}.json with:
+- agenciesTarget: {count}
+- messages: [] (append as you go)
 
 ## Step 2: Search for Agencies
-Use WebSearch. Report activity messages:
+Use WebSearch. Append activity messages (to activity-{sessionId}.json):
 - Before search: type "search"
 - After results: type "results"
 - Before each fetch: type "fetch"
 - After agency confirmed: type "identified"
-
-Update activity.agenciesFound as you go.
+Track progress via the SSE stream `found` count (derived from known agency IDs).
 
 ## Step 3: Create Skeleton Progress Files
 For each agency, write /data/progress/agency-{agencyId}.json with status "skeleton".
@@ -329,7 +345,7 @@ After all subagents finish:
 
 ## Tool Restrictions
 DO NOT use Chrome, Playwright, or browser automation.
-Use ONLY: WebSearch, WebFetch, Read, Write, Task, Glob
+Do not use Bash/Grep. Use ONLY: WebSearch, WebFetch, Read, Write, Task, Glob
 ```
 
 ---
@@ -357,6 +373,8 @@ The subagent must:
 ## Search History
 
 **Location:** `/data/history/sessions.json`
+
+Note: This file is runtime-generated and should not be committed to git. Deploys must preserve it.
 
 ```typescript
 interface SearchSession {

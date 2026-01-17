@@ -1,18 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { writeFile, readFile, mkdir } from 'fs/promises';
 import path from 'path';
+import { getDemoPhone } from '@/lib/phone';
 
 const CONTEXT_FILE = path.join(process.cwd(), 'data/context/pending-calls.json');
 const CONTEXT_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 export async function POST(request: NextRequest) {
-  console.log('\n' + '='.repeat(60));
   console.log('[REGISTER-CALL] Incoming request at', new Date().toISOString());
-  console.log('='.repeat(60));
 
   try {
-    const body = await request.json();
-    console.log('[REGISTER-CALL] Request body:', JSON.stringify(body, null, 2));
+    const rawBody = await request.text();
+    const body = (() => {
+      try {
+        return JSON.parse(rawBody) as any;
+      } catch {
+        return null;
+      }
+    })();
+
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json({ success: false, error: 'Invalid JSON body' }, { status: 400 });
+    }
 
     // Handle both formats: {agencyData, timestamp} or {agencyId, agencyName, context}
     const agencyData = body.agencyData || {
@@ -20,9 +29,16 @@ export async function POST(request: NextRequest) {
       name: body.agencyName,
       ...body.context?.agency
     };
-    const timestamp = body.timestamp || body.context?.timestamp || new Date().toISOString();
+    const timestamp = body.timestamp || body.context?.timestamp || Date.now();
+    const registeredAt =
+      typeof timestamp === 'number' ? timestamp : new Date(timestamp).getTime() || Date.now();
 
-    console.log('[REGISTER-CALL] Parsed agencyData:', JSON.stringify(agencyData, null, 2));
+    if (!agencyData?.id || !agencyData?.name) {
+      return NextResponse.json(
+        { success: false, error: 'agencyData.id and agencyData.name are required' },
+        { status: 400 }
+      );
+    }
 
     // Generate unique context ID
     const contextId = `ctx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -54,35 +70,29 @@ export async function POST(request: NextRequest) {
       agencyId: agencyData.id,
       agencyName: agencyData.name,
       agencyData,
-      registeredAt: timestamp,
+      registeredAt,
       expiresAt,
       status: 'pending'
     };
 
     // Save
     await writeFile(CONTEXT_FILE, JSON.stringify(contexts, null, 2));
-    console.log('[REGISTER-CALL] Context saved to file');
-    console.log('[REGISTER-CALL] Total pending contexts:', Object.keys(contexts).length);
-
-    // Return phone number from environment
-    const phoneNumber = process.env.NEXT_PUBLIC_DEMO_PHONE || process.env.TWILIO_PHONE_NUMBER;
+    const demoPhone = getDemoPhone();
 
     const response = {
       success: true,
       contextId,
       expiresAt,
-      phoneNumber
+      phoneNumber: demoPhone.tel,
+      displayPhoneNumber: demoPhone.display
     };
 
-    console.log('[REGISTER-CALL] Response:', JSON.stringify(response, null, 2));
-    console.log('[REGISTER-CALL] ✅ Context registered successfully');
-    console.log('='.repeat(60) + '\n');
+    console.log('[REGISTER-CALL] Context registered:', contextId, 'agency:', agencyData.name);
 
     return NextResponse.json(response);
 
   } catch (error) {
-    console.error('[REGISTER-CALL] ❌ Error:', error);
-    console.log('='.repeat(60) + '\n');
+    console.error('[REGISTER-CALL] Error:', error);
     return NextResponse.json({ success: false, error: 'Internal error' }, { status: 500 });
   }
 }

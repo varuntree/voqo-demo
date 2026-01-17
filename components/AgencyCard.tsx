@@ -1,15 +1,88 @@
 'use client';
 
-import { AgencyProgress, CardStep } from '@/lib/types';
+import { AgencyProgress, ActivityMessage, CardStep } from '@/lib/types';
 import StepList from './StepList';
-import MockPreview from './MockPreview';
+import ShimmerPreview from './ShimmerPreview';
+import ActivityMessageRow from './ActivityMessage';
 
 interface AgencyCardProps {
   data: AgencyProgress;
   isRemoving?: boolean;
+  activity?: ActivityMessage[];
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
-export default function AgencyCard({ data, isRemoving }: AgencyCardProps) {
+function MiniTodos({ status }: { status: AgencyProgress['status'] }) {
+  const extract =
+    status === 'skeleton' ? 'pending' : status === 'extracting' ? 'in_progress' : 'complete';
+  const generate =
+    status === 'generating' ? 'in_progress' : status === 'complete' ? 'complete' : status === 'error' ? 'pending' : 'pending';
+
+  const Row = ({
+    label,
+    state,
+  }: {
+    label: string;
+    state: 'pending' | 'in_progress' | 'complete';
+  }) => {
+    const icon = (() => {
+      if (state === 'complete') {
+        return (
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+          </svg>
+        );
+      }
+      if (state === 'in_progress') {
+        return (
+          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            />
+          </svg>
+        );
+      }
+      return (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <circle cx="12" cy="12" r="9" strokeWidth="2" />
+        </svg>
+      );
+    })();
+
+    const color =
+      state === 'complete'
+        ? 'text-green-300'
+        : state === 'in_progress'
+          ? 'text-blue-300'
+          : 'text-slate-500';
+
+    return (
+      <div className="flex items-center gap-2 text-xs">
+        <span className={color}>{icon}</span>
+        <span className={state === 'pending' ? 'text-slate-500' : 'text-slate-300'}>{label}</span>
+      </div>
+    );
+  };
+
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      <Row label="Extract info" state={extract} />
+      <Row label="Generate page" state={generate} />
+    </div>
+  );
+}
+
+export default function AgencyCard({
+  data,
+  isRemoving,
+  activity = [],
+  isExpanded = false,
+  onToggleExpand,
+}: AgencyCardProps) {
   const getPainScoreColor = (score: number | null) => {
     if (score === null) return 'bg-slate-700 text-slate-400';
     if (score >= 70) return 'bg-red-500/20 text-red-400';
@@ -185,6 +258,14 @@ export default function AgencyCard({ data, isRemoving }: AgencyCardProps) {
               )}
             </div>
           </div>
+
+          <button
+            type="button"
+            onClick={onToggleExpand}
+            className="text-xs text-slate-500 hover:text-slate-200 transition-colors"
+          >
+            {isExpanded ? 'Hide details' : 'Show details'}
+          </button>
         </div>
 
         {/* Enhanced Metrics Row */}
@@ -231,6 +312,8 @@ export default function AgencyCard({ data, isRemoving }: AgencyCardProps) {
 
       {/* Content */}
       <div className="p-4">
+        <MiniTodos status={data.status} />
+
         {/* Skeleton state */}
         {data.status === 'skeleton' && (
           <div className="space-y-3">
@@ -245,61 +328,40 @@ export default function AgencyCard({ data, isRemoving }: AgencyCardProps) {
           </div>
         )}
 
-        {/* Generating state */}
-        {data.status === 'generating' && (
-          <div className="space-y-3">
-            {/* Pain Score badge */}
+        {/* Generating + Complete preview */}
+        {(data.status === 'generating' || data.status === 'complete') && (
+          <div className="mt-3 space-y-3">
             {data.painScore !== null && (
               <div className="flex justify-end">
-                <span
-                  className={`px-2 py-1 rounded text-xs font-medium ${getPainScoreColor(
-                    data.painScore
-                  )}`}
-                >
+                <span className={`px-2 py-1 rounded text-xs font-medium ${getPainScoreColor(data.painScore)}`}>
                   Pain: {data.painScore}
                 </span>
               </div>
             )}
 
-            {/* Steps */}
-            <StepList steps={steps} />
+            <div className="relative">
+              <ShimmerPreview
+                primaryColor={data.primaryColor}
+                secondaryColor={data.secondaryColor}
+                progress={data.htmlProgress}
+                isComplete={data.status === 'complete'}
+              />
 
-            {/* Mock Preview */}
-            <MockPreview
-              primaryColor={data.primaryColor}
-              progress={data.htmlProgress}
-            />
-          </div>
-        )}
+              {data.status === 'complete' && demoUrl && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <a
+                    href={demoUrl}
+                    className="px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm font-medium hover:bg-white/15 transition-colors"
+                  >
+                    Open Demo Page
+                  </a>
+                </div>
+              )}
+            </div>
 
-        {/* Complete state */}
-        {data.status === 'complete' && (
-          <div className="space-y-3">
-            {/* Pain Score badge */}
-            {data.painScore !== null && (
-              <div className="flex justify-end">
-                <span
-                  className={`px-2 py-1 rounded text-xs font-medium ${getPainScoreColor(
-                    data.painScore
-                  )}`}
-                >
-                  Pain: {data.painScore}
-                </span>
-              </div>
-            )}
-
-            {/* Steps */}
-            <StepList steps={steps} />
-
-            {/* View Demo button */}
-            {demoUrl && (
-              <a
-                href={demoUrl}
-                className="block w-full py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-medium rounded-lg text-center transition-all mt-3"
-              >
-                View Demo
-              </a>
-            )}
+            <div className="text-xs text-slate-500">
+              {data.status === 'generating' ? 'Generating demo page…' : 'Ready.'}
+            </div>
           </div>
         )}
 
@@ -308,6 +370,22 @@ export default function AgencyCard({ data, isRemoving }: AgencyCardProps) {
           <div className="space-y-3">
             <StepList steps={steps} />
             <p className="text-red-400 text-sm text-center">{data.error || 'Failed to process'}</p>
+          </div>
+        )}
+
+        {isExpanded && (
+          <div className="mt-4 border-t border-slate-700/60 pt-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs uppercase tracking-wide text-slate-500">Subagent stream</span>
+              <span className="text-xs text-slate-600">{activity.length}</span>
+            </div>
+            <div className="max-h-40 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
+              {activity.length === 0 ? (
+                <p className="text-slate-600 text-sm">No subagent activity yet.</p>
+              ) : (
+                activity.slice(-40).map((msg) => <ActivityMessageRow key={msg.id} message={msg} />)
+              )}
+            </div>
           </div>
         )}
       </div>

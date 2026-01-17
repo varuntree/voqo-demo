@@ -108,7 +108,7 @@ export async function buildSessionFromPipeline(
 
   // Determine status
   let status: SearchSession['status'] = 'complete';
-  if (pipelineState.status === 'error') {
+  if (pipelineState.status === 'error' || pipelineState.status === 'cancelled') {
     status = agencies.length > 0 ? 'partial' : 'failed';
   } else if (successCount < agencies.length) {
     status = 'partial';

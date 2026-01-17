@@ -17,6 +17,19 @@
 /.next/
 /out/
 
+# runtime storage (generated)
+/data/**
+!/data/
+!/data/**/
+!/data/**/.gitkeep
+
+# generated html artifacts
+/public/demo/**
+/public/call/**
+
+# package manager
+pnpm-lock.yaml
+
 # production
 /build
 

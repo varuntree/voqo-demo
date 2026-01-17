@@ -29,7 +29,7 @@ interface CallContext {
 
 export async function POST(request: NextRequest) {
   console.log('\n' + '='.repeat(60));
-  console.log('[PERSONALIZE] 🔔 Webhook triggered at', new Date().toISOString());
+  console.log('[PERSONALIZE] Webhook triggered at', new Date().toISOString());
   console.log('='.repeat(60));
 
   // Log all headers for debugging
