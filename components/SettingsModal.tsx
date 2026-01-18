@@ -92,42 +92,42 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button
         type="button"
-        className="absolute inset-0 bg-slate-950/70"
+        className="absolute inset-0 bg-stone-950/60 backdrop-blur-sm"
         onClick={onClose}
         aria-label="Close modal"
       />
 
-      <div className="relative w-full max-w-3xl bg-slate-900 border border-slate-700 rounded-2xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col">
+      <div className="relative w-full max-w-3xl bg-white border-2 border-stone-100 rounded-3xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-slate-700 flex items-center justify-between">
-          <h3 className="text-white font-semibold">Voice Agent Settings</h3>
+        <div className="px-6 py-5 border-b border-stone-100 flex items-center justify-between">
+          <h3 className="text-stone-900 font-semibold text-lg">Voice Agent Settings</h3>
           <button
             type="button"
             onClick={onClose}
-            className="px-3 py-1.5 text-sm rounded-lg bg-slate-800 text-slate-200 hover:bg-slate-700 transition-colors"
+            className="px-4 py-2 text-xs font-mono uppercase tracking-widest rounded-full bg-stone-100 text-stone-600 hover:bg-stone-200 transition-colors"
           >
             Close
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-5 overflow-y-auto flex-1 space-y-5">
+        <div className="p-6 overflow-y-auto flex-1 space-y-5">
           {/* Unknown variable warning */}
           {unknownVars.length > 0 && (
-            <div className="bg-amber-500/15 border border-amber-500/30 rounded-lg p-3 text-amber-200 text-sm">
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-amber-800 text-sm">
               <span className="font-medium">Warning:</span> Unknown variable(s) detected:{' '}
-              <code className="bg-amber-500/20 px-1 rounded">{unknownVars.join(', ')}</code>
+              <code className="bg-amber-100 px-1.5 py-0.5 rounded font-mono text-xs">{unknownVars.join(', ')}</code>
             </div>
           )}
 
           {/* Available variables reference */}
-          <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-3">
-            <div className="text-slate-400 text-xs mb-2 font-medium">Available Variables</div>
+          <div className="bg-stone-50 border border-stone-200 rounded-xl p-4">
+            <div className="text-stone-500 text-xs mb-3 font-mono uppercase tracking-widest font-medium">Available Variables</div>
             <div className="flex flex-wrap gap-2">
               {AVAILABLE_VARIABLES.map((v) => (
                 <code
                   key={v}
-                  className="bg-slate-700/60 text-slate-300 px-2 py-0.5 rounded text-xs"
+                  className="bg-stone-100 text-stone-600 px-2.5 py-1 rounded-full text-xs font-mono"
                 >
                   {v}
                 </code>
@@ -137,35 +137,35 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
           {/* First Message */}
           <div>
-            <label className="block text-slate-300 text-sm font-medium mb-2">First Message</label>
+            <label className="block text-stone-700 text-sm font-medium mb-2">First Message</label>
             <textarea
               value={firstMessage}
               onChange={(e) => setFirstMessage(e.target.value)}
               rows={3}
-              className="w-full px-4 py-3 rounded-xl bg-white/10 border border-slate-600 text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm"
+              className="w-full px-4 py-3 rounded-xl bg-stone-50 border border-stone-200 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#00C853] focus:border-transparent resize-none text-sm"
               placeholder="Enter the first message the agent says..."
             />
           </div>
 
           {/* System Prompt */}
           <div>
-            <label className="block text-slate-300 text-sm font-medium mb-2">System Prompt</label>
+            <label className="block text-stone-700 text-sm font-medium mb-2">System Prompt</label>
             <textarea
               value={systemPrompt}
               onChange={(e) => setSystemPrompt(e.target.value)}
               rows={16}
-              className="w-full px-4 py-3 rounded-xl bg-white/10 border border-slate-600 text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm font-mono"
+              className="w-full px-4 py-3 rounded-xl bg-stone-50 border border-stone-200 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#00C853] focus:border-transparent resize-none text-sm font-mono"
               placeholder="Enter the system prompt for the voice agent..."
             />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-4 border-t border-slate-700 flex items-center justify-between gap-3">
+        <div className="px-6 py-5 border-t border-stone-100 flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={handleReset}
-            className="px-4 py-2 text-sm rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
+            className="px-5 py-2.5 text-xs font-mono uppercase tracking-widest rounded-full bg-stone-100 text-stone-600 hover:bg-stone-200 transition-colors"
           >
             Reset to Defaults
           </button>
@@ -174,14 +174,14 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm rounded-lg bg-slate-800 text-slate-200 hover:bg-slate-700 transition-colors"
+              className="px-5 py-2.5 text-xs font-mono uppercase tracking-widest rounded-full bg-stone-100 text-stone-600 hover:bg-stone-200 transition-colors"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={handleSave}
-              className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition-colors"
+              className="px-6 py-2.5 text-xs font-mono uppercase tracking-widest rounded-full bg-[#00C853] text-white hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20"
             >
               Save
             </button>

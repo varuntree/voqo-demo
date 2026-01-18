@@ -34,25 +34,25 @@ export default function HistoryCard({ session, onAgencyClick, onRename }: Histor
     switch (session.status) {
       case 'running':
         return (
-          <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-400 rounded-full">
+          <span className="px-2.5 py-1 text-[10px] font-mono uppercase tracking-widest bg-[#00C853]/10 text-[#00C853] rounded-full">
             Running
           </span>
         );
       case 'complete':
         return (
-          <span className="px-2 py-0.5 text-xs bg-green-500/20 text-green-400 rounded-full">
+          <span className="px-2.5 py-1 text-[10px] font-mono uppercase tracking-widest bg-emerald-50 text-emerald-700 rounded-full">
             Complete
           </span>
         );
       case 'partial':
         return (
-          <span className="px-2 py-0.5 text-xs bg-amber-500/20 text-amber-400 rounded-full">
+          <span className="px-2.5 py-1 text-[10px] font-mono uppercase tracking-widest bg-amber-50 text-amber-700 rounded-full">
             Partial
           </span>
         );
       case 'failed':
         return (
-          <span className="px-2 py-0.5 text-xs bg-red-500/20 text-red-400 rounded-full">
+          <span className="px-2.5 py-1 text-[10px] font-mono uppercase tracking-widest bg-red-50 text-red-600 rounded-full">
             Failed
           </span>
         );
@@ -63,7 +63,7 @@ export default function HistoryCard({ session, onAgencyClick, onRename }: Histor
   const remainingCount = session.agencies.length - 5;
 
   return (
-    <div className="bg-slate-800 rounded-xl p-4 border border-slate-700 hover:border-slate-600 transition-colors">
+    <div className="bg-white rounded-2xl p-5 border border-stone-200 hover:border-[#00C853]/30 hover:shadow-lg transition-all duration-300">
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex-1 min-w-0">
@@ -75,14 +75,14 @@ export default function HistoryCard({ session, onAgencyClick, onRename }: Histor
               onBlur={handleSave}
               onKeyDown={handleKeyDown}
               autoFocus
-              className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full bg-stone-50 border border-stone-200 rounded-lg px-3 py-1.5 text-stone-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#00C853]"
             />
           ) : (
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-white truncate">{session.name}</h3>
+              <h3 className="font-semibold text-stone-900 truncate">{session.name}</h3>
               <button
                 onClick={() => setIsEditing(true)}
-                className="text-slate-500 hover:text-slate-300 transition-colors flex-shrink-0"
+                className="text-stone-400 hover:text-stone-600 transition-colors flex-shrink-0"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
@@ -101,12 +101,12 @@ export default function HistoryCard({ session, onAgencyClick, onRename }: Histor
 
       {/* Stats */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-stone-500 font-mono">
           {session.actualCount} agencies • {session.successCount} demos generated
         </p>
         <Link
           href={`/history/${session.sessionId}`}
-          className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+          className="text-sm text-[#00C853] hover:text-emerald-600 transition-colors font-medium"
         >
           View run →
         </Link>
@@ -120,11 +120,11 @@ export default function HistoryCard({ session, onAgencyClick, onRename }: Histor
             onClick={() => onAgencyClick(agency.id, agency.demoUrl)}
             disabled={!agency.demoUrl}
             className={`
-              flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-all
+              flex items-center gap-2 px-3 py-1.5 rounded-full text-xs transition-all
               ${
                 agency.demoUrl
-                  ? 'bg-slate-700 hover:bg-slate-600 text-white cursor-pointer'
-                  : 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
+                  ? 'bg-stone-100 hover:bg-stone-200 text-stone-700 cursor-pointer'
+                  : 'bg-stone-50 text-stone-400 cursor-not-allowed'
               }
             `}
             title={agency.demoUrl ? 'View demo' : 'Demo not generated'}
@@ -139,7 +139,7 @@ export default function HistoryCard({ session, onAgencyClick, onRename }: Histor
                 }}
               />
             ) : (
-              <span className="w-4 h-4 bg-slate-600 rounded flex items-center justify-center text-[10px]">
+              <span className="w-4 h-4 bg-stone-200 rounded flex items-center justify-center text-[10px] text-stone-500">
                 {agency.name.charAt(0)}
               </span>
             )}
@@ -147,14 +147,14 @@ export default function HistoryCard({ session, onAgencyClick, onRename }: Histor
           </button>
         ))}
         {remainingCount > 0 && (
-          <span className="px-3 py-1.5 bg-slate-700/50 rounded-lg text-xs text-slate-400">
+          <span className="px-3 py-1.5 bg-stone-50 rounded-full text-xs text-stone-400 font-mono">
             +{remainingCount} more
           </span>
         )}
       </div>
 
       {/* Hint */}
-      <p className="text-xs text-slate-500 mt-3">Click any agency to view their demo page</p>
+      <p className="text-xs text-stone-400 mt-3">Click any agency to view their demo page</p>
     </div>
   );
 }
