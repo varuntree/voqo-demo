@@ -9,6 +9,7 @@ import type {
 import { promises as fs } from 'fs';
 import path from 'path';
 import type { Activity, ActivityMessage } from '@/lib/types';
+import { getToolVerb, SOURCE_LABELS } from '@/lib/playful-labels';
 
 export interface ClaudeCodeOptions {
   prompt: string;
@@ -67,7 +68,7 @@ export function getClaudeModel(): string {
 
 function buildBaseOptions(options: ClaudeCodeOptions): Options {
   const { workingDir, activitySessionId } = options;
-  const activitySourceLabel = options.activitySourceLabel ?? 'Main agent';
+  const activitySourceLabel = options.activitySourceLabel ?? SOURCE_LABELS.mainAgent;
 
   return {
     model: getClaudeModel(),
@@ -148,7 +149,7 @@ function mapToolMessage(toolName: string, toolInput: unknown, sourceLabel: strin
   const base: ActivityMessage = {
     id: buildActivityId(),
     type: 'tool',
-    text: `Using ${toolName}`,
+    text: `${getToolVerb(toolName)}...`,
     detail,
     source: sourceLabel,
     timestamp: new Date().toISOString(),
@@ -158,7 +159,7 @@ function mapToolMessage(toolName: string, toolInput: unknown, sourceLabel: strin
     return {
       ...base,
       type: 'search',
-      text: detail ? `Searching: ${detail}` : 'Searching the web...',
+      text: detail ? `${getToolVerb('WebSearch')}: ${detail}` : 'Hunting the web...',
     };
   }
 
@@ -166,7 +167,7 @@ function mapToolMessage(toolName: string, toolInput: unknown, sourceLabel: strin
     return {
       ...base,
       type: 'fetch',
-      text: detail ? `Fetching: ${detail}` : 'Fetching webpage...',
+      text: detail ? `${getToolVerb('WebFetch')}: ${detail}` : 'Snooping around...',
     };
   }
 
@@ -253,7 +254,7 @@ async function appendActivity(sessionId: string, message: ActivityMessage, statu
       next.status = status;
     }
 
-    next.messages = [...next.messages, { ...message, source: message.source ?? 'Main agent' }].slice(-200);
+    next.messages = [...next.messages, { ...message, source: message.source ?? SOURCE_LABELS.mainAgent }].slice(-200);
 
     await fs.writeFile(filePath, JSON.stringify(next, null, 2));
   } catch {

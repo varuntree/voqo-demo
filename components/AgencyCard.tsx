@@ -4,6 +4,7 @@ import { AgencyProgress, ActivityMessage, CardStep } from '@/lib/types';
 import StepList from './StepList';
 import ShimmerPreview from './ShimmerPreview';
 import ActivityMessageRow from './ActivityMessage';
+import { WORKSPACE_LABELS } from '@/lib/playful-labels';
 
 interface AgencyCardProps {
   data: AgencyProgress;
@@ -322,7 +323,7 @@ export default function AgencyCard({
         {isExpanded && (
           <div className="mt-4 border-t border-stone-100 pt-3">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] uppercase tracking-widest text-stone-400 font-mono">Subagent stream</span>
+              <span className="text-[10px] uppercase tracking-widest text-stone-400 font-mono">{WORKSPACE_LABELS.subagent}</span>
               <span className="text-xs text-stone-300 font-mono">{activity.length}</span>
             </div>
             <div className="max-h-40 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-stone-300 scrollbar-track-transparent">

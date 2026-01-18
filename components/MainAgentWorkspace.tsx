@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ActivityMessage, PipelineState } from '@/lib/types';
 import ActivityMessageRow from '@/components/ActivityMessage';
+import { WORKSPACE_LABELS } from '@/lib/playful-labels';
 
 type Todo = PipelineState['todos'][number];
 
@@ -118,7 +119,7 @@ export default function MainAgentWorkspace({
       <div className="px-6 py-5 border-b border-stone-100 flex items-center justify-between gap-4">
         <div className="min-w-0">
           <div className="flex items-center gap-3">
-            <h2 className="text-stone-900 font-semibold truncate">Engine Workspace</h2>
+            <h2 className="text-stone-900 font-semibold truncate">{WORKSPACE_LABELS.main}</h2>
             <StatusBadge status={status} />
             <span className="text-stone-300 text-sm">•</span>
             <span className="text-stone-600 text-sm font-mono">

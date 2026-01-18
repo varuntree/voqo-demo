@@ -8,6 +8,7 @@ import type { PipelineRunStatus } from '@/lib/pipeline-registry';
 import type { Activity, ActivityMessage, AgencyProgress, PipelineState } from '@/lib/types';
 import { addToHistory, buildSessionDetailFromPipeline, buildSessionFromPipeline, writeSessionDetail } from '@/lib/history';
 import { buildActivityId } from '@/lib/ids';
+import { SOURCE_LABELS, getToolVerb } from '@/lib/playful-labels';
 
 const PROJECT_ROOT = process.cwd();
 const PROGRESS_DIR = path.join(PROJECT_ROOT, 'data', 'progress');
@@ -69,7 +70,7 @@ async function appendMainActivityMessage(sessionId: string, message: {
   const nextMessage = {
     id: buildActivityId(),
     ...message,
-    source: message.source ?? 'Main agent',
+    source: message.source ?? SOURCE_LABELS.mainAgent,
     timestamp,
   };
 
@@ -270,13 +271,13 @@ export async function POST(request: NextRequest) {
                   text:
                     toolName === 'WebSearch'
                       ? detail
-                        ? `Searching: ${detail}`
-                        : 'Searching the web...'
+                        ? `${getToolVerb('WebSearch')}: ${detail}`
+                        : 'Hunting the web...'
                       : toolName === 'WebFetch'
                         ? detail
-                          ? `Fetching: ${detail}`
-                          : 'Fetching webpage...'
-                        : `Using ${toolName}`,
+                          ? `${getToolVerb('WebFetch')}: ${detail}`
+                          : 'Snooping around...'
+                        : `${getToolVerb(toolName)}...`,
                   detail,
                 });
               }

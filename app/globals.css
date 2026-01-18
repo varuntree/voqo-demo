@@ -24,3 +24,11 @@ body {
 .font-fraunces {
   font-family: var(--font-fraunces), Georgia, serif;
 }
+
+.font-space-grotesk {
+  font-family: var(--font-space-grotesk), sans-serif;
+}
+
+.font-inter {
+  font-family: var(--font-inter), sans-serif;
+}
