@@ -21,11 +21,11 @@ const dmSans = DM_Sans({
 const qualities = [
   {
     title: 'AI Native',
-    desc: 'Built with Claude Code, v0, and cutting-edge AI tools from day one.',
+    desc: 'Built with Claude Code, Cursor, and cutting-edge AI tools from day one.',
   },
   {
     title: 'Side Projects',
-    desc: 'Shipped 3 products in the last 6 months. Building is my default state.',
+    desc: 'RealMate.pro and OneClick Safety—200+ construction business clients.',
   },
   {
     title: 'High Agency',
