@@ -3,8 +3,20 @@
 import { useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Playfair_Display, DM_Sans } from 'next/font/google';
+import { Space_Grotesk, Inter, Playfair_Display, DM_Sans } from 'next/font/google';
 import styles from './landing-page.module.css';
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-space-grotesk',
+  display: 'swap',
+});
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+});
 
 const playfair = Playfair_Display({
   subsets: ['latin'],
@@ -25,7 +37,7 @@ const qualities = [
   },
   {
     title: 'Side Projects',
-    desc: 'RealMate.pro and OneClick Safety—200+ construction business clients.',
+    desc: 'RealMate.pro and OneClick Safety, 200+ construction business clients.',
   },
   {
     title: 'High Agency',
@@ -33,7 +45,7 @@ const qualities = [
   },
   {
     title: 'Future Founder',
-    desc: 'Learning the full stack of building—product, growth, and operations.',
+    desc: 'Learning the full stack of building: product, growth, and operations.',
   },
 ];
 
@@ -62,7 +74,7 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <main className={`${playfair.variable} ${dmSans.variable}`}>
+    <main className={`${spaceGrotesk.variable} ${inter.variable} ${playfair.variable} ${dmSans.variable}`}>
       {/* Hero Section */}
       <section
         className={styles.hero}
@@ -85,7 +97,7 @@ export default function LandingPage() {
           <p className={styles.heroSubtitle}>
             AI that talks like a human. Handles millions of calls.
             I built a working prototype that finds agencies, generates personalized demos,
-            and makes real phone calls—all autonomously.
+            and makes real phone calls, all autonomously.
           </p>
           <Link href="/product" className={styles.heroCta}>
             See It Live <span aria-hidden="true">→</span>
@@ -110,7 +122,7 @@ export default function LandingPage() {
           <p className={styles.section2Text}>
             I didn&apos;t apply with a resume. I applied with a product.
             This demo engine finds real estate agencies, generates branded landing pages,
-            and initiates AI phone calls—exactly what Voqo needs to scale outreach.
+            and initiates AI phone calls, exactly what Voqo needs to scale outreach.
           </p>
 
           <Image
@@ -141,10 +153,10 @@ export default function LandingPage() {
           <div>
             <p className={styles.quote}>
               I want to build the future of voice AI with people who move fast
-              and ship things that matter. Voqo is doing exactly that—and I want in.
+              and ship things that matter. Voqo is doing exactly that, and I want in.
             </p>
-            <a href="mailto:varun@example.com" className={styles.emailLink}>
-              varun@example.com
+            <a href="mailto:varungopisetti@gmail.com" className={styles.emailLink}>
+              varungopisetti@gmail.com
             </a>
           </div>
 
@@ -152,8 +164,8 @@ export default function LandingPage() {
             <Image
               src="/signature.png"
               alt="Varun Prasad signature"
-              width={220}
-              height={80}
+              width={280}
+              height={100}
               className={styles.signature}
             />
             <div className={styles.signatureName}>Varun Prasad, UNSW</div>
@@ -164,9 +176,9 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className={styles.footer}>
-        <p className={styles.footerText}>Built with AI agents · Sydney, Australia</p>
-        <a href="mailto:adam@voqo.ai" className={styles.footerLink}>
-          adam@voqo.ai
+        <p className={styles.footerText}>Built with ♥ for Voqo · Sydney, Australia</p>
+        <a href="mailto:varungopisetti@gmail.com" className={styles.footerLink}>
+          varungopisetti@gmail.com
         </a>
       </footer>
     </main>

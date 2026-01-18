@@ -81,7 +81,7 @@ export default function HistorySessionReplay({ sessionId }: { sessionId: string 
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <Link
-              href="/?tab=history"
+              href="/product?tab=history"
               className="text-stone-500 hover:text-stone-900 transition-colors text-sm font-mono"
             >
               ← Back to History

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import Link from 'next/link';
 import AgencyCard from '@/components/AgencyCard';
 import TabNavigation from '@/components/TabNavigation';
 import HistoryList from '@/components/HistoryList';
@@ -583,10 +584,9 @@ export default function Home() {
       <header className="border-b border-stone-200 bg-white/80 backdrop-blur-lg sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold text-stone-900 font-fraunces">Voqo</span>
-              <span className="text-stone-500 text-sm font-mono">Lead Engine</span>
-            </div>
+            <Link href="/" className="text-2xl font-bold text-stone-900 font-fraunces hover:text-stone-700 transition-colors">
+              Voqo
+            </Link>
             <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
           </div>
           <div className="flex items-center gap-3">
