@@ -545,7 +545,7 @@ Every landing page must include "Presented by Voqo" branding:
 
 2) Write progress file:
    - `status = "extracting"`
-   - `steps.website.status = "in_progress"`
+   - In the `steps` array, set the step with `id: "website"` to `status = "in_progress"` (keep `steps` as an array; never convert it to an object).
 
 ### Phase 1: Fetch + Extract (SINGLE WebFetch)
 
@@ -560,15 +560,15 @@ Every landing page must include "Presented by Voqo" branding:
    - Team size, listing count (if visible)
 
 4) Update progress file:
-   - `steps.website.status = "complete"`
-   - `steps.details.status = "in_progress"`
+   - In the `steps` array, set `id: "website"` to `status = "complete"`
+   - In the `steps` array, set `id: "details"` to `status = "in_progress"`
    - Write all extracted fields
 
 5) Append activity message:
    - `type: "identified"`, `text: "Extracted agency details"`
 
 6) Update progress file:
-   - `steps.details.status = "complete"`
+   - In the `steps` array, set `id: "details"` to `status = "complete"`
 
 NOTE: Do NOT do additional WebFetch for missing fields. Set to null and proceed.
 
@@ -581,7 +581,7 @@ NOTE: Do NOT do additional WebFetch for missing fields. Set to null and proceed.
 
 3) Update progress file:
    - `status = "generating"`
-   - `steps.generating.status = "in_progress"`
+   - In the `steps` array, set `id: "generating"` to `status = "in_progress"`
    - `designSystem = "<selected-system>"`
    - `htmlProgress = 10`
 
@@ -609,8 +609,8 @@ NOTE: Do NOT do additional WebFetch for missing fields. Set to null and proceed.
 1) Write agency record to `agencyDataPath` (see schema above)
 
 2) Update progress file:
-   - `steps.generating.status = "complete"`
-   - `steps.complete.status = "complete"`
+   - In the `steps` array, set `id: "generating"` to `status = "complete"`
+   - In the `steps` array, set `id: "complete"` to `status = "complete"`
    - `status = "complete"`
    - `demoUrl = "/demo/{agencyId}"`
 
@@ -627,14 +627,14 @@ If the WebFetch fails:
 
 2) Write progress file:
    - `status = "error"`
-   - `steps.website.status = "error"`
+   - In the `steps` array, set `id: "website"` to `status = "error"`
    - `error = "<error message>"`
 
 3) Stop processing (no retries).
 
 If HTML generation fails:
 1) Append activity message with warning
-2) Write progress with `status = "error"` and `steps.generating.status = "error"`
+2) Write progress with `status = "error"` and in the `steps` array set `id: "generating"` to `status = "error"`
 3) Stop processing.
 
 ---

@@ -173,14 +173,14 @@ export default function CallDetailModal({
         aria-label="Close modal"
       />
 
-      <div className="relative w-full max-w-5xl bg-white border-2 border-stone-100 rounded-3xl overflow-hidden shadow-2xl">
-        <div className="px-6 py-5 border-b border-stone-100 flex items-start justify-between gap-4">
+      <div className="relative w-full max-w-5xl bg-white border-2 border-stone-100 rounded-3xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col">
+        <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-stone-100 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
           <div className="min-w-0">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <h3 className="text-stone-900 font-semibold truncate">{agencyName}</h3>
               <StatusLabel status={pageStatus} />
               {timestamp ? (
-                <span className="text-stone-400 text-sm font-mono">• {formatTimestamp(timestamp)}</span>
+                <span className="text-stone-400 text-xs sm:text-sm font-mono">• {formatTimestamp(timestamp)}</span>
               ) : null}
             </div>
             <div className="mt-1 text-[10px] text-stone-400 truncate font-mono">
@@ -188,7 +188,7 @@ export default function CallDetailModal({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0 flex-wrap w-full sm:w-auto justify-end">
             {pageUrl && pageStatus === 'completed' && (
               <a
                 href={pageUrl}
@@ -226,7 +226,7 @@ export default function CallDetailModal({
               {transcript.length === 0 ? (
                 <p className="text-stone-500 text-sm">No transcript available yet.</p>
               ) : (
-                <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-stone-300 scrollbar-track-transparent">
+                <div className="space-y-3 max-h-[40vh] sm:max-h-[50vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-stone-300 scrollbar-track-transparent">
                   {transcript.map((t, idx) => {
                     const isCaller = t.role === 'user';
                     return (
@@ -268,7 +268,7 @@ export default function CallDetailModal({
               ) : (
                 <div
                   ref={scrollRef}
-                  className="max-h-[50vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-stone-300 scrollbar-track-transparent"
+                  className="max-h-[40vh] sm:max-h-[50vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-stone-300 scrollbar-track-transparent"
                 >
                   {activityMessages.slice(-200).map((msg) => (
                     <ActivityMessageRow key={msg.id} message={msg} />

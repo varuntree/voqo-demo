@@ -105,7 +105,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
       <div className="relative w-full max-w-3xl bg-white border-2 border-stone-100 rounded-3xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="px-6 py-5 border-b border-stone-100 flex items-center justify-between">
+        <div className="px-6 py-5 border-b border-stone-100 flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-stone-900 font-semibold text-lg">Voice Agent Settings</h3>
           <button
             type="button"
@@ -180,16 +180,16 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-5 border-t border-stone-100 flex items-center justify-between gap-3">
+        <div className="px-6 py-5 border-t border-stone-100 flex flex-col sm:flex-row items-center justify-between gap-3">
           <button
             type="button"
             onClick={handleReset}
-            className="px-5 py-2.5 text-xs font-mono uppercase tracking-widest rounded-full bg-stone-100 text-stone-600 hover:bg-stone-200 transition-colors"
+            className="w-full sm:w-auto px-5 py-2.5 text-xs font-mono uppercase tracking-widest rounded-full bg-stone-100 text-stone-600 hover:bg-stone-200 transition-colors"
           >
             Reset to Defaults
           </button>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end">
             <button
               type="button"
               onClick={onClose}

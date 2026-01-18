@@ -116,22 +116,22 @@ export default function MainAgentWorkspace({
 
   return (
     <div className="bg-white border-2 border-stone-100 rounded-3xl overflow-hidden shadow-sm">
-      <div className="px-6 py-5 border-b border-stone-100 flex items-center justify-between gap-4">
+      <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-stone-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div className="min-w-0">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <h2 className="text-stone-900 font-semibold truncate">{WORKSPACE_LABELS.main}</h2>
             <StatusBadge status={status} />
-            <span className="text-stone-300 text-sm">•</span>
-            <span className="text-stone-600 text-sm font-mono">
-              {found}/{target} agencies identified
+            <span className="hidden sm:inline text-stone-300 text-sm">•</span>
+            <span className="text-stone-600 text-xs sm:text-sm font-mono">
+              {found}/{target} agencies
             </span>
           </div>
-          <p className="text-stone-500 text-sm mt-0.5">
+          <p className="text-stone-500 text-xs sm:text-sm mt-0.5">
             {running ? 'Streaming updates in real time.' : status === 'idle' ? 'Ready when you are.' : 'Run finished.'}
           </p>
         </div>
 
-        <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 flex-wrap w-full sm:w-auto justify-end">
           {todos.length > 0 && (
             <span className="text-xs text-stone-400 font-mono">
               {completedCount}/{todos.length}

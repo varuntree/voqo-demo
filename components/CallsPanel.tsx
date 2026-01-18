@@ -79,7 +79,7 @@ export default function CallsPanel({
             key={call.callId}
             type="button"
             onClick={() => onSelectCall(call.callId)}
-            className={`w-full text-left rounded-xl border px-3 py-2.5 transition-all duration-300 ${
+            className={`w-full text-left rounded-xl border px-2.5 py-2 sm:px-3 sm:py-2.5 transition-all duration-300 ${
               isActive
                 ? 'bg-white border-[#00C853]/30 shadow-sm'
                 : 'bg-stone-50 border-stone-200 hover:bg-white hover:border-stone-300 hover:shadow-sm'

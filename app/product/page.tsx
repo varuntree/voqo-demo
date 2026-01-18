@@ -582,14 +582,14 @@ export default function Home() {
     <div className="min-h-screen bg-[#FDFCF8]">
       {/* Header */}
       <header className="border-b border-stone-200 bg-white/80 backdrop-blur-lg sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="text-2xl font-bold text-stone-900 font-inter hover:text-stone-700 transition-colors">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Link href="/" className="text-xl sm:text-2xl font-bold text-stone-900 font-inter hover:text-stone-700 transition-colors">
               Voqo
             </Link>
             <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <button
               onClick={() => setSettingsOpen(true)}
               className="p-2 text-stone-400 hover:text-stone-900 transition-colors rounded-full hover:bg-stone-100"

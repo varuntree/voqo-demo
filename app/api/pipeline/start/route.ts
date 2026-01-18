@@ -449,16 +449,16 @@ agencyDataPath: ${AGENCIES_DIR}/{agencyId}.json
 
 Use the agency-processor skill instructions. Follow these steps:
 
-1. Update progress file to status='extracting', steps.website='in_progress'
+1. Update progress file to status='extracting', and in the steps array set the step with id 'website' to status='in_progress' (keep steps as an array; never convert it to an object)
 2. WebFetch the homepage to extract: logo, colors, phone, address, email, tagline, images
-3. Update progress with extracted fields, steps.website='complete', steps.details='in_progress'
-4. Mark steps.details='complete'
+3. Update progress with extracted fields, in the steps array set id 'website' to status='complete' and id 'details' to status='in_progress'
+4. Mark in the steps array id 'details' to status='complete'
 5. Select design system based on agency type (franchise→swiss-precision, boutique→editorial-prestige, etc.)
 6. Update progress to status='generating', designSystem=selected, htmlProgress=10
 7. Generate demo HTML with: selected design system, conversion-focused layout, Voqo branding, demo phone 04832945767
 8. Write HTML to demoHtmlPath, update htmlProgress=100
 9. Write agency record to agencyDataPath
-10. Update progress to status='complete', demoUrl='/demo/{agencyId}'
+10. Update progress to status='complete', demoUrl='/demo/{agencyId}', and in the steps array set id 'generating' to status='complete' and id 'complete' to status='complete'
 
 CRITICAL RULES:
 - Use ONLY the absolute paths listed above

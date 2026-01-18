@@ -47,6 +47,30 @@ function computeHash(value: unknown): string {
   return JSON.stringify(value);
 }
 
+function normalizeSteps(raw: unknown): AgencyProgress['steps'] {
+  if (Array.isArray(raw)) return raw as AgencyProgress['steps'];
+
+  const steps = DEFAULT_STEPS.map((s) => ({ ...s }));
+  if (!raw || typeof raw !== 'object') return steps;
+
+  const obj = raw as Record<string, unknown>;
+  for (const step of steps) {
+    const legacy = obj[step.id];
+    const status =
+      typeof legacy === 'string'
+        ? legacy
+        : legacy && typeof legacy === 'object'
+          ? (legacy as Record<string, unknown>).status
+          : undefined;
+
+    if (status === 'pending' || status === 'in_progress' || status === 'complete' || status === 'error') {
+      step.status = status;
+    }
+  }
+
+  return steps;
+}
+
 // Schema updated 2026-01-18: Removed painScore, soldCount, forRentCount, priceRangeMin/Max. Added email, tagline, heroImageUrl, designSystem.
 function normalizeAgencyProgress(raw: unknown, agencyId: string, sessionId: string): AgencyProgress | null {
   if (!raw || typeof raw !== 'object') return null;
@@ -75,7 +99,7 @@ function normalizeAgencyProgress(raw: unknown, agencyId: string, sessionId: stri
     designSystem: (obj.designSystem as string | null) ?? null,
     htmlProgress: typeof obj.htmlProgress === 'number' ? obj.htmlProgress : 0,
     demoUrl: (obj.demoUrl as string | null) ?? null,
-    steps: Array.isArray(obj.steps) ? (obj.steps as AgencyProgress['steps']) : DEFAULT_STEPS,
+    steps: normalizeSteps(obj.steps),
     error: typeof obj.error === 'string' ? obj.error : undefined,
   };
 }

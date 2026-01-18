@@ -70,7 +70,7 @@ function MiniTodos({ status }: { status: AgencyProgress['status'] }) {
   };
 
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
       <Row label="Extract info" state={extract} />
       <Row label="Generate page" state={generate} />
     </div>
@@ -161,8 +161,11 @@ export default function AgencyCard({
   };
 
   const computedSteps = buildSteps(data);
-  const hasReportedSteps = data.steps?.some((step) => step.status !== 'pending') ?? false;
-  const steps = hasReportedSteps ? data.steps ?? computedSteps : computedSteps;
+  const reportedSteps = Array.isArray(data.steps) ? data.steps : null;
+  const hasReportedSteps =
+    reportedSteps?.some((step) => step && typeof step === 'object' && (step as CardStep).status !== 'pending') ??
+    false;
+  const steps = hasReportedSteps ? reportedSteps ?? computedSteps : computedSteps;
   const demoUrl = normalizeDemoUrl(data.demoUrl);
   const fallbackLogoUrl = getFallbackLogo(data.website);
   const logoSrc = data.logoUrl || fallbackLogoUrl;

@@ -65,7 +65,7 @@ export default function HistoryCard({ session, onAgencyClick, onRename }: Histor
   return (
     <div className="bg-white rounded-2xl p-5 border border-stone-200 hover:border-[#00C853]/30 hover:shadow-lg transition-all duration-300">
       {/* Header */}
-      <div className="flex items-start justify-between gap-3 mb-3">
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
         <div className="flex-1 min-w-0">
           {isEditing ? (
             <input
@@ -143,7 +143,7 @@ export default function HistoryCard({ session, onAgencyClick, onRename }: Histor
                 {agency.name.charAt(0)}
               </span>
             )}
-            <span className="truncate max-w-[80px]">{agency.name}</span>
+            <span className="truncate max-w-[60px] sm:max-w-[80px]">{agency.name}</span>
           </button>
         ))}
         {remainingCount > 0 && (

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
-import type { Activity, ActivityMessage, AgencyProgress, PipelineState } from '@/lib/types';
+import { DEFAULT_STEPS, type Activity, type ActivityMessage, type AgencyProgress, type CardStep, type PipelineState } from '@/lib/types';
 import { isSafeSessionId } from '@/lib/ids';
 import { normalizeActivityMessage } from '@/lib/server/activity';
 
@@ -19,12 +19,44 @@ async function readJson<T>(filePath: string): Promise<T | null> {
   }
 }
 
+function normalizeSteps(raw: unknown): CardStep[] {
+  if (Array.isArray(raw)) {
+    return raw as CardStep[];
+  }
+
+  const steps = DEFAULT_STEPS.map((s) => ({ ...s }));
+
+  if (!raw || typeof raw !== 'object') return steps;
+
+  const obj = raw as Record<string, unknown>;
+  for (const step of steps) {
+    const legacy = obj[step.id];
+    const status =
+      typeof legacy === 'string'
+        ? legacy
+        : legacy && typeof legacy === 'object'
+          ? (legacy as Record<string, unknown>).status
+          : undefined;
+
+    if (status === 'pending' || status === 'in_progress' || status === 'complete' || status === 'error') {
+      step.status = status;
+    }
+  }
+
+  return steps;
+}
+
 async function readAgencies(sessionId: string, agencyIds: string[]): Promise<AgencyProgress[]> {
   const agencies: AgencyProgress[] = [];
   for (const agencyId of agencyIds) {
     const agencyPath = path.join(PROGRESS_DIR, `agency-${agencyId}.json`);
     const parsed = await readJson<AgencyProgress>(agencyPath);
-    if (parsed && parsed.sessionId === sessionId) agencies.push(parsed);
+    if (!parsed || parsed.sessionId !== sessionId) continue;
+
+    agencies.push({
+      ...parsed,
+      steps: normalizeSteps((parsed as unknown as { steps?: unknown }).steps),
+    });
   }
   return agencies;
 }

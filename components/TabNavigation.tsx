@@ -7,11 +7,11 @@ interface TabNavigationProps {
 
 export default function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
   return (
-    <div className="flex gap-1 bg-stone-100 p-1.5 rounded-full">
+    <div className="flex gap-1 bg-stone-100 p-1 sm:p-1.5 rounded-full">
       <button
         onClick={() => onTabChange('search')}
         className={`
-          px-5 py-2 rounded-full text-xs font-mono uppercase tracking-widest font-medium transition-all
+          px-3 py-1.5 sm:px-5 sm:py-2 rounded-full text-[10px] sm:text-xs font-mono uppercase tracking-widest font-medium transition-all
           ${
             activeTab === 'search'
               ? 'bg-white text-stone-900 shadow-sm'
@@ -24,7 +24,7 @@ export default function TabNavigation({ activeTab, onTabChange }: TabNavigationP
       <button
         onClick={() => onTabChange('history')}
         className={`
-          px-5 py-2 rounded-full text-xs font-mono uppercase tracking-widest font-medium transition-all
+          px-3 py-1.5 sm:px-5 sm:py-2 rounded-full text-[10px] sm:text-xs font-mono uppercase tracking-widest font-medium transition-all
           ${
             activeTab === 'history'
               ? 'bg-white text-stone-900 shadow-sm'
