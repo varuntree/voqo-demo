@@ -4,13 +4,15 @@ import path from 'path';
 import { updateAgencyCall } from '@/lib/agency-calls';
 import { enqueuePostcallJob, ensurePostcallWorker } from '@/lib/postcall-queue';
 import { ensureSmsWorker } from '@/lib/sms-queue';
-import { safeJsonParse, updateJsonFileWithLock } from '@/lib/fs-json';
+import { safeJsonParse, safeStringEqual, updateJsonFileWithLock } from '@/lib/fs-json';
 import { verifyElevenLabsWebhookSignature } from '@/lib/elevenlabs-webhook';
 import { getOrCreateCallIdForConversation } from '@/lib/call-conversation-index';
 
 const CONTEXT_FILE = path.join(process.cwd(), 'data/context/pending-calls.json');
 const CALLS_DIR = path.join(process.cwd(), 'data/calls');
 const WEBHOOK_SECRET = process.env.ELEVENLABS_WEBHOOK_SECRET;
+const WEBHOOK_TOKEN = process.env.ELEVENLABS_WEBHOOK_TOKEN;
+const REQUIRE_WEBHOOK_SIGNATURE = process.env.ELEVENLABS_REQUIRE_WEBHOOK_SIGNATURE === '1';
 const DEBUG_WEBHOOKS = process.env.DEBUG_WEBHOOKS === '1';
 
 export const runtime = 'nodejs';
@@ -92,13 +94,29 @@ export async function POST(request: NextRequest) {
     const rawBody = await request.text();
     const signature = request.headers.get('x-elevenlabs-signature') || request.headers.get('elevenlabs-signature');
 
-    if (process.env.NODE_ENV === 'production') {
+    // Optional: shared-token verification (works even if ElevenLabs doesn't send a signature header).
+    if (WEBHOOK_TOKEN) {
+      const tokenFromQuery = request.nextUrl.searchParams.get('token');
+      const tokenFromHeader = request.headers.get('x-voqo-webhook-token');
+      const provided = tokenFromQuery || tokenFromHeader;
+      if (!provided || !safeStringEqual(provided, WEBHOOK_TOKEN)) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+    }
+
+    // Signature verification:
+    // - Enforce only when ELEVENLABS_REQUIRE_WEBHOOK_SIGNATURE=1, OR when a signature is present (best-effort).
+    // - This keeps webhook ingestion compatible if ElevenLabs does not include signatures.
+    const shouldVerifySignature = REQUIRE_WEBHOOK_SIGNATURE || !!signature;
+    if (shouldVerifySignature) {
       const verification = verifyElevenLabsWebhookSignature(rawBody, signature, WEBHOOK_SECRET);
       if (!verification.ok) {
         console.error('[CALL-COMPLETE] Signature verification failed:', verification.reason);
         const status = verification.reason.includes('Missing ELEVENLABS_WEBHOOK_SECRET') ? 500 : 401;
         return NextResponse.json({ error: 'Signature verification failed' }, { status });
       }
+    } else if (process.env.NODE_ENV === 'production') {
+      console.warn('[CALL-COMPLETE] Missing signature header; accepting unsigned webhook (set ELEVENLABS_REQUIRE_WEBHOOK_SIGNATURE=1 to enforce).');
     }
 
     const body = safeJsonParse<CallCompleteWebhook>(rawBody);

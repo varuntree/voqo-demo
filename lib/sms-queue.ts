@@ -25,6 +25,7 @@ interface SmsErrorEntry {
 }
 
 const WORKER_FLAG = '__voqoSmsWorkerStarted';
+const WORKER_RUNNING_FLAG = '__voqoSmsWorkerRunning';
 
 function buildBaseUrl(): string {
   const envUrl = process.env.NEXT_PUBLIC_APP_URL;
@@ -73,7 +74,24 @@ export function ensureSmsWorker(): void {
   const g = globalThis as unknown as Record<string, unknown>;
   if (g[WORKER_FLAG]) return;
   g[WORKER_FLAG] = true;
-  setInterval(() => void processSmsJobsOnce(), INTERVAL_MS);
+
+  const loop = async () => {
+    if (g[WORKER_RUNNING_FLAG]) {
+      setTimeout(loop, INTERVAL_MS);
+      return;
+    }
+    g[WORKER_RUNNING_FLAG] = true;
+    try {
+      await processSmsJobsOnce();
+    } catch {
+      // ignore
+    } finally {
+      g[WORKER_RUNNING_FLAG] = false;
+      setTimeout(loop, INTERVAL_MS);
+    }
+  };
+
+  void loop();
 }
 
 async function readCall(callId: string): Promise<Record<string, unknown> | null> {

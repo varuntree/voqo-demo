@@ -54,6 +54,19 @@
 
 ---
 
+## Webhook Security
+
+ElevenLabs webhooks may or may not include a signature header depending on product/config. This app supports:
+
+- **Signature verification (recommended if available)**
+  - `.env.local`: `ELEVENLABS_WEBHOOK_SECRET=...`
+  - To strictly require signatures: `ELEVENLABS_REQUIRE_WEBHOOK_SIGNATURE=1`
+- **Shared token (recommended if signatures are not available)**
+  - `.env.local`: `ELEVENLABS_WEBHOOK_TOKEN=...`
+  - Update webhook URLs in ElevenLabs to include: `?token=YOUR_TOKEN`
+
+---
+
 ## SSH Access
 
 ```bash
@@ -141,6 +154,18 @@ ssh voqo@170.64.163.27
 ### 504 Gateway Timeout
 - Cause: Default Nginx timeout too short
 - Fix: Increase proxy timeouts to 300s in nginx config
+
+### "Could not find a production build in the '.next' directory"
+- Cause: `next start` was launched without a prior `next build` (often after a deploy or manual restart).
+- Fix: Always run `npm run build` before `pm2 restart voqo-demo`.
+
+### "Failed to find Server Action"
+- Cause: Usually a stale client/browser tab (or bot traffic) posting an action from a different deployment version.
+- Fix: Typically safe to ignore. If it’s frequent for real users, ensure deploys are atomic (build before restart) and consider asking users to hard refresh.
+
+### Node "MaxListenersExceededWarning"
+- Cause: Long-running process + repeated Claude SDK invocations can accumulate process listeners (warning threshold is low by default).
+- Fix: This project raises the listener limit via `NODE_MAX_LISTENERS` (default 50) in `lib/claude.ts`.
 
 ### OOM Killer
 - Cause: RAM exhausted by parallel subagents

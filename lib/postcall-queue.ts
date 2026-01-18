@@ -30,6 +30,7 @@ interface ErrorEntry {
 }
 
 const WORKER_FLAG = '__voqoPostcallWorkerStarted';
+const WORKER_RUNNING_FLAG = '__voqoPostcallWorkerRunning';
 
 // NOTE: SMS sending is handled by lib/sms-queue.ts as a durable, idempotent job.
 
@@ -56,10 +57,25 @@ export function ensurePostcallWorker(): void {
   // Ensure SMS worker is available whenever the postcall worker runs.
   ensureSmsWorker();
 
-  // Use a single interval per process
-  setInterval(() => {
-    void processPostcallJobsOnce();
-  }, INTERVAL_MS);
+  // Run in a single loop (avoid overlapping runs if one tick takes > INTERVAL_MS).
+  const loop = async () => {
+    if (g[WORKER_RUNNING_FLAG]) {
+      setTimeout(loop, INTERVAL_MS);
+      return;
+    }
+
+    g[WORKER_RUNNING_FLAG] = true;
+    try {
+      await processPostcallJobsOnce();
+    } catch {
+      // ignore
+    } finally {
+      g[WORKER_RUNNING_FLAG] = false;
+      setTimeout(loop, INTERVAL_MS);
+    }
+  };
+
+  void loop();
 }
 
 export async function processPostcallJobsOnce(): Promise<void> {

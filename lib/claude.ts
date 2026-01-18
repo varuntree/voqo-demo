@@ -21,6 +21,25 @@ export interface ClaudeCodeOptions {
 
 const PROGRESS_DIR = path.join(process.cwd(), 'data', 'progress');
 
+const MAX_PROCESS_LISTENERS = Number(process.env.NODE_MAX_LISTENERS || '50');
+const MAX_LISTENERS_FLAG = '__voqoMaxListenersConfigured';
+(() => {
+  const g = globalThis as unknown as Record<string, unknown>;
+  if (g[MAX_LISTENERS_FLAG]) return;
+  g[MAX_LISTENERS_FLAG] = true;
+
+  try {
+    if (Number.isFinite(MAX_PROCESS_LISTENERS) && MAX_PROCESS_LISTENERS > 0) {
+      const current = typeof process.getMaxListeners === 'function' ? process.getMaxListeners() : 10;
+      if (current < MAX_PROCESS_LISTENERS && typeof process.setMaxListeners === 'function') {
+        process.setMaxListeners(MAX_PROCESS_LISTENERS);
+      }
+    }
+  } catch {
+    // ignore
+  }
+})();
+
 const logClaudeStderr = (data: string) => {
   if (!data) return;
   console.error('[Claude Code STDERR]', data.trim());
