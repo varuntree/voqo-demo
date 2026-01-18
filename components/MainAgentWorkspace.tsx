@@ -23,15 +23,15 @@ interface MainAgentWorkspaceProps {
 function StatusBadge({ status }: { status: MainAgentWorkspaceProps['status'] }) {
   switch (status) {
     case 'searching':
-      return <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-300 rounded-full">Searching</span>;
+      return <span className="px-2.5 py-1 text-[10px] font-mono uppercase tracking-widest bg-[#00C853]/10 text-[#00C853] rounded-full">Searching</span>;
     case 'processing':
-      return <span className="px-2 py-0.5 text-xs bg-amber-500/20 text-amber-300 rounded-full">Processing</span>;
+      return <span className="px-2.5 py-1 text-[10px] font-mono uppercase tracking-widest bg-amber-50 text-amber-700 rounded-full">Processing</span>;
     case 'complete':
-      return <span className="px-2 py-0.5 text-xs bg-green-500/20 text-green-300 rounded-full">Complete</span>;
+      return <span className="px-2.5 py-1 text-[10px] font-mono uppercase tracking-widest bg-emerald-50 text-emerald-700 rounded-full">Complete</span>;
     case 'cancelled':
-      return <span className="px-2 py-0.5 text-xs bg-slate-500/20 text-slate-300 rounded-full">Cancelled</span>;
+      return <span className="px-2.5 py-1 text-[10px] font-mono uppercase tracking-widest bg-stone-100 text-stone-500 rounded-full">Cancelled</span>;
     case 'error':
-      return <span className="px-2 py-0.5 text-xs bg-red-500/20 text-red-300 rounded-full">Error</span>;
+      return <span className="px-2.5 py-1 text-[10px] font-mono uppercase tracking-widest bg-red-50 text-red-600 rounded-full">Error</span>;
     default:
       return null;
   }
@@ -69,17 +69,17 @@ function TodoRow({ todo }: { todo: Todo }) {
 
   const color =
     todo.status === 'complete'
-      ? 'text-green-300'
+      ? 'text-emerald-600'
       : todo.status === 'in_progress'
-        ? 'text-blue-300'
-        : 'text-slate-500';
+        ? 'text-[#00C853]'
+        : 'text-stone-400';
 
   return (
     <div className={`flex items-start gap-3 py-1.5 ${todo.status === 'complete' ? 'opacity-70' : ''}`}>
       <span className={color}>{icon}</span>
       <span
         className={`text-sm ${
-          todo.status === 'complete' ? 'text-slate-400 line-through' : todo.status === 'in_progress' ? 'text-slate-200' : 'text-slate-500'
+          todo.status === 'complete' ? 'text-stone-400 line-through' : todo.status === 'in_progress' ? 'text-stone-700' : 'text-stone-500'
         }`}
       >
         {todo.text}
@@ -114,32 +114,32 @@ export default function MainAgentWorkspace({
   const showCalls = Boolean(callsOpen && callsPanel);
 
   return (
-    <div className="bg-slate-900/40 border border-slate-700 rounded-2xl overflow-hidden backdrop-blur">
-      <div className="px-5 py-4 border-b border-slate-700 flex items-center justify-between gap-4">
+    <div className="bg-white border-2 border-stone-100 rounded-3xl overflow-hidden shadow-sm">
+      <div className="px-6 py-5 border-b border-stone-100 flex items-center justify-between gap-4">
         <div className="min-w-0">
           <div className="flex items-center gap-3">
-            <h2 className="text-white font-semibold truncate">Engine Workspace</h2>
+            <h2 className="text-stone-900 font-semibold truncate">Engine Workspace</h2>
             <StatusBadge status={status} />
-            <span className="text-slate-500 text-sm">•</span>
-            <span className="text-slate-300 text-sm">
+            <span className="text-stone-300 text-sm">•</span>
+            <span className="text-stone-600 text-sm font-mono">
               {found}/{target} agencies identified
             </span>
           </div>
-          <p className="text-slate-500 text-sm mt-0.5">
+          <p className="text-stone-500 text-sm mt-0.5">
             {running ? 'Streaming updates in real time.' : status === 'idle' ? 'Ready when you are.' : 'Run finished.'}
           </p>
         </div>
 
         <div className="flex items-center gap-3 flex-shrink-0">
           {todos.length > 0 && (
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-stone-400 font-mono">
               {completedCount}/{todos.length}
             </span>
           )}
           {onToggleCalls && (
             <button
               onClick={onToggleCalls}
-              className="text-xs text-slate-400 hover:text-white transition-colors"
+              className="text-xs text-stone-500 hover:text-stone-900 transition-colors font-mono uppercase tracking-wider"
               type="button"
             >
               Calls{typeof callsCount === 'number' ? ` (${callsCount})` : ''}
@@ -147,7 +147,7 @@ export default function MainAgentWorkspace({
           )}
           <button
             onClick={() => setCollapsed((prev) => !prev)}
-            className="text-xs text-slate-400 hover:text-white transition-colors"
+            className="text-xs text-stone-500 hover:text-stone-900 transition-colors font-mono uppercase tracking-wider"
             type="button"
           >
             {collapsed ? 'Expand' : 'Collapse'}
@@ -155,10 +155,10 @@ export default function MainAgentWorkspace({
           <button
             onClick={onCancel}
             disabled={!canCancel}
-            className="px-3 py-1.5 text-sm rounded-lg bg-red-500/20 text-red-200 hover:bg-red-500/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 text-xs font-mono uppercase tracking-widest rounded-full bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             type="button"
           >
-            Cancel All
+            Cancel
           </button>
         </div>
       </div>
@@ -167,37 +167,37 @@ export default function MainAgentWorkspace({
         className={`${collapsed ? 'hidden' : 'grid'} grid-cols-1 lg:grid-cols-7`}
       >
         <div
-          className={`px-5 py-4 border-b lg:border-b-0 border-slate-700 ${
+          className={`px-6 py-5 border-b lg:border-b-0 border-stone-100 ${
             showCalls ? 'lg:col-span-3 lg:border-r' : 'lg:col-span-4 lg:border-r'
           }`}
         >
           <div
             ref={scrollRef}
-            className="max-h-72 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent"
+            className="max-h-72 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-stone-300 scrollbar-track-transparent"
           >
             {messages.length === 0 ? (
-              <p className="text-slate-500 text-sm">Waiting for activity…</p>
+              <p className="text-stone-500 text-sm">Waiting for activity…</p>
             ) : (
               messages.map((msg) => <ActivityMessageRow key={msg.id} message={msg} />)
             )}
           </div>
 
           {running && (
-            <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
-              <span className="w-1.5 h-1.5 bg-blue-300 rounded-full animate-pulse" />
-              <span className="w-1.5 h-1.5 bg-blue-300 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
-              <span className="w-1.5 h-1.5 bg-blue-300 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
-              <span>Live stream</span>
+            <div className="mt-3 flex items-center gap-2 text-xs text-stone-500">
+              <span className="w-1.5 h-1.5 bg-[#00C853] rounded-full animate-pulse" />
+              <span className="w-1.5 h-1.5 bg-[#00C853] rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+              <span className="w-1.5 h-1.5 bg-[#00C853] rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
+              <span className="font-mono uppercase tracking-wider">Live stream</span>
             </div>
           )}
         </div>
 
-        <div className={`px-5 py-4 ${showCalls ? 'lg:col-span-2 lg:border-r border-slate-700' : 'lg:col-span-3'}`}>
+        <div className={`px-6 py-5 ${showCalls ? 'lg:col-span-2 lg:border-r border-stone-100' : 'lg:col-span-3'}`}>
           {todos.length === 0 ? (
-            <p className="text-slate-500 text-sm">No tasks yet.</p>
+            <p className="text-stone-500 text-sm">No tasks yet.</p>
           ) : (
             <div>
-              <h3 className="text-slate-300 font-medium text-sm mb-2">Tasks</h3>
+              <h3 className="text-stone-600 font-medium text-sm mb-2">Tasks</h3>
               <div className="space-y-1">
                 {todos.map((todo) => (
                   <TodoRow key={todo.id} todo={todo} />
@@ -208,8 +208,8 @@ export default function MainAgentWorkspace({
         </div>
 
         {showCalls && (
-          <div className="px-5 py-4 lg:col-span-2">
-            <h3 className="text-slate-300 font-medium text-sm mb-2">Calls</h3>
+          <div className="px-6 py-5 lg:col-span-2">
+            <h3 className="text-stone-600 font-medium text-sm mb-2">Calls</h3>
             {callsPanel}
           </div>
         )}

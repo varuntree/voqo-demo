@@ -76,23 +76,23 @@ export default function HistorySessionReplay({ sessionId }: { sessionId: string 
   const subagentActivity = detail?.subagentActivity || {};
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
-      <header className="border-b border-slate-700 bg-slate-900/50 backdrop-blur sticky top-0 z-10">
+    <div className="min-h-screen bg-[#FDFCF8]">
+      <header className="border-b border-stone-200 bg-white/80 backdrop-blur sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <Link
               href="/?tab=history"
-              className="text-slate-400 hover:text-white transition-colors text-sm"
+              className="text-stone-500 hover:text-stone-900 transition-colors text-sm font-mono"
             >
               ← Back to History
             </Link>
-            <span className="text-slate-600">/</span>
-            <span className="text-white font-semibold truncate">
+            <span className="text-stone-300">/</span>
+            <span className="text-stone-900 font-semibold truncate">
               {detail?.session.name || sessionId}
             </span>
           </div>
           {headerMeta?.createdLabel && (
-            <span className="text-xs text-slate-500 shrink-0">{headerMeta.createdLabel}</span>
+            <span className="text-xs text-stone-400 shrink-0 font-mono">{headerMeta.createdLabel}</span>
           )}
         </div>
       </header>
@@ -100,8 +100,8 @@ export default function HistorySessionReplay({ sessionId }: { sessionId: string 
       <section className="py-8 px-4">
         <div className="max-w-6xl mx-auto">
           {loading && (
-            <div className="flex items-center gap-3 text-slate-400">
-              <svg className="animate-spin h-5 w-5 text-blue-500" viewBox="0 0 24 24">
+            <div className="flex items-center gap-3 text-stone-500">
+              <svg className="animate-spin h-5 w-5 text-[#00C853]" viewBox="0 0 24 24">
                 <circle
                   className="opacity-25"
                   cx="12"
@@ -117,12 +117,12 @@ export default function HistorySessionReplay({ sessionId }: { sessionId: string 
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                 />
               </svg>
-              <span>Loading session…</span>
+              <span className="font-mono">Loading session…</span>
             </div>
           )}
 
           {!loading && error && (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-red-300">
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-red-600">
               {error}
             </div>
           )}
@@ -131,8 +131,8 @@ export default function HistorySessionReplay({ sessionId }: { sessionId: string 
             <>
               <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
                 <div className="min-w-0">
-                  <h1 className="text-2xl font-bold text-white truncate">{detail.session.name}</h1>
-                  <p className="text-sm text-slate-400 mt-1">
+                  <h1 className="text-2xl font-bold text-stone-900 truncate">{detail.session.name}</h1>
+                  <p className="text-sm text-stone-500 mt-1 font-mono">
                     {detail.session.suburb} • {detail.session.actualCount} agencies •{' '}
                     {detail.session.successCount} demos generated
                   </p>
@@ -140,13 +140,13 @@ export default function HistorySessionReplay({ sessionId }: { sessionId: string 
                 {(detail.pipeline.status === 'complete' ||
                   detail.pipeline.status === 'error' ||
                   detail.pipeline.status === 'cancelled') && (
-                  <div className="bg-slate-900/30 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-300">
-                    <span className="text-slate-400">Result:</span>{' '}
-                    <span className="text-white font-medium">
+                  <div className="bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm text-stone-600">
+                    <span className="text-stone-400">Result:</span>{' '}
+                    <span className="text-stone-900 font-medium">
                       {completionStats.success}/{completionStats.total}
                     </span>
                     {completionStats.failed > 0 && (
-                      <span className="text-amber-400"> • {completionStats.failed} failed</span>
+                      <span className="text-amber-600"> • {completionStats.failed} failed</span>
                     )}
                   </div>
                 )}
@@ -191,4 +191,3 @@ export default function HistorySessionReplay({ sessionId }: { sessionId: string 
     </div>
   );
 }
-

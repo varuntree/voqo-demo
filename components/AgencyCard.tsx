@@ -55,15 +55,15 @@ function MiniTodos({ status }: { status: AgencyProgress['status'] }) {
 
     const color =
       state === 'complete'
-        ? 'text-green-300'
+        ? 'text-emerald-600'
         : state === 'in_progress'
-          ? 'text-blue-300'
-          : 'text-slate-500';
+          ? 'text-[#00C853]'
+          : 'text-stone-400';
 
     return (
       <div className="flex items-center gap-2 text-xs">
         <span className={color}>{icon}</span>
-        <span className={state === 'pending' ? 'text-slate-500' : 'text-slate-300'}>{label}</span>
+        <span className={state === 'pending' ? 'text-stone-400' : 'text-stone-600'}>{label}</span>
       </div>
     );
   };
@@ -85,7 +85,7 @@ export default function AgencyCard({
 }: AgencyCardProps) {
   // Note: getPainScoreColor removed 2026-01-18 (painScore field deprecated)
 
-  const borderColor = data.primaryColor || '#475569'; // slate-600 fallback
+  const borderColor = data.primaryColor || '#e7e5e4'; // stone-200 fallback
   const normalizeDemoUrl = (demoUrl: string | null) => {
     if (!demoUrl) return null;
     if (demoUrl.startsWith('/demo/') && demoUrl.endsWith('.html')) {
@@ -179,23 +179,23 @@ export default function AgencyCard({
   return (
     <div
       className={`
-        bg-slate-800 rounded-xl overflow-hidden transition-all duration-500
+        bg-white rounded-2xl overflow-hidden transition-all duration-500 shadow-sm hover:shadow-2xl hover:shadow-emerald-500/10
         ${isRemoving ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}
         ${data.status === 'skeleton' ? 'animate-pulse' : ''}
       `}
       style={{
         borderWidth: '2px',
         borderStyle: 'solid',
-        borderColor: data.status !== 'skeleton' ? borderColor : '#475569',
+        borderColor: data.status !== 'skeleton' ? borderColor : '#e7e5e4',
       }}
     >
       {/* Header */}
-      <div className="p-4 border-b border-slate-700/50">
+      <div className="p-4 border-b border-stone-100">
         <div className="flex items-start justify-between gap-3">
           {/* Logo + Name */}
           <div className="flex items-center gap-3 min-w-0">
             {logoSrc ? (
-              <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center overflow-hidden flex-shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center overflow-hidden flex-shrink-0">
                 <img
                   src={logoSrc}
                   alt={data.name || 'Agency'}
@@ -211,14 +211,14 @@ export default function AgencyCard({
                 />
               </div>
             ) : (
-              <div className="w-10 h-10 rounded-lg bg-slate-700 flex items-center justify-center flex-shrink-0">
-                <span className="text-slate-500 text-lg font-bold">
+              <div className="w-10 h-10 rounded-xl bg-stone-200 flex items-center justify-center flex-shrink-0">
+                <span className="text-stone-500 text-lg font-bold">
                   {data.name?.charAt(0) || '?'}
                 </span>
               </div>
             )}
             <div className="min-w-0">
-              <h3 className="font-semibold text-white truncate">
+              <h3 className="font-semibold text-stone-900 truncate">
                 {data.name || 'Loading...'}
               </h3>
               {data.website && (
@@ -226,7 +226,7 @@ export default function AgencyCard({
                   href={data.website}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-slate-500 hover:text-slate-400 truncate block"
+                  className="text-xs text-stone-400 hover:text-stone-600 truncate block"
                 >
                   {websiteHost}
                 </a>
@@ -237,9 +237,9 @@ export default function AgencyCard({
           <button
             type="button"
             onClick={onToggleExpand}
-            className="text-xs text-slate-500 hover:text-slate-200 transition-colors"
+            className="text-xs text-stone-400 hover:text-stone-700 transition-colors font-mono uppercase tracking-wider"
           >
-            {isExpanded ? 'Hide details' : 'Show details'}
+            {isExpanded ? 'Hide' : 'Details'}
           </button>
         </div>
 
@@ -247,16 +247,16 @@ export default function AgencyCard({
         {(data.status === 'extracting' || data.status === 'generating' || data.status === 'complete') && (
           <div className="mt-3 space-y-1.5">
             {/* Listing Stats */}
-            <div className="flex flex-wrap items-center gap-2 text-xs">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
               {data.listingCount !== null && (
-                <span className="text-slate-400">
+                <span className="text-stone-500">
                   {data.listingCount} for sale
                 </span>
               )}
               {data.teamSize !== null && (
                 <>
-                  {data.listingCount !== null && <span className="text-slate-600">•</span>}
-                  <span className="text-slate-400">{data.teamSize} agents</span>
+                  {data.listingCount !== null && <span className="text-stone-300">•</span>}
+                  <span className="text-stone-500">{data.teamSize} agents</span>
                 </>
               )}
             </div>
@@ -297,15 +297,15 @@ export default function AgencyCard({
                 <div className="absolute inset-0 flex items-center justify-center">
                   <a
                     href={`${demoUrl}${data.sessionId ? `?session=${encodeURIComponent(data.sessionId)}` : ''}`}
-                    className="px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm font-medium hover:bg-white/15 transition-colors"
+                    className="px-5 py-2.5 rounded-full bg-[#00C853] text-white text-xs font-mono uppercase tracking-widest font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20"
                   >
-                    Open Demo Page
+                    Open Demo
                   </a>
                 </div>
               )}
             </div>
 
-            <div className="text-xs text-slate-500">
+            <div className="text-xs text-stone-500 font-mono">
               {data.status === 'generating' ? 'Generating demo page…' : 'Ready.'}
             </div>
           </div>
@@ -315,19 +315,19 @@ export default function AgencyCard({
         {data.status === 'error' && (
           <div className="space-y-3">
             <StepList steps={steps} />
-            <p className="text-red-400 text-sm text-center">{data.error || 'Failed to process'}</p>
+            <p className="text-red-500 text-sm text-center">{data.error || 'Failed to process'}</p>
           </div>
         )}
 
         {isExpanded && (
-          <div className="mt-4 border-t border-slate-700/60 pt-3">
+          <div className="mt-4 border-t border-stone-100 pt-3">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs uppercase tracking-wide text-slate-500">Subagent stream</span>
-              <span className="text-xs text-slate-600">{activity.length}</span>
+              <span className="text-[10px] uppercase tracking-widest text-stone-400 font-mono">Subagent stream</span>
+              <span className="text-xs text-stone-300 font-mono">{activity.length}</span>
             </div>
-            <div className="max-h-40 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
+            <div className="max-h-40 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-stone-300 scrollbar-track-transparent">
               {activity.length === 0 ? (
-                <p className="text-slate-600 text-sm">No subagent activity yet.</p>
+                <p className="text-stone-400 text-sm">No subagent activity yet.</p>
               ) : (
                 activity.slice(-40).map((msg) => <ActivityMessageRow key={msg.id} message={msg} />)
               )}

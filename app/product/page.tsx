@@ -578,21 +578,21 @@ export default function Home() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
+    <div className="min-h-screen bg-[#FDFCF8]">
       {/* Header */}
-      <header className="border-b border-slate-700 bg-slate-900/50 backdrop-blur sticky top-0 z-10">
+      <header className="border-b border-stone-200 bg-white/80 backdrop-blur-lg sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold text-white">Voqo</span>
-              <span className="text-slate-400 text-sm">Lead Engine</span>
+              <span className="text-2xl font-bold text-stone-900 font-fraunces">Voqo</span>
+              <span className="text-stone-500 text-sm font-mono">Lead Engine</span>
             </div>
             <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSettingsOpen(true)}
-              className="p-2 text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-slate-700/50"
+              className="p-2 text-stone-400 hover:text-stone-900 transition-colors rounded-full hover:bg-stone-100"
               title="Settings"
             >
               <svg
@@ -617,7 +617,7 @@ export default function Home() {
             {pipelineStatus !== 'idle' && activeTab === 'search' && (
               <button
                 onClick={handleReset}
-                className="text-sm text-slate-400 hover:text-white transition-colors"
+                className="text-sm text-stone-500 hover:text-stone-900 transition-colors font-mono"
               >
                 New Search
               </button>
@@ -632,10 +632,10 @@ export default function Home() {
           {/* Hero + Search */}
           <section className="py-12 md:py-16">
             <div className="max-w-4xl mx-auto px-4 text-center">
-              <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+              <h1 className="text-4xl md:text-5xl font-bold text-stone-950 font-fraunces mb-4">
                 Find Real Estate Agencies
               </h1>
-              <p className="text-xl text-slate-300 mb-8">
+              <p className="text-xl text-stone-600 mb-8">
                 Search any suburb to discover agencies and generate personalized demos
               </p>
 
@@ -647,12 +647,12 @@ export default function Home() {
                     onChange={(e) => setSuburb(e.target.value)}
                     placeholder="Enter suburb (e.g. Surry Hills)"
                     disabled={isSearching}
-                    className="flex-1 px-5 py-4 rounded-xl bg-white/10 border border-slate-600 text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+                    className="flex-1 px-5 py-4 rounded-2xl bg-white border border-stone-200 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#00C853] focus:border-transparent disabled:opacity-50 shadow-sm"
                   />
                   <button
                     type="submit"
                     disabled={isSearching || !suburb.trim()}
-                    className="px-8 py-4 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors"
+                    className="px-8 py-4 bg-[#00C853] hover:bg-emerald-600 disabled:bg-emerald-300 disabled:cursor-not-allowed text-white font-mono uppercase tracking-widest rounded-full transition-colors shadow-lg shadow-emerald-500/20"
                   >
                     {isSearching ? 'Searching...' : 'Search'}
                   </button>
@@ -660,7 +660,7 @@ export default function Home() {
 
                 {/* Agency count slider */}
                 <div className="flex items-center gap-4 justify-center">
-                  <label className="text-slate-400 text-sm">Agencies:</label>
+                  <label className="text-stone-500 text-sm font-mono">Agencies:</label>
                   <input
                     type="range"
                     min="1"
@@ -668,13 +668,13 @@ export default function Home() {
                     value={agencyCount}
                     onChange={(e) => setAgencyCount(Number(e.target.value))}
                     disabled={isSearching}
-                    className="w-32 accent-blue-500"
+                    className="w-32 accent-[#00C853]"
                   />
-                  <span className="text-white font-medium w-8">{agencyCount}</span>
+                  <span className="text-stone-900 font-medium w-8 font-mono">{agencyCount}</span>
                 </div>
               </form>
 
-              {error && <p className="mt-4 text-red-400">{error}</p>}
+              {error && <p className="mt-4 text-red-600">{error}</p>}
             </div>
           </section>
 
@@ -722,10 +722,10 @@ export default function Home() {
           {completionStats && pipelineStatus === 'complete' && (
             <section className="px-4 pb-6">
               <div className="max-w-6xl mx-auto">
-                <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 flex items-center justify-between">
+                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <svg
-                      className="w-6 h-6 text-green-500"
+                      className="w-6 h-6 text-emerald-600"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -737,13 +737,13 @@ export default function Home() {
                         d="M5 13l4 4L19 7"
                       />
                     </svg>
-                    <span className="text-green-400 font-medium">
+                    <span className="text-emerald-700 font-medium">
                       Pipeline complete! {completionStats.success} of {completionStats.total}{' '}
                       agencies processed successfully.
                     </span>
                   </div>
                   {completionStats.failed > 0 && (
-                    <span className="text-amber-400 text-sm">
+                    <span className="text-amber-600 text-sm font-mono">
                       {completionStats.failed} failed
                     </span>
                   )}
@@ -756,7 +756,7 @@ export default function Home() {
           {cardsArray.length > 0 && (
             <section className="px-4 pb-16">
               <div className="max-w-6xl mx-auto">
-                <h2 className="text-xl font-semibold text-white mb-4">
+                <h2 className="text-xl font-semibold text-stone-900 mb-4">
                   {isSearching ? 'Processing Agencies...' : `Found ${cardsArray.length} Agencies`}
                 </h2>
 
@@ -787,8 +787,8 @@ export default function Home() {
           {isSearching && cardsArray.length === 0 && mainActivityMessages.length === 0 && (
             <section className="px-4 py-12">
               <div className="max-w-6xl mx-auto text-center">
-                <div className="inline-flex items-center gap-3 px-6 py-3 bg-slate-800 rounded-full">
-                  <svg className="animate-spin h-5 w-5 text-blue-500" viewBox="0 0 24 24">
+                <div className="inline-flex items-center gap-3 px-6 py-3 bg-stone-100 rounded-full">
+                  <svg className="animate-spin h-5 w-5 text-[#00C853]" viewBox="0 0 24 24">
                     <circle
                       className="opacity-25"
                       cx="12"
@@ -804,7 +804,7 @@ export default function Home() {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                     />
                   </svg>
-                  <span className="text-slate-300">Starting search for agencies in {suburb}...</span>
+                  <span className="text-stone-600 font-mono">Starting search for agencies in {suburb}...</span>
                 </div>
               </div>
             </section>
@@ -816,7 +816,7 @@ export default function Home() {
       {activeTab === 'history' && (
         <section className="py-8 px-4">
           <div className="max-w-6xl mx-auto">
-            <h1 className="text-2xl font-bold text-white mb-6">Search History</h1>
+            <h1 className="text-2xl font-bold text-stone-900 mb-6">Search History</h1>
             <HistoryList
               sessions={history}
               onAgencyClick={handleAgencyClick}

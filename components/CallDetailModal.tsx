@@ -24,12 +24,12 @@ function contentKey(message: ActivityMessage): string {
 function StatusLabel({ status }: { status: string }) {
   const normalized = status || 'generating';
   const styles = (() => {
-    if (normalized === 'completed') return 'bg-green-500/15 text-green-300 border-green-500/20';
-    if (normalized === 'failed') return 'bg-red-500/15 text-red-300 border-red-500/20';
-    return 'bg-amber-500/15 text-amber-300 border-amber-500/20';
+    if (normalized === 'completed') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    if (normalized === 'failed') return 'bg-red-50 text-red-600 border-red-200';
+    return 'bg-amber-50 text-amber-700 border-amber-200';
   })();
   const label = normalized === 'completed' ? 'Ready' : normalized === 'failed' ? 'Failed' : 'Generating';
-  return <span className={`px-2 py-0.5 text-xs rounded-full border ${styles}`}>{label}</span>;
+  return <span className={`px-2.5 py-1 text-[10px] font-mono uppercase tracking-widest rounded-full border ${styles}`}>{label}</span>;
 }
 
 export default function CallDetailModal({
@@ -168,22 +168,22 @@ export default function CallDetailModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button
         type="button"
-        className="absolute inset-0 bg-slate-950/70"
+        className="absolute inset-0 bg-stone-950/60 backdrop-blur-sm"
         onClick={onClose}
         aria-label="Close modal"
       />
 
-      <div className="relative w-full max-w-5xl bg-slate-900 border border-slate-700 rounded-2xl overflow-hidden shadow-2xl">
-        <div className="px-5 py-4 border-b border-slate-700 flex items-start justify-between gap-4">
+      <div className="relative w-full max-w-5xl bg-white border-2 border-stone-100 rounded-3xl overflow-hidden shadow-2xl">
+        <div className="px-6 py-5 border-b border-stone-100 flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-3">
-              <h3 className="text-white font-semibold truncate">{agencyName}</h3>
+              <h3 className="text-stone-900 font-semibold truncate">{agencyName}</h3>
               <StatusLabel status={pageStatus} />
               {timestamp ? (
-                <span className="text-slate-500 text-sm">• {formatTimestamp(timestamp)}</span>
+                <span className="text-stone-400 text-sm font-mono">• {formatTimestamp(timestamp)}</span>
               ) : null}
             </div>
-            <div className="mt-1 text-xs text-slate-500 truncate">
+            <div className="mt-1 text-[10px] text-stone-400 truncate font-mono">
               {callId}
             </div>
           </div>
@@ -192,7 +192,7 @@ export default function CallDetailModal({
             {pageUrl && pageStatus === 'completed' && (
               <a
                 href={pageUrl}
-                className="px-3 py-1.5 text-sm rounded-lg bg-blue-500/15 text-blue-200 hover:bg-blue-500/25 transition-colors"
+                className="px-4 py-2 text-xs font-mono uppercase tracking-widest rounded-full bg-[#00C853] text-white hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20"
               >
                 Open Page
               </a>
@@ -200,7 +200,7 @@ export default function CallDetailModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-3 py-1.5 text-sm rounded-lg bg-slate-800 text-slate-200 hover:bg-slate-700 transition-colors"
+              className="px-4 py-2 text-xs font-mono uppercase tracking-widest rounded-full bg-stone-100 text-stone-600 hover:bg-stone-200 transition-colors"
             >
               Close
             </button>
@@ -208,25 +208,25 @@ export default function CallDetailModal({
         </div>
 
         {loading ? (
-          <div className="p-6 text-slate-500 text-sm">Loading call details…</div>
+          <div className="p-6 text-stone-500 text-sm font-mono">Loading call details…</div>
         ) : error ? (
-          <div className="p-6 text-red-300 text-sm">{error}</div>
+          <div className="p-6 text-red-600 text-sm">{error}</div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-5">
-            <div className="lg:col-span-3 p-5 border-b lg:border-b-0 lg:border-r border-slate-700">
+            <div className="lg:col-span-3 p-6 border-b lg:border-b-0 lg:border-r border-stone-100">
               <div className="flex items-center justify-between mb-3">
-                <h4 className="text-slate-200 text-sm font-medium">Transcript</h4>
+                <h4 className="text-stone-700 text-sm font-medium">Transcript</h4>
                 {toolStreamVisible && (
-                  <div className="text-xs text-slate-500">
+                  <div className="text-[10px] text-stone-400 font-mono uppercase tracking-wider">
                     Post-call page: {activityStatus === 'active' ? 'running' : activityStatus === 'complete' ? 'finished' : 'pending'}
                   </div>
                 )}
               </div>
 
               {transcript.length === 0 ? (
-                <p className="text-slate-500 text-sm">No transcript available yet.</p>
+                <p className="text-stone-500 text-sm">No transcript available yet.</p>
               ) : (
-                <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
+                <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-stone-300 scrollbar-track-transparent">
                   {transcript.map((t, idx) => {
                     const isCaller = t.role === 'user';
                     return (
@@ -234,11 +234,11 @@ export default function CallDetailModal({
                         <div
                           className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed border ${
                             isCaller
-                              ? 'bg-blue-500/10 border-blue-500/20 text-slate-100'
-                              : 'bg-slate-800/60 border-slate-700 text-slate-100'
+                              ? 'bg-[#00C853]/10 border-[#00C853]/20 text-stone-800'
+                              : 'bg-stone-50 border-stone-200 text-stone-800'
                           }`}
                         >
-                          <div className="text-[11px] text-slate-500 mb-1">
+                          <div className="text-[10px] text-stone-400 mb-1 font-mono uppercase tracking-wider">
                             {isCaller ? 'Caller' : 'Agent'}
                           </div>
                           <div className="whitespace-pre-wrap">{t.message}</div>
@@ -250,25 +250,25 @@ export default function CallDetailModal({
               )}
             </div>
 
-            <div className="lg:col-span-2 p-5">
+            <div className="lg:col-span-2 p-6">
               <div className="flex items-center justify-between mb-3">
-                <h4 className="text-slate-200 text-sm font-medium">Post-call generation</h4>
+                <h4 className="text-stone-700 text-sm font-medium">Post-call generation</h4>
                 {activityStatus === 'active' && (
-                  <div className="flex items-center gap-2 text-xs text-slate-500">
-                    <span className="w-1.5 h-1.5 bg-amber-300 rounded-full animate-pulse" />
+                  <div className="flex items-center gap-2 text-[10px] text-stone-400 font-mono uppercase tracking-wider">
+                    <span className="w-1.5 h-1.5 bg-[#00C853] rounded-full animate-pulse" />
                     <span>Live</span>
                   </div>
                 )}
               </div>
 
               {activityMessages.length === 0 ? (
-                <p className="text-slate-500 text-sm">
+                <p className="text-stone-500 text-sm">
                   {pageStatus === 'completed' ? 'No generation activity recorded.' : 'Waiting for post-call agent activity…'}
                 </p>
               ) : (
                 <div
                   ref={scrollRef}
-                  className="max-h-[50vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent"
+                  className="max-h-[50vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-stone-300 scrollbar-track-transparent"
                 >
                   {activityMessages.slice(-200).map((msg) => (
                     <ActivityMessageRow key={msg.id} message={msg} />
@@ -282,4 +282,3 @@ export default function CallDetailModal({
     </div>
   );
 }
-
