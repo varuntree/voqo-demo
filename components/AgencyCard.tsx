@@ -83,12 +83,7 @@ export default function AgencyCard({
   isExpanded = false,
   onToggleExpand,
 }: AgencyCardProps) {
-  const getPainScoreColor = (score: number | null) => {
-    if (score === null) return 'bg-slate-700 text-slate-400';
-    if (score >= 70) return 'bg-red-500/20 text-red-400';
-    if (score >= 40) return 'bg-amber-500/20 text-amber-400';
-    return 'bg-green-500/20 text-green-400';
-  };
+  // Note: getPainScoreColor removed 2026-01-18 (painScore field deprecated)
 
   const borderColor = data.primaryColor || '#475569'; // slate-600 fallback
   const normalizeDemoUrl = (demoUrl: string | null) => {
@@ -179,27 +174,7 @@ export default function AgencyCard({
     }
   })();
 
-  // Format price for display
-  const formatPrice = (price: string | number | null) => {
-    if (price === null || price === undefined) return null;
-    if (typeof price === 'number') {
-      const num = price;
-      if (num >= 1000000) return `$${(num / 1000000).toFixed(1)}M`;
-      if (num >= 1000) return `$${(num / 1000).toFixed(0)}K`;
-      return `$${num}`;
-    }
-    // If already formatted, return as-is
-    if (price.startsWith('$')) return price;
-    const numeric = parseFloat(price.replace(/[^0-9.]/g, ''));
-    if (Number.isNaN(numeric)) return price;
-    if (numeric >= 1000000) return `$${(numeric / 1000000).toFixed(1)}M`;
-    if (numeric >= 1000) return `$${(numeric / 1000).toFixed(0)}K`;
-    return `$${numeric}`;
-  };
-
-  const priceMin = formatPrice(data.priceRangeMin);
-  const priceMax = formatPrice(data.priceRangeMax);
-  const priceRange = priceMin && priceMax ? `${priceMin} - ${priceMax}` : null;
+  // Note: formatPrice and priceRange removed 2026-01-18 (priceRangeMin/Max fields deprecated)
 
   return (
     <div
@@ -268,17 +243,9 @@ export default function AgencyCard({
           </button>
         </div>
 
-        {/* Enhanced Metrics Row */}
+        {/* Metrics Row (simplified 2026-01-18: removed priceRange, soldCount, forRentCount) */}
         {(data.status === 'extracting' || data.status === 'generating' || data.status === 'complete') && (
           <div className="mt-3 space-y-1.5">
-            {/* Price Range */}
-            {priceRange && (
-              <div className="flex items-center gap-2 text-sm animate-fadeIn">
-                <span className="text-amber-400">$</span>
-                <span className="text-slate-300">{priceRange}</span>
-              </div>
-            )}
-
             {/* Listing Stats */}
             <div className="flex flex-wrap items-center gap-2 text-xs">
               {data.listingCount !== null && (
@@ -286,26 +253,13 @@ export default function AgencyCard({
                   {data.listingCount} for sale
                 </span>
               )}
-              {data.soldCount !== null && data.soldCount > 0 && (
+              {data.teamSize !== null && (
                 <>
-                  <span className="text-slate-600">•</span>
-                  <span className="text-slate-400">{data.soldCount} sold</span>
-                </>
-              )}
-              {data.forRentCount !== null && data.forRentCount > 0 && (
-                <>
-                  <span className="text-slate-600">•</span>
-                  <span className="text-slate-400">{data.forRentCount} rentals</span>
+                  {data.listingCount !== null && <span className="text-slate-600">•</span>}
+                  <span className="text-slate-400">{data.teamSize} agents</span>
                 </>
               )}
             </div>
-
-            {/* Team Size */}
-            {data.teamSize !== null && (
-              <div className="text-xs text-slate-400">
-                {data.teamSize} agents
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -328,17 +282,9 @@ export default function AgencyCard({
           </div>
         )}
 
-        {/* Generating + Complete preview */}
+        {/* Generating + Complete preview (painScore display removed 2026-01-18) */}
         {(data.status === 'generating' || data.status === 'complete') && (
           <div className="mt-3 space-y-3">
-            {data.painScore !== null && (
-              <div className="flex justify-end">
-                <span className={`px-2 py-1 rounded text-xs font-medium ${getPainScoreColor(data.painScore)}`}>
-                  Pain: {data.painScore}
-                </span>
-              </div>
-            )}
-
             <div className="relative">
               <ShimmerPreview
                 primaryColor={data.primaryColor}

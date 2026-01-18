@@ -24,6 +24,13 @@ export interface CardStep {
   status: 'pending' | 'in_progress' | 'complete' | 'error';
 }
 
+/**
+ * Agency progress tracking for pipeline UI
+ *
+ * Schema updated 2026-01-18:
+ * - Removed: painScore, soldCount, priceRangeMin, priceRangeMax, forRentCount
+ * - Added: email, tagline, heroImageUrl, designSystem
+ */
 export interface AgencyProgress {
   // Identity
   agencyId: string;
@@ -41,22 +48,21 @@ export interface AgencyProgress {
   website: string | null;
   phone: string | null;
   address: string | null;
+  email: string | null;
 
   // Branding
   logoUrl: string | null;
   primaryColor: string | null;
   secondaryColor: string | null;
+  tagline: string | null;
+  heroImageUrl: string | null;
 
-  // Metrics (existing)
+  // Metrics (simplified - only what's visible on homepage)
   teamSize: number | null;
   listingCount: number | null;
-  painScore: number | null;
 
-  // Metrics (enhanced - from existing searches)
-  soldCount: number | null;
-  priceRangeMin: string | null;
-  priceRangeMax: string | null;
-  forRentCount: number | null;
+  // Design System Selection
+  designSystem: string | null;
 
   // Generation
   htmlProgress: number;

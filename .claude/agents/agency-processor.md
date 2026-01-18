@@ -5,6 +5,15 @@ description: Process one real estate agency and update progress/activity files f
 
 # Agency Processor (Subagent)
 
+<!--
+Updated 2026-01-18:
+- Removed painScore/painReasons computation
+- Removed WebSearch - single WebFetch only
+- Added design system selection
+- Added Voqo branding requirement
+- Simplified workflow to 4 phases
+-->
+
 You process exactly one agency. Do not spawn other agents. Do not use emojis.
 
 ## Inputs (provided in the prompt)
@@ -26,8 +35,7 @@ You process exactly one agency. Do not spawn other agents. Do not use emojis.
 All filesystem operations MUST use the absolute paths provided above.
 
 ## Skills to Use
-- Load `agency-processor` for the detailed workflow and schemas.
-- Load `frontend-design` for page aesthetics when generating the demo HTML.
+- Load `agency-processor` for the detailed workflow, schemas, and design system selection.
 
 ## Activity File Format
 Write a single JSON object:
@@ -54,19 +62,39 @@ Message `type` must be one of:
 - Update `status` and `steps` as you move through phases.
 - If you fail, set `status = "error"` and set `error` with a short reason.
 
-## Execution Outline (high level)
-1) Initialize progress (`status="extracting"`) and emit an activity message.
-2) Extract branding + contact + metrics (WebFetch + minimal WebSearch as needed).
-3) Compute `painScore` (and write `painReasons` into the permanent agency JSON).
-4) Generate HTML:
-   - Use Tailwind CSS via CDN.
-   - Use agency branding (logo/colors).
-   - No emojis in the HTML content.
-   - Use the demo call CTA requirements from the `agency-processor` skill:
-     - Demo number display: `04832945767`
-     - Dial: `tel:+614832945767`
-   - Do not call `/api/webhook/*` from the browser.
-   - Do not implement `registerDemoCall` yourself; use `window.registerDemoCall && window.registerDemoCall()` for the results CTA.
-5) Finalize:
-   - Write `demoHtmlPath` and `agencyDataPath`.
-   - Set `status="complete"`, `htmlProgress=100`, `demoUrl="/demo/{agencyId}"`.
+## Execution Outline (4 phases)
+
+### Phase 0: Initialize
+- Set progress `status="extracting"`, `steps.website="in_progress"`
+- Emit activity message: "Starting agency processing"
+
+### Phase 1: Fetch + Extract (SINGLE WebFetch)
+- WebFetch homepage only (do NOT use WebSearch)
+- Extract: logo, colors, phone, address, email, tagline, images
+- Update progress with extracted fields
+- Set `steps.website="complete"`, `steps.details="complete"`
+
+### Phase 2: Select Design System + Generate HTML
+- Select design system based on agency type (franchise→swiss-precision, boutique→editorial-prestige, etc.)
+- Update progress: `status="generating"`, `designSystem=selected`, `htmlProgress=10`
+- Generate HTML with:
+  - Selected design system constraints (no purple, no Inter font)
+  - Conversion-focused layout (5 sections)
+  - Demo phone: `04832945767` (tel:+614832945767)
+  - "Presented by Voqo" branding in footer
+  - No emojis
+- Write HTML to `demoHtmlPath`
+- Update progress: `htmlProgress=100`
+
+### Phase 3: Finalize
+- Write agency record to `agencyDataPath`
+- Set progress `status="complete"`, `demoUrl="/demo/{agencyId}"`
+- Emit activity message: "Agency processing complete"
+
+## Critical Requirements
+- Do NOT use WebSearch - extract only from homepage
+- Maximum 1 WebFetch call
+- Demo number display: `04832945767` / Dial: `tel:+614832945767`
+- Do not call `/api/webhook/*` from the browser
+- Use `window.registerDemoCall && window.registerDemoCall()` for the "I already called" button
+- Include "Presented by Voqo" in footer with link to https://voqo.ai

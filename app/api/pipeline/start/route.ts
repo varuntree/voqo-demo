@@ -383,6 +383,9 @@ Once you have exactly ${count} agencies:
 2) Proceed to Step 3.
 
 ## Skeleton Progress File Format
+
+<!-- Schema updated 2026-01-18: Removed painScore, soldCount, forRentCount, priceRangeMin/max. Added email, tagline, heroImageUrl, designSystem. -->
+
 Write ${PROGRESS_DIR}/agency-{agencyId}.json with this format:
 
 {
@@ -392,18 +395,17 @@ Write ${PROGRESS_DIR}/agency-{agencyId}.json with this format:
   "updatedAt": "ISO timestamp",
   "name": "Agency Name",
   "website": "https://...",
+  "phone": null,
+  "address": null,
+  "email": null,
   "logoUrl": null,
   "primaryColor": null,
   "secondaryColor": null,
-  "phone": null,
-  "address": null,
+  "tagline": null,
+  "heroImageUrl": null,
   "teamSize": null,
   "listingCount": null,
-  "soldCount": null,
-  "priceRangeMin": null,
-  "priceRangeMax": null,
-  "forRentCount": null,
-  "painScore": null,
+  "designSystem": null,
   "htmlProgress": 0,
   "demoUrl": null,
   "steps": [
@@ -411,7 +413,8 @@ Write ${PROGRESS_DIR}/agency-{agencyId}.json with this format:
     { "id": "details", "label": "Extracted details", "status": "pending" },
     { "id": "generating", "label": "Generating demo page", "status": "pending" },
     { "id": "complete", "label": "Ready", "status": "pending" }
-  ]
+  ],
+  "error": null
 }
 
 ## Step 3: Spawn Subagents (ONE message, N tasks)
@@ -424,10 +427,12 @@ For each agency, use:
 - description: "Process agency {name}"
 - prompt: include agency details AND absolute paths for file operations.
 
+<!-- Subagent workflow updated 2026-01-18: Removed pain score, removed WebSearch, single WebFetch only -->
+
 Use the agency-processor skill to:
-1. Extract agency details (logo, colors, phone, metrics)
-2. Calculate pain score
-3. Generate demo HTML page
+1. Extract agency details from homepage (logo, colors, phone, images)
+2. Select design system based on agency type
+3. Generate conversion-focused demo HTML page
 4. Update progress file at each step
 
 The subagent prompt should be:
@@ -441,21 +446,26 @@ activityFilePath: ${PROGRESS_DIR}/agency-activity-{agencyId}.json
 demoHtmlPath: ${PUBLIC_DEMO_DIR}/{agencyId}.html
 agencyDataPath: ${AGENCIES_DIR}/{agencyId}.json
 
-Use the agency-processor subagent instructions. Follow these steps:
+Use the agency-processor skill instructions. Follow these steps:
 
-1. Update progress file to status='extracting'
-2. WebFetch the website to extract logo, colors, phone
-3. Update progress file with each extracted field
-4. WebSearch for team size and listing count if not found
-5. Calculate pain score
-6. Update progress to status='generating', htmlProgress=10
-7. Generate demo HTML page and save to the absolute Demo HTML path above
-8. Save agency data to the absolute Agency data path above
-9. Update progress to status='complete', htmlProgress=100, demoUrl='/demo/{agencyId}'
+1. Update progress file to status='extracting', steps.website='in_progress'
+2. WebFetch the homepage to extract: logo, colors, phone, address, email, tagline, images
+3. Update progress with extracted fields, steps.website='complete', steps.details='in_progress'
+4. Mark steps.details='complete'
+5. Select design system based on agency type (franchise→swiss-precision, boutique→editorial-prestige, etc.)
+6. Update progress to status='generating', designSystem=selected, htmlProgress=10
+7. Generate demo HTML with: selected design system, conversion-focused layout, Voqo branding, demo phone 04832945767
+8. Write HTML to demoHtmlPath, update htmlProgress=100
+9. Write agency record to agencyDataPath
+10. Update progress to status='complete', demoUrl='/demo/{agencyId}'
 
-Progress file path: ${PROGRESS_DIR}/agency-{agencyId}.json
-
-CRITICAL: Use ONLY the absolute paths listed above for Read/Write/Edit. Update the progress file after EACH step so the UI shows real-time updates."
+CRITICAL RULES:
+- Use ONLY the absolute paths listed above
+- Do NOT use WebSearch - extract only from homepage
+- Maximum 1 WebFetch call (homepage only)
+- Set missing fields to null, do not fetch additional pages
+- Demo phone number is 04832945767 (tel:+614832945767)
+- Include 'Presented by Voqo' in footer"
 
 Immediately after spawning all tasks:
 1) Update pipeline file:

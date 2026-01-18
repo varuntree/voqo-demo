@@ -47,6 +47,7 @@ function computeHash(value: unknown): string {
   return JSON.stringify(value);
 }
 
+// Schema updated 2026-01-18: Removed painScore, soldCount, forRentCount, priceRangeMin/Max. Added email, tagline, heroImageUrl, designSystem.
 function normalizeAgencyProgress(raw: unknown, agencyId: string, sessionId: string): AgencyProgress | null {
   if (!raw || typeof raw !== 'object') return null;
   const obj = raw as Partial<AgencyProgress> & Record<string, unknown>;
@@ -63,16 +64,15 @@ function normalizeAgencyProgress(raw: unknown, agencyId: string, sessionId: stri
     website: (obj.website as string | null) ?? null,
     phone: (obj.phone as string | null) ?? null,
     address: (obj.address as string | null) ?? null,
+    email: (obj.email as string | null) ?? null,
     logoUrl: (obj.logoUrl as string | null) ?? null,
     primaryColor: (obj.primaryColor as string | null) ?? null,
     secondaryColor: (obj.secondaryColor as string | null) ?? null,
+    tagline: (obj.tagline as string | null) ?? null,
+    heroImageUrl: (obj.heroImageUrl as string | null) ?? null,
     teamSize: (obj.teamSize as number | null) ?? null,
     listingCount: (obj.listingCount as number | null) ?? null,
-    painScore: (obj.painScore as number | null) ?? null,
-    soldCount: (obj.soldCount as number | null) ?? null,
-    priceRangeMin: (obj.priceRangeMin as string | null) ?? null,
-    priceRangeMax: (obj.priceRangeMax as string | null) ?? null,
-    forRentCount: (obj.forRentCount as number | null) ?? null,
+    designSystem: (obj.designSystem as string | null) ?? null,
     htmlProgress: typeof obj.htmlProgress === 'number' ? obj.htmlProgress : 0,
     demoUrl: (obj.demoUrl as string | null) ?? null,
     steps: Array.isArray(obj.steps) ? (obj.steps as AgencyProgress['steps']) : DEFAULT_STEPS,
