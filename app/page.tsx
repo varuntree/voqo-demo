@@ -91,6 +91,15 @@ export default function LandingPage() {
             See It Live <span aria-hidden="true">→</span>
           </Link>
         </div>
+
+        {/* Scroll down button */}
+        <button
+          className={styles.scrollDown}
+          onClick={() => section2Ref.current?.scrollIntoView({ behavior: 'smooth' })}
+          aria-label="Scroll to next section"
+        >
+          <span aria-hidden="true">↓</span>
+        </button>
       </section>
 
       {/* Section 2 - Why I'm Here */}

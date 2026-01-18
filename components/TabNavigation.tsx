@@ -7,15 +7,15 @@ interface TabNavigationProps {
 
 export default function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
   return (
-    <div className="flex gap-1 bg-slate-800/50 p-1 rounded-lg">
+    <div className="flex gap-1 bg-stone-100 p-1.5 rounded-full">
       <button
         onClick={() => onTabChange('search')}
         className={`
-          px-4 py-2 rounded-md text-sm font-medium transition-all
+          px-5 py-2 rounded-full text-xs font-mono uppercase tracking-widest font-medium transition-all
           ${
             activeTab === 'search'
-              ? 'bg-slate-700 text-white'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
+              ? 'bg-white text-stone-900 shadow-sm'
+              : 'text-stone-500 hover:text-stone-700 hover:bg-white/50'
           }
         `}
       >
@@ -24,11 +24,11 @@ export default function TabNavigation({ activeTab, onTabChange }: TabNavigationP
       <button
         onClick={() => onTabChange('history')}
         className={`
-          px-4 py-2 rounded-md text-sm font-medium transition-all
+          px-5 py-2 rounded-full text-xs font-mono uppercase tracking-widest font-medium transition-all
           ${
             activeTab === 'history'
-              ? 'bg-slate-700 text-white'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
+              ? 'bg-white text-stone-900 shadow-sm'
+              : 'text-stone-500 hover:text-stone-700 hover:bg-white/50'
           }
         `}
       >

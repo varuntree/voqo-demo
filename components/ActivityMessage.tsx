@@ -5,14 +5,14 @@ interface ActivityMessageProps {
 }
 
 const COLORS: Record<ActivityMessageType['type'], string> = {
-  search: 'text-blue-400',
-  results: 'text-slate-300',
-  fetch: 'text-cyan-400',
-  identified: 'text-green-400',
-  warning: 'text-amber-400',
-  thinking: 'text-purple-400',
-  tool: 'text-slate-200',
-  agent: 'text-emerald-400',
+  search: 'text-[#00C853]',
+  results: 'text-stone-600',
+  fetch: 'text-emerald-500',
+  identified: 'text-[#00C853]',
+  warning: 'text-amber-600',
+  thinking: 'text-stone-500',
+  tool: 'text-stone-700',
+  agent: 'text-[#00C853]',
 };
 
 function Icon({ type }: { type: ActivityMessageType['type'] }) {
@@ -91,14 +91,14 @@ export default function ActivityMessage({ message }: ActivityMessageProps) {
       <div className="flex-1 min-w-0">
         <p className={`text-sm ${colorClass}`}>
           {message.source && (
-            <span className="mr-2 text-[10px] uppercase tracking-wide text-slate-500">
+            <span className="mr-2 text-[10px] uppercase tracking-wide text-stone-400 font-mono">
               {message.source}
             </span>
           )}
           {message.text}
         </p>
         {message.detail && (
-          <p className="text-xs text-slate-500 truncate">{message.detail}</p>
+          <p className="text-xs text-stone-400 truncate">{message.detail}</p>
         )}
       </div>
     </div>
