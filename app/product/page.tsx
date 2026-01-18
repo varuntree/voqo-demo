@@ -584,7 +584,7 @@ export default function Home() {
       <header className="border-b border-stone-200 bg-white/80 backdrop-blur-lg sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/" className="text-2xl font-bold text-stone-900 font-space-grotesk hover:text-stone-700 transition-colors">
+            <Link href="/" className="text-2xl font-bold text-stone-900 font-inter hover:text-stone-700 transition-colors">
               Voqo
             </Link>
             <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
@@ -632,7 +632,7 @@ export default function Home() {
           {/* Hero + Search */}
           <section className="py-12 md:py-16">
             <div className="max-w-4xl mx-auto px-4 text-center">
-              <h1 className="text-4xl md:text-5xl font-bold text-stone-950 font-fraunces mb-4">
+              <h1 className="text-4xl md:text-5xl font-bold text-stone-950 font-inter mb-4">
                 Find Real Estate Agencies
               </h1>
               <p className="text-xl text-stone-600 mb-8">
