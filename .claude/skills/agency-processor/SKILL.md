@@ -7,7 +7,42 @@ description: Extract agency data and generate a branded demo landing page with r
 
 <!--
 ================================================================================
-CHANGELOG (2026-01-18)
+CHANGELOG (2026-01-18 v2)
+================================================================================
+Clarified page purpose and fixed design issues:
+
+PURPOSE CLARIFICATION:
+- Page is a DEMO INVITATION for Voqo AI voice platform
+- Agency branding shows personalization, but page is about TRYING THE DEMO
+- NOT a lead gen page, NOT an agency info page, NOT generic SaaS marketing
+
+COLOR/READABILITY FIXES:
+- Added explicit COLOR CONTRAST RULES section
+- Banned gradient backgrounds in hero sections
+- Brand colors should be accents only, not full backgrounds
+- Added specific rules: light bg = dark text, dark bg = light text
+- Explicitly banned white text on yellow backgrounds
+
+CONTENT FIXES:
+- Removed stats/metrics sections (team size, listings) - distracts from demo
+- Removed pain point / opportunity analysis sections
+- Headlines should invite to demo, not promise business outcomes
+- Sections renamed: "Value Proposition" → "What You'll Experience"
+
+IMAGE HANDLING:
+- Added strict image URL validation rules (reject relative paths, placeholders, SVGs, etc.)
+- Removed teamImageUrl and officeImageUrl extraction (rarely work)
+- Explicit guidance: "When in doubt, no image"
+- Prefer solid color backgrounds over potentially broken images
+
+BANNED ADDITIONS:
+- Added #7a00df, #6200b3 to banned purple colors
+- Added gradient hero backgrounds to banned layouts
+- Added pain point cards to banned layouts
+- Added stats grids to banned layouts
+
+================================================================================
+CHANGELOG (2026-01-18 v1)
 ================================================================================
 Major refactor to improve speed and landing page quality:
 
@@ -159,9 +194,7 @@ Write the durable record used by the rest of the system:
     "logoUrl": null,
     "primaryColor": "#0f172a",
     "secondaryColor": "#ffffff",
-    "heroImageUrl": null,
-    "teamImageUrl": null,
-    "officeImageUrl": null
+    "heroImageUrl": null
   },
   "metrics": {
     "teamSize": null,
@@ -222,13 +255,43 @@ Extract these fields from the homepage HTML in a single pass:
 | `teamSize` | "X agents" text, team count if visible | Number or null |
 | `listingCount` | "X properties" text, listing count if visible | Number or null |
 
-### Images (for landing page enhancement)
+### Images (STRICT VALIDATION REQUIRED)
 
+**IMPORTANT: Most extracted image URLs will NOT work.** Only use images that pass ALL these checks:
+
+#### Image URL Validation Rules
+```
+REJECT if URL:
+- Is a relative path (doesn't start with http:// or https://)
+- Contains "placeholder", "default", "blank", "spacer"
+- Is from a CDN that requires auth (cloudinary transforms, imgix with tokens)
+- Is a base64 data URI
+- Is an SVG file (often icons, not photos)
+- Is smaller than 100x100 (likely an icon)
+- Contains tracking parameters (?utm_, ?ref=, etc.)
+- Is from social media CDNs (fbcdn, twimg) - often expire
+
+PREFER URLs that:
+- Are from the agency's own domain
+- Are from stable CDNs (amazonaws, cloudfront without signed URLs)
+- Have common image extensions (.jpg, .jpeg, .png, .webp)
+- Are clearly named (hero.jpg, team-photo.png, office.jpg)
+```
+
+#### Extraction Priority
 | Field | Where to Look | Format |
 |-------|---------------|--------|
-| `heroImageUrl` | Hero section background, main banner `<img>` | Full URL |
-| `teamImageUrl` | Team/about section photos | Full URL |
-| `officeImageUrl` | Office exterior/interior photos | Full URL |
+| `logoUrl` | `<img>` with "logo" in src/alt/class, `<link rel="icon">` | Full URL (validated) |
+| `heroImageUrl` | Hero section background, main banner `<img>` | Full URL (validated) |
+
+**DO NOT extract these** (rarely work, clutter the page):
+- `teamImageUrl` - usually broken or requires auth
+- `officeImageUrl` - usually broken or requires auth
+
+#### When In Doubt: NO IMAGE
+If you're not confident an image URL will load, **do not include it**.
+A clean page with no images is better than a broken page with missing images.
+Use solid color backgrounds instead of potentially broken hero images.
 
 ### DO NOT extract (removed for speed)
 - soldCount, forRentCount, priceRangeMin, priceRangeMax
@@ -271,16 +334,17 @@ Write the selected design system to `progress.designSystem` and `agencyRecord.de
 
 ### Design System Constraints (MUST FOLLOW)
 
-#### Banned Colors (AI-slop - never use)
+#### Banned Colors (AI-slop - NEVER use these)
 ```
-- Purple/violet/indigo: #6366F1, #8B5CF6, #A855F7, #7C3AED
+- ANY purple/violet/indigo: #6366F1, #8B5CF6, #A855F7, #7C3AED, #7a00df, #6200b3
 - Neon cyan/teal: #00FF88, #00DDFF, #06B6D4
 - ChatGPT green: #10A37F
 - Any purple + green combinations
 - Any blue-to-purple gradients
+- ANY gradient backgrounds in hero sections
 ```
 
-#### Banned Fonts (overused - never use)
+#### Banned Fonts (overused - NEVER use these)
 ```
 - Inter (the #1 AI-slop font)
 - Roboto, Open Sans, Lato
@@ -297,14 +361,41 @@ Body: Source Serif 4, DM Sans, IBM Plex Sans, Outfit
 ```
 - Three equal cards with icons in a horizontal row
 - Symmetric 2x2 or 3x3 grids without hierarchy
-- Purple gradient hero backgrounds
+- Gradient hero backgrounds (use solid colors instead)
 - Generic "feature cards" with icon + title + description
+- Pain point cards or "opportunity analysis" sections
+- Stats/metrics grids (team size, listings, etc.)
+```
+
+#### COLOR CONTRAST RULES (CRITICAL)
+```
+Text must ALWAYS be readable. Follow these rules:
+
+LIGHT BACKGROUNDS (white, cream, light gray):
+  - Use dark text: #1a1a1a, #333333, slate-900
+  - Never use white or light text
+
+DARK BACKGROUNDS (navy, charcoal, black):
+  - Use white or very light text: #ffffff, #f5f5f5
+  - Never use dark text
+
+BRAND COLOR BACKGROUNDS:
+  - If brand color is LIGHT (yellow, light blue, beige): use DARK text
+  - If brand color is DARK (navy, forest green, burgundy): use LIGHT text
+  - When in doubt, use light background with dark text
+
+NEVER DO:
+  - White text on yellow/gold backgrounds
+  - Light gray text on white backgrounds
+  - Dark text on dark backgrounds
+  - Any text color that doesn't have at least 4.5:1 contrast ratio
 ```
 
 #### Required
-- Light theme by default (warm whites: #FAFAF9, #F8F6F1)
-- Use agency's extracted brand colors if found
-- Fallback colors: navy (#1E3A5F), terracotta (#C2703A), forest green (#2D5A47)
+- Light theme by default (warm whites: #FAFAF9, #F8F6F1, #ffffff)
+- Use agency's extracted brand colors ONLY for accents (buttons, borders), not backgrounds
+- Fallback accent colors: navy (#1E3A5F), terracotta (#C2703A), forest green (#2D5A47)
+- Body text: always dark (#1a1a1a or slate-900) on light backgrounds
 - Mobile-responsive (test at 375px width)
 - No emojis anywhere
 
@@ -312,58 +403,70 @@ Body: Source Serif 4, DM Sans, IBM Plex Sans, Outfit
 
 ## Landing Page Purpose & Structure
 
-<!-- NEW: Focused on conversion, not information -->
-
 ### Primary Goal
 
-The landing page has ONE goal: **Get the agency to try the voice AI demo**
+**This is a DEMO INVITATION page for Voqo AI's voice agent platform.**
 
-This is NOT an informational page about the agency.
-This is a SALES page showing what Voqo can do FOR the agency.
+The page exists to invite this specific agency to EXPERIENCE the Voqo voice AI by calling the demo number. They will hear an AI receptionist answer as their agency.
+
+This is NOT:
+- A lead gen landing page for the agency
+- An informational page about the agency's services
+- A generic SaaS product page
+
+### Content Philosophy
+
+The page should feel like a personalized demo invitation:
+- "We built a voice AI demo just for {Agency Name}"
+- "Call now and hear how Voqo sounds when answering as your agency"
+- The agency branding shows we've customized the demo FOR THEM
 
 ### Required Sections (in order)
 
 #### 1. Hero Section
-- Agency logo (if extracted) + agency name
-- Headline: Value proposition for AI voice calling
-  - Example: "Never Miss Another Lead"
-  - Example: "Your 24/7 AI Receptionist"
-- Subheadline: Personalized to agency location
-  - Example: "AI-powered call handling for {Agency Name} in {Suburb}"
-- Primary CTA: Large "Try the Demo" button (calls demo number)
-- Background: Use `heroImageUrl` if extracted, else solid brand color
+- Agency logo (if extracted) prominently displayed
+- Agency name as context (not headline)
+- Headline: Direct invitation to try the demo
+  - GOOD: "Hear How Voqo Answers Your Calls"
+  - GOOD: "Your AI Receptionist Demo is Ready"
+  - BAD: "Scale Your Agency" (too generic)
+  - BAD: "Never Miss a Lead" (feature-focused, not demo-focused)
+- Subheadline: What happens when they call
+  - Example: "Call now and our AI will answer as {Agency Name}"
+- Primary CTA: Large call button with phone number visible
+- Background: Light/neutral - ensure text is ALWAYS readable
 
-#### 2. Value Proposition (2-3 points max)
-- Focus on OUTCOMES, not features
-- Examples:
-  - "Capture every lead, even after hours"
-  - "Professional greeting with your agency name"
-  - "Instant SMS with caller details"
-- Use numbered sections (01, 02, 03) instead of icon cards
+#### 2. What You'll Experience (not "value proposition")
+- Frame as what happens IN THE DEMO CALL:
+  - "AI answers with your agency name"
+  - "Natural conversation about property inquiries"
+  - "See the caller summary page after"
+- This is about the DEMO EXPERIENCE, not product benefits
 
-#### 3. How It Works (simple 3 steps)
-- Step 1: "Caller dials your number"
-- Step 2: "AI answers professionally as {Agency Name}"
-- Step 3: "You receive lead details instantly"
-- Keep it visual and simple
+#### 3. How the Demo Works (3 steps)
+- Step 1: "Call the number below"
+- Step 2: "Our AI answers as {Agency Name}"
+- Step 3: "After the call, see your personalized results page"
+- Emphasize this is a LIVE demo they can try RIGHT NOW
 
-#### 4. Demo CTA Section (prominent)
-- Large call button with phone number displayed
-- Phone: `04832945767` (display) / `+614832945767` (tel: link)
-- Secondary: "I already called" button
-- Trust signals: "30-second demo" • "No signup required" • "Hear it yourself"
+#### 4. Call-to-Action Section (prominent)
+- Large call button: `tel:+614832945767`
+- Display number clearly: `04832945767`
+- Trust text: "30 seconds" • "No signup" • "Try it now"
+- Secondary: "I already called" button (uses window.registerDemoCall)
 
 #### 5. Footer
 - "Presented by Voqo" with link to https://voqo.ai
-- Agency name + suburb (for context)
-- Minimal, clean design
+- "AI Voice Agents for Real Estate"
+- Agency name + location for context
+- Keep minimal
 
-### NOT Included (removed for speed and focus)
-- Pain score or pain reasons display
-- Detailed metrics (sold count, price ranges)
+### NOT Included
+- Pain scores, pain reasons, or "opportunity analysis"
+- Agency metrics (team size, listings, etc.) - this distracts from demo
 - Feature comparison tables
 - Pricing information
-- Long form content
+- Generic SaaS marketing copy
 
 ---
 
