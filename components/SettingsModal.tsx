@@ -5,6 +5,7 @@ import {
   VoiceAgentSettings,
   DEFAULT_VOICE_AGENT_SETTINGS,
   AVAILABLE_VARIABLES,
+  DEFAULT_SMS_TEMPLATE,
 } from '@/lib/types';
 
 const STORAGE_KEY = 'voqo:voiceAgentSettings';
@@ -25,7 +26,7 @@ function extractVariables(text: string): string[] {
 }
 
 function findUnknownVariables(settings: VoiceAgentSettings): string[] {
-  const allText = settings.systemPrompt + ' ' + settings.firstMessage;
+  const allText = settings.systemPrompt + ' ' + settings.firstMessage + ' ' + settings.smsTemplate;
   const found = extractVariables(allText);
   const available = new Set(AVAILABLE_VARIABLES as readonly string[]);
   return found.filter((v) => !available.has(v));
@@ -34,6 +35,7 @@ function findUnknownVariables(settings: VoiceAgentSettings): string[] {
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [systemPrompt, setSystemPrompt] = useState(DEFAULT_VOICE_AGENT_SETTINGS.systemPrompt);
   const [firstMessage, setFirstMessage] = useState(DEFAULT_VOICE_AGENT_SETTINGS.firstMessage);
+  const [smsTemplate, setSmsTemplate] = useState(DEFAULT_SMS_TEMPLATE);
   const [unknownVars, setUnknownVars] = useState<string[]>([]);
 
   // Use ref to avoid re-running effect when onClose changes
@@ -59,24 +61,27 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         const parsed = JSON.parse(stored) as VoiceAgentSettings;
         setSystemPrompt(parsed.systemPrompt ?? DEFAULT_VOICE_AGENT_SETTINGS.systemPrompt);
         setFirstMessage(parsed.firstMessage ?? DEFAULT_VOICE_AGENT_SETTINGS.firstMessage);
+        setSmsTemplate(parsed.smsTemplate ?? DEFAULT_SMS_TEMPLATE);
       } else {
         setSystemPrompt(DEFAULT_VOICE_AGENT_SETTINGS.systemPrompt);
         setFirstMessage(DEFAULT_VOICE_AGENT_SETTINGS.firstMessage);
+        setSmsTemplate(DEFAULT_SMS_TEMPLATE);
       }
     } catch {
       setSystemPrompt(DEFAULT_VOICE_AGENT_SETTINGS.systemPrompt);
       setFirstMessage(DEFAULT_VOICE_AGENT_SETTINGS.firstMessage);
+      setSmsTemplate(DEFAULT_SMS_TEMPLATE);
     }
   }, [isOpen]);
 
   // Validate for unknown variables whenever fields change
   useEffect(() => {
-    const unknown = findUnknownVariables({ systemPrompt, firstMessage });
+    const unknown = findUnknownVariables({ systemPrompt, firstMessage, smsTemplate });
     setUnknownVars(unknown);
-  }, [systemPrompt, firstMessage]);
+  }, [systemPrompt, firstMessage, smsTemplate]);
 
   const handleSave = () => {
-    const settings: VoiceAgentSettings = { systemPrompt, firstMessage };
+    const settings: VoiceAgentSettings = { systemPrompt, firstMessage, smsTemplate };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
     onClose();
   };
@@ -84,6 +89,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const handleReset = () => {
     setSystemPrompt(DEFAULT_VOICE_AGENT_SETTINGS.systemPrompt);
     setFirstMessage(DEFAULT_VOICE_AGENT_SETTINGS.firstMessage);
+    setSmsTemplate(DEFAULT_SMS_TEMPLATE);
   };
 
   if (!isOpen) return null;
@@ -145,6 +151,19 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               className="w-full px-4 py-3 rounded-xl bg-stone-50 border border-stone-200 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#00C853] focus:border-transparent resize-none text-sm"
               placeholder="Enter the first message the agent says..."
             />
+          </div>
+
+          {/* SMS Template */}
+          <div>
+            <label className="block text-stone-700 text-sm font-medium mb-2">SMS Template</label>
+            <textarea
+              value={smsTemplate}
+              onChange={(e) => setSmsTemplate(e.target.value)}
+              rows={3}
+              className="w-full px-4 py-3 rounded-xl bg-stone-50 border border-stone-200 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#00C853] focus:border-transparent resize-none text-sm"
+              placeholder="SMS message sent after call..."
+            />
+            <p className="text-stone-500 text-xs mt-1">Sent to caller after their personalized page is ready</p>
           </div>
 
           {/* System Prompt */}

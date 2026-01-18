@@ -83,6 +83,11 @@ interface PendingCallContext {
   callId?: string;
   activatedAt?: number;
   completedAt?: number;
+  settings?: {
+    systemPrompt?: string;
+    firstMessage?: string;
+    smsTemplate?: string;
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -255,7 +260,10 @@ export async function POST(request: NextRequest) {
 
       pageStatus: 'generating',
       pageUrl: null,
-      generatedAt: null
+      generatedAt: null,
+
+      // Voice/SMS settings for downstream workers
+      settings: matched?.settings || null
     };
 
     // Ensure calls directory exists
@@ -278,6 +286,7 @@ export async function POST(request: NextRequest) {
         listingsShown: (existing.listingsShown ?? (callData as any).listingsShown) as unknown,
         sms: (existing.sms ?? (callData as any).sms) as unknown,
         smsSentAt: (existing.smsSentAt ?? (callData as any).smsSentAt) as unknown,
+        settings: (existing.settings ?? callData.settings) as unknown,
       } as Record<string, unknown>;
     });
 

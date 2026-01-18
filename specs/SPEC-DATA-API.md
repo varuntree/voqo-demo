@@ -180,6 +180,7 @@ interface CallData {
 interface VoiceAgentSettings {
   systemPrompt: string;              // Custom system prompt with {{variable}} placeholders
   firstMessage: string;              // Custom first message with {{variable}} placeholders
+  smsTemplate: string;               // Custom SMS message template with {{variable}} placeholders
 }
 
 interface PendingCallsContext {
@@ -609,9 +610,9 @@ Sent after successful post-call page generation.
 
 **Trigger:** Call JSON indicates a completed page (`pageStatus="completed"` and `pageUrl` is set).
 
-**Message Format:**
+**Default Message Format:**
 ```
-{agencyName} found properties for you: {pageUrl}
+{{agency_name}} found properties for you: {{page_url}}
 ```
 
 **Example:**
@@ -619,9 +620,24 @@ Sent after successful post-call page generation.
 Ray White Surry Hills found properties for you: https://theagentic.engineer/call/call-1768493009666-fe33yd
 ```
 
+**Configurable Template:**
+
+The SMS message can be customized via the Settings modal. Custom templates are stored in `settings.smsTemplate` and support the following variables:
+
+| Variable | Description |
+|----------|-------------|
+| `{{agency_name}}` | Full agency name |
+| `{{page_url}}` | Full URL to generated post-call page |
+| `{{caller_name}}` | Caller's name (may be empty) |
+| `{{agency_location}}` | Agency suburb/area |
+| `{{demo_page_url}}` | Alias for `{{page_url}}` |
+
+Empty or whitespace-only templates fall back to the default message.
+
 **Implementation:**
 - SMS is handled by a dedicated worker that processes `/data/jobs/sms/{callId}.json`.
 - The worker is idempotent and will not send twice for the same `callId` (writes `callData.sms.status="sent"`).
+- Template substitution happens at send time using data from the call JSON.
 
 **Error Handling:**
 - SMS failure: retry up to N attempts, then set `callData.sms.status="failed"` and log to `/data/errors/sms-errors.json`.

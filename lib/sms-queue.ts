@@ -2,6 +2,7 @@ import { readFile, writeFile, mkdir, readdir, rename, unlink, stat } from 'fs/pr
 import path from 'path';
 import { sendSMS, normalizePhoneNumber } from '@/lib/twilio';
 import { readJsonFile, safeJsonParse, updateJsonFileWithLock, writeJsonFileAtomic } from '@/lib/fs-json';
+import { DEFAULT_SMS_TEMPLATE } from '@/lib/types';
 
 const SMS_JOBS_DIR = path.join(process.cwd(), 'data/jobs/sms');
 const CALLS_DIR = path.join(process.cwd(), 'data/calls');
@@ -137,14 +138,45 @@ function canSendSms(data: Record<string, unknown>): {
   callerPhone?: string;
   agencyName?: string;
   pageUrl?: string;
+  smsTemplate?: string;
+  callerName?: string;
+  agencyLocation?: string;
 } {
   const pageStatus = typeof data.pageStatus === 'string' ? data.pageStatus : null;
   const pageUrl = typeof data.pageUrl === 'string' ? data.pageUrl : null;
   const callerPhone = typeof data.callerPhone === 'string' ? data.callerPhone : null;
   const agencyName = typeof data.agencyName === 'string' ? data.agencyName : 'Voqo';
 
+  // Extract settings for SMS template
+  const settings = data.settings && typeof data.settings === 'object' ? data.settings as Record<string, unknown> : null;
+  const smsTemplate = typeof settings?.smsTemplate === 'string' && settings.smsTemplate.trim()
+    ? settings.smsTemplate
+    : DEFAULT_SMS_TEMPLATE;
+
+  // Extract additional fields for variable substitution
+  const callerName = typeof data.callerName === 'string' ? data.callerName : '';
+  const agencyData = data.agencyData && typeof data.agencyData === 'object' ? data.agencyData as Record<string, unknown> : null;
+  const agencyLocation = typeof agencyData?.location === 'string' ? agencyData.location :
+                         typeof agencyData?.address === 'string' ? agencyData.address : '';
+
   if (pageStatus !== 'completed' || !pageUrl || !callerPhone) return { ok: false };
-  return { ok: true, callerPhone, agencyName, pageUrl };
+  return { ok: true, callerPhone, agencyName, pageUrl, smsTemplate, callerName, agencyLocation };
+}
+
+function substituteSmsVariables(
+  template: string,
+  vars: { agencyName: string; pageUrl: string; callerName: string; agencyLocation: string }
+): string {
+  return template
+    .replace(/\{\{agency_name\}\}/g, vars.agencyName)
+    .replace(/\{\{page_url\}\}/g, vars.pageUrl)
+    .replace(/\{\{caller_name\}\}/g, vars.callerName || '')
+    .replace(/\{\{agency_location\}\}/g, vars.agencyLocation || '')
+    // Also support demo_page_url as alias for page_url
+    .replace(/\{\{demo_page_url\}\}/g, vars.pageUrl)
+    // Support context_id and agency_phone as empty (not available at SMS time)
+    .replace(/\{\{context_id\}\}/g, '')
+    .replace(/\{\{agency_phone\}\}/g, '');
 }
 
 export async function processSmsJobsOnce(): Promise<void> {
@@ -221,7 +253,12 @@ export async function processSmsJobsOnce(): Promise<void> {
 
       const baseUrl = buildBaseUrl();
       const fullUrl = pre.pageUrl!.startsWith('http') ? pre.pageUrl! : `${baseUrl}${pre.pageUrl}`;
-      const message = `${pre.agencyName} found properties for you: ${fullUrl}`;
+      const message = substituteSmsVariables(pre.smsTemplate!, {
+        agencyName: pre.agencyName!,
+        pageUrl: fullUrl,
+        callerName: pre.callerName || '',
+        agencyLocation: pre.agencyLocation || '',
+      });
       const normalizedTo = normalizePhoneNumber(pre.callerPhone!);
 
       const result = await sendSMS(normalizedTo, message);

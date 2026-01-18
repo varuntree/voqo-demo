@@ -136,6 +136,7 @@ export const DEFAULT_STEPS: CardStep[] = [
 export interface VoiceAgentSettings {
   systemPrompt: string;
   firstMessage: string;
+  smsTemplate: string;
 }
 
 export const AVAILABLE_VARIABLES = [
@@ -145,7 +146,10 @@ export const AVAILABLE_VARIABLES = [
   '{{demo_page_url}}',
   '{{context_id}}',
   '{{caller_name}}',
+  '{{page_url}}',
 ] as const;
+
+export const DEFAULT_SMS_TEMPLATE = '{{agency_name}} found properties for you: {{page_url}}';
 
 export const DEFAULT_VOICE_AGENT_SETTINGS: VoiceAgentSettings = {
   systemPrompt: `You are a friendly AI receptionist for {{agency_name}}, a real estate agency located in {{agency_location}}.
@@ -325,4 +329,5 @@ Caller: "Yeah, it's David Chen."
 
 AI: "Thanks David! I'll make sure one of our sales team reaches out to you soon. They'll be able to give you a proper rundown on the market and what your place might be worth. Thanks for calling {{agency_name}}!"`,
   firstMessage: `Hi! Thanks for calling {{agency_name}}. I'm their AI assistant - how can I help you today?`,
+  smsTemplate: DEFAULT_SMS_TEMPLATE,
 };

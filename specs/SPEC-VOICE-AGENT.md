@@ -314,13 +314,14 @@ voqo:voiceAgentSettings
 interface VoiceAgentSettings {
   systemPrompt: string;
   firstMessage: string;
+  smsTemplate: string;
 }
 ```
 
 ### Settings Modal
 
 - Accessible via gear icon in the main UI header
-- Two text fields: System Prompt and First Message
+- Three text fields: System Prompt, First Message, and SMS Template
 - Changes persist to localStorage
 - Reset button restores defaults from SPEC-VOICE-AGENT.md
 
@@ -355,5 +356,27 @@ Custom prompts support the same dynamic variables as the default prompt:
 | `{{demo_page_url}}` | Source demo page URL |
 | `{{context_id}}` | Context tracking ID |
 | `{{caller_name}}` | Caller name (may be empty) |
+| `{{page_url}}` | Post-call page URL (SMS only) |
 
 Implementation note: for `conversation_config_override` prompts, the server substitutes these placeholders before returning the override (and also returns `dynamic_variables` for the voice agent runtime).
+
+---
+
+### SMS Template Customization
+
+The SMS message sent after post-call page generation can be customized.
+
+**Default Template:**
+```
+{{agency_name}} found properties for you: {{page_url}}
+```
+
+**Supported Variables:**
+| Variable | Description |
+|----------|-------------|
+| `{{agency_name}}` | Full agency name |
+| `{{page_url}}` | Full URL to generated page |
+| `{{caller_name}}` | Caller's name (may be empty) |
+| `{{agency_location}}` | Agency suburb/area |
+
+Note: `{{demo_page_url}}` is also supported as an alias for `{{page_url}}`.

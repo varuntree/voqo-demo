@@ -15,7 +15,9 @@ function parseVoiceAgentSettings(raw: unknown): VoiceAgentSettings | null {
   const obj = raw as Record<string, unknown>;
   if (typeof obj.systemPrompt !== 'string') return null;
   if (typeof obj.firstMessage !== 'string') return null;
-  return { systemPrompt: obj.systemPrompt, firstMessage: obj.firstMessage };
+  // smsTemplate is optional for backwards compatibility
+  const smsTemplate = typeof obj.smsTemplate === 'string' ? obj.smsTemplate : '';
+  return { systemPrompt: obj.systemPrompt, firstMessage: obj.firstMessage, smsTemplate };
 }
 
 export async function POST(request: NextRequest) {
